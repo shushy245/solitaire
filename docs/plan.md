@@ -218,6 +218,10 @@ type GameContextValue = {
   - Cypress: actions in a real browser schedule the expected sounds (audio port faked in-page), and mute silences them
   - manual: listen in Chrome and Safari — every action audible, nothing clipped or too loud
   - the background has no visible edge or banding (two visual passes saw a faint shape low on the page — likely the radial gradient's ellipse edge)
+  - pre-mortem: StrictMode's double effect plays a change's sound once
+  - pre-mortem: the winning move plays the win sound only, not a foundation sound on top
+  - pre-mortem: a restored game on load plays nothing; an undo plays the place sound
+  - pre-mortem: a rejected AudioContext resume() never surfaces as an unhandled rejection
 
 ---
 

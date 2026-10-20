@@ -11,6 +11,8 @@ export default mergeConfig(
             include: ['src/**/*.test.{ts,tsx}'],
             setupFiles: ['./src/testkit/setup.ts'],
             clearMocks: true,
+            // Stylesheets load blank in tests, except the palette, which the contrast test reads (global.scss?raw).
+            css: { include: [/global\.scss/] },
             passWithNoTests: true,
         },
     }),

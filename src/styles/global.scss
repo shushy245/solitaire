@@ -3,12 +3,13 @@
 @import '@fontsource/instrument-sans/600.css';
 
 :root {
-    // Card-room baize: deep teal under a soft overhead light.
-    --baize: #0d4a43;
-    --baize-shadow: #062824;
-    --text: #efe6d2;
-    --text-muted: #b9c7bf;
-    --brass: #c9a24c;
+    // Card-room baize: a lively green under a soft overhead light. Text, outlines and focus rings are held to
+    // their contrast targets against it by src/styles/contrast.utils.test.ts.
+    --baize: #136a55;
+    --baize-shadow: #0a4236;
+    --text: #f3ecdb;
+    --text-muted: #d6e2da;
+    --brass: #e3bf6a;
 
     --card-ivory: #fbf7ee;
     --card-edge: #d8cfbc;
@@ -17,11 +18,11 @@
 
     --back: #5c1020;
     --back-glow: #7b1a2e;
-    --back-line: rgb(201 162 76 / 0.45);
+    --back-line: rgb(227 191 106 / 0.45);
 
-    --slot-line: rgb(239 230 210 / 0.28);
+    --slot-line: rgb(243 236 219 / 0.3);
     // Controls (the empty stock) need >= 3:1 against the felt; decorative outlines stay quieter.
-    --control-line: rgb(239 230 210 / 0.62);
+    --control-line: rgb(243 236 219 / 0.8);
     --slot-fill: rgb(0 0 0 / 0.12);
 
     color-scheme: dark;
@@ -38,9 +39,11 @@ body {
     margin: 0;
 }
 
+// The light fades all the way to the farthest corner, so its edge never shows, and stays put with the window
+// rather than repeating down a long page.
 body {
     min-height: 100dvh;
-    background: radial-gradient(ellipse 120% 80% at 50% 0%, var(--baize), var(--baize-shadow));
+    background: radial-gradient(ellipse farthest-corner at 50% 0%, var(--baize), var(--baize-shadow)) fixed;
     color: var(--text);
     font-family: 'Instrument Sans', system-ui, sans-serif;
 }
