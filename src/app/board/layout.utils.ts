@@ -81,3 +81,45 @@ export const layoutCards = (game: GameStateModel): CardSlotModel[] => [
     ),
     ...game.tableau.flatMap((pile, pileIndex) => tableauSlots({ pile, pileIndex })),
 ];
+
+const slotKey = (slot: CardSlotModel): string =>
+    `${slot.column}:${slot.row}:${slot.downOffset}:${slot.upOffset}:${slot.fan}:${slot.card.faceUp}`;
+
+// Cards whose on-table position or face changed — these are lifted above everything while they fly.
+export const movedCardIds = ({
+    previous,
+    next,
+}: {
+    previous: readonly CardSlotModel[];
+    next: readonly CardSlotModel[];
+}): Set<string> => {
+    const previousKeys = new Map(previous.map((slot) => [slot.card.id, slotKey(slot)]));
+
+    return new Set(next.filter((slot) => previousKeys.get(slot.card.id) !== slotKey(slot)).map((slot) => slot.card.id));
+};
+
+const isTableauSlot = (slot: CardSlotModel): boolean => slot.pile === PileKind.Tableau;
+
+const depthOf = (slot: CardSlotModel): number => slot.downOffset + slot.upOffset;
+
+// The order a dealer lays tableau cards: one card to every column, then the next row, left to right.
+export const dealOrder = (slots: readonly CardSlotModel[]): Map<string, number> =>
+    new Map(
+        slots
+            .filter(isTableauSlot)
+            .sort((a, b) => depthOf(a) - depthOf(b) || a.column - b.column)
+            .map((slot, index) => [slot.card.id, index]),
+    );
+
+// Every card squared face-down on the stock — the picture before the deal animation starts.
+export const stackOnStock = (slots: readonly CardSlotModel[]): CardSlotModel[] =>
+    slots.map((slot, index) => ({
+        ...slot,
+        card: { ...slot.card, faceUp: false },
+        column: 0,
+        row: 0,
+        downOffset: 0,
+        upOffset: 0,
+        fan: 0,
+        z: index + 1,
+    }));

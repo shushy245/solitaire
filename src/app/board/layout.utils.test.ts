@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { at } from '~/testkit/at.ts';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
-import { dealGame, DrawMode, Rank, Suit } from '~/engine/index.ts';
+import { applyMove, dealGame, DrawMode, makeDrawMove, Rank, Suit } from '~/engine/index.ts';
 
-import { layoutCards, PileKind } from './layout.utils.ts';
+import { dealOrder, layoutCards, movedCardIds, PileKind, stackOnStock } from './layout.utils.ts';
 
 const slotOf = ({ slots, cardId }: { slots: ReturnType<typeof layoutCards>; cardId: string }) => {
     const slot = slots.find((s) => s.card.id === cardId);
@@ -82,5 +82,51 @@ describe('layoutCards', () => {
 
         expect(stockZ).toEqual([...stockZ].sort((a, b) => a - b));
         expect(new Set(stockZ).size).toBe(stockZ.length);
+    });
+});
+
+describe('movedCardIds', () => {
+    it('lists exactly the cards whose slot changed between two layouts', () => {
+        const before = dealGame({ seed: 21, drawMode: DrawMode.One });
+        const move = makeDrawMove(before);
+
+        if (move === undefined) throw new Error('layout test: expected a stock card');
+
+        const after = applyMove({ state: before, move });
+
+        expect(movedCardIds({ previous: layoutCards(before), next: layoutCards(after) })).toEqual(
+            new Set([move.cardId]),
+        );
+    });
+
+    it('lists nothing when the layout is unchanged', () => {
+        const slots = layoutCards(dealGame({ seed: 21, drawMode: DrawMode.One }));
+
+        expect(movedCardIds({ previous: slots, next: slots }).size).toBe(0);
+    });
+});
+
+describe('dealOrder', () => {
+    it('numbers tableau cards row by row across the columns, as a dealer deals', () => {
+        const game = dealGame({ seed: 4, drawMode: DrawMode.One });
+        const order = dealOrder(layoutCards(game));
+
+        expect(order.get(at(at(game.tableau, 0), 0).id)).toBe(0);
+        expect(order.get(at(at(game.tableau, 6), 0).id)).toBe(6);
+        expect(order.get(at(at(game.tableau, 1), 1).id)).toBe(7);
+        expect(order.get(at(at(game.tableau, 6), 6).id)).toBe(27);
+        expect(order.size).toBe(28);
+    });
+});
+
+describe('stackOnStock', () => {
+    it('puts every card face-down on the stock pile, keeping each card once', () => {
+        const slots = stackOnStock(layoutCards(dealGame({ seed: 4, drawMode: DrawMode.One })));
+
+        expect(
+            slots.every((s) => s.column === 0 && s.row === 0 && s.downOffset === 0 && s.upOffset === 0 && s.fan === 0),
+        ).toBe(true);
+        expect(slots.every((s) => !s.card.faceUp)).toBe(true);
+        expect(new Set(slots.map((s) => s.z)).size).toBe(52);
     });
 });
