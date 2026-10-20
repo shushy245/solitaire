@@ -102,6 +102,20 @@ class GameStateBuilder {
         return this;
     }
 
+    // Won but for the King of hearts, which waits face-up on the first column (its foundation is the first).
+    asOneMoveFromWon(): this {
+        const won = this.asWon().state;
+        const [hearts = [], ...others] = won.foundations;
+        const king = hearts[hearts.length - 1];
+        this.state = {
+            ...won,
+            foundations: [hearts.slice(0, -1), ...others],
+            tableau: won.tableau.map((column, i) => (i === 0 && king !== undefined ? [king] : column)),
+        };
+
+        return this;
+    }
+
     build(): GameStateModel {
         return this.state;
     }

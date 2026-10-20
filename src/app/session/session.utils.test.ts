@@ -2,9 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import { at } from '~/testkit/at.ts';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
-import { dealGame, DrawMode, isWon, makeDrawMove, MoveKind, Rank, Suit } from '~/engine/index.ts';
+import { dealGame, DrawMode, isWon, makeDrawMove, Move, MoveKind, Rank, Suit } from '~/engine/index.ts';
 
-import { canUndo, makeSession, reduceSession, SessionActionKind, SessionPhase } from './session.utils.ts';
+import {
+    canUndo,
+    makeSession,
+    reduceSession,
+    SessionAction,
+    SessionActionKind,
+    SessionModel,
+    SessionPhase,
+} from './session.utils.ts';
 
 const freshSession = () => makeSession({ seed: 77, drawMode: DrawMode.One });
 const drawIn = (session: ReturnType<typeof freshSession>) => {
@@ -250,5 +258,52 @@ describe('canUndo', () => {
         expect(canUndo(fresh)).toBe(false);
         expect(canUndo(withHistory)).toBe(true);
         expect(canUndo({ ...withHistory, phase: SessionPhase.AutoCompleting })).toBe(false);
+    });
+});
+
+describe('reduceSession — stats', () => {
+    const winningMove: Move = { kind: MoveKind.TableauToFoundation, cardId: 'hearts-13', from: 0, to: 0 };
+    const oneMoveFromWon = () => ({
+        ...freshSession(),
+        game: { ...aGameState().asOneMoveFromWon().build(), moves: 9, score: 300 },
+    });
+    const act = (session: SessionModel, action: SessionAction) => reduceSession({ session, action });
+
+    it('counts a deal as played at its first move, and only then', () => {
+        const once = drawIn(freshSession());
+
+        expect(freshSession().stats.played).toBe(0);
+        expect(once.stats.played).toBe(1);
+        expect(drawIn(once).stats.played).toBe(1);
+    });
+
+    it('still counts a deal once when every move is undone and play starts again', () => {
+        const undone = act(drawIn(freshSession()), { kind: SessionActionKind.Undo });
+
+        expect(drawIn(undone).stats.played).toBe(1);
+    });
+
+    it('records the win with the time played and the final score at the winning move', () => {
+        const session = { ...oneMoveFromWon(), elapsedMs: 75_000 };
+
+        const won = act(session, { kind: SessionActionKind.Move, move: winningMove });
+
+        expect(won.stats.won).toBe(1);
+        expect(won.stats.best).toEqual({ timeMs: 75_000, score: won.game.score });
+    });
+
+    it('records a win once, even when it is undone and won again', () => {
+        const won = act(oneMoveFromWon(), { kind: SessionActionKind.Move, move: winningMove });
+        const undone = act(won, { kind: SessionActionKind.Undo });
+
+        expect(act(undone, { kind: SessionActionKind.Move, move: winningMove }).stats.won).toBe(1);
+    });
+
+    it('a new game keeps the record and starts its own deal uncounted', () => {
+        const played = drawIn(freshSession());
+        const next = act(played, { kind: SessionActionKind.NewGame, seed: 5, drawMode: DrawMode.One });
+
+        expect(next.stats).toEqual(played.stats);
+        expect(drawIn(next).stats.played).toBe(2);
     });
 });

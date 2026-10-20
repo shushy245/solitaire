@@ -13,9 +13,19 @@ import {
     topCard,
 } from '~/engine/index.ts';
 
+import { emptyStats, recordPlayed, recordWin, StatsModel } from '../stats/stats.utils.ts';
+
 export enum SessionPhase {
     Playing = 'playing',
     AutoCompleting = 'auto-completing',
+}
+
+// How far the current deal has got in the record: counted as played at its first move, as won at its first win.
+// Undoing back to the deal or away from the win never moves it back, so nothing is counted twice.
+export enum DealProgress {
+    Unstarted = 'unstarted',
+    Started = 'started',
+    Won = 'won',
 }
 
 export type SessionModel = {
@@ -27,6 +37,9 @@ export type SessionModel = {
     readonly phase: SessionPhase;
     // Counts deals in this session, so replaying the same seed is still recognised as a new deal.
     readonly dealNumber: number;
+    readonly progress: DealProgress;
+    // The player's record across deals — updated inside the transition that plays or wins a deal.
+    readonly stats: StatsModel;
 };
 
 export enum SessionActionKind {
@@ -60,6 +73,8 @@ export const makeSession = ({ seed, drawMode }: { seed: number; drawMode: DrawMo
     elapsedMs: 0,
     phase: SessionPhase.Playing,
     dealNumber: 0,
+    progress: DealProgress.Unstarted,
+    stats: emptyStats,
 });
 
 export const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
@@ -116,6 +131,7 @@ const reducerMap: ReducerMap = {
     [SessionActionKind.NewGame]: ({ session, action }) => ({
         ...makeSession({ seed: action.seed, drawMode: action.drawMode }),
         dealNumber: session.dealNumber + 1,
+        stats: session.stats,
     }),
     [SessionActionKind.Tick]: ({ session, action }) =>
         isGameUnderWay(session) ? { ...session, elapsedMs: session.elapsedMs + action.elapsedMs } : session,
@@ -136,10 +152,33 @@ const reducerMap: ReducerMap = {
     },
 };
 
+const isNewlyStarted = (session: SessionModel): boolean =>
+    session.progress === DealProgress.Unstarted && session.game.moves > 0;
+
+const isNewlyWon = (session: SessionModel): boolean => session.progress === DealProgress.Started && isWon(session.game);
+
+const countPlayed = (session: SessionModel): SessionModel =>
+    isNewlyStarted(session)
+        ? { ...session, progress: DealProgress.Started, stats: recordPlayed(session.stats) }
+        : session;
+
+// The clock was read right before the winning action, so elapsedMs is the exact time to the win.
+const countWin = (session: SessionModel): SessionModel =>
+    isNewlyWon(session)
+        ? {
+              ...session,
+              progress: DealProgress.Won,
+              stats: recordWin({ stats: session.stats, timeMs: session.elapsedMs, score: session.game.score }),
+          }
+        : session;
+
+// Brings the record up to date with whatever the action did to the game.
+const recordProgress = (session: SessionModel): SessionModel => countWin(countPlayed(session));
+
 export const reduceSession = <K extends SessionActionKind>({
     session,
     action,
 }: {
     session: SessionModel;
     action: SessionActionOf<K>;
-}): SessionModel => reducerMap[action.kind]({ session, action });
+}): SessionModel => recordProgress(reducerMap[action.kind]({ session, action }));
