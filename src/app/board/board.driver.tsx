@@ -2,7 +2,7 @@ import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
-import { fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
+import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 import { CardModel, DrawMode, GameStateModel, Rank, Suit, topCard } from '~/engine/index.ts';
 
 import { Board } from './board.tsx';
@@ -140,7 +140,12 @@ export const makeBoardDriver = (): BoardDriver => {
                 const session = sessionUnderTest();
                 const initialSession = (): SessionModel => session;
                 rendered.unmount = render(
-                    <GameProvider createInitialSession={initialSession} seedSource={fixedSeed} now={fakeNow}>
+                    <GameProvider
+                        createInitialSession={initialSession}
+                        seedSource={fixedSeed}
+                        now={fakeNow}
+                        saveSession={discardSave}
+                    >
                         <Board />
                         <ElsewhereInTheApp />
                     </GameProvider>,

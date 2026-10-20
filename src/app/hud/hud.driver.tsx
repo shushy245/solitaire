@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { aSession } from '~/testkit/builders/index.ts';
 import { DrawMode, makeDrawMove } from '~/engine/index.ts';
-import { fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
+import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Hud } from './hud.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
@@ -77,7 +77,12 @@ export const makeHudDriver = (): HudDriver => {
         const initialSession = (): SessionModel => session;
 
         return (
-            <GameProvider createInitialSession={initialSession} seedSource={fixedSeed} now={now}>
+            <GameProvider
+                createInitialSession={initialSession}
+                seedSource={fixedSeed}
+                now={now}
+                saveSession={discardSave}
+            >
                 <Hud />
                 <ElsewhereInTheApp />
             </GameProvider>

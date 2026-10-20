@@ -2,9 +2,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './app.tsx';
+import { Logger } from './utils/logger.port.ts';
 import { generateSeed } from './utils/generate-seed.ts';
 import { getElementById } from './utils/get-element-by-id.ts';
 import { seedFromSearch } from './utils/seed-source.utils.ts';
+import { makeSessionStore } from './app/persistence/session-store.ts';
+import { makeBrowserKeyValueStore } from './utils/browser-key-value-store.ts';
 
 import './styles/global.scss';
 
@@ -14,13 +17,32 @@ if (root === undefined) {
     throw new Error('main: root element not found — check index.html has <div id="root">');
 }
 
-// ?seed= replays a deal; otherwise the first deal is random like every later one.
+const logger: Logger = {
+    warn: (message, context) => {
+        console.warn(message, context);
+    },
+};
+
 const monotonicNow = (): number => performance.now();
 
-const firstSeed = seedFromSearch(window.location.search) ?? generateSeed();
+const sessionStore = makeSessionStore({
+    store: makeBrowserKeyValueStore({ storage: () => window.localStorage, logger }),
+    logger,
+});
+
+// ?seed= replays a deal; otherwise the saved game resumes, or the first deal is random like every later one.
+const initialSession = sessionStore.load({
+    seedParam: seedFromSearch(window.location.search),
+    freshSeed: generateSeed,
+});
 
 createRoot(root).render(
     <StrictMode>
-        <App firstSeed={firstSeed} seedSource={generateSeed} now={monotonicNow} />
+        <App
+            initialSession={initialSession}
+            saveSession={sessionStore.save}
+            seedSource={generateSeed}
+            now={monotonicNow}
+        />
     </StrictMode>,
 );

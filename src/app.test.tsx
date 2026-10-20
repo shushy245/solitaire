@@ -24,4 +24,15 @@ describe('App', () => {
         // seed 1 deals the Jack of diamonds face-up on column 2 (index 1)
         driver.assert.tableauTop({ column: 1, cardId: 'diamonds-11' });
     });
+
+    it('brings a game in progress back exactly as it was after a reload', async () => {
+        driver.given.laterDealsFrom([12]);
+        await driver.when.created();
+        driver.when.dealt();
+        driver.click.stock();
+
+        await driver.when.reloaded();
+
+        driver.assert.tableAsBeforeReload();
+    });
 });

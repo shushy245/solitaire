@@ -4,3 +4,6 @@ export const fixedSeed = (): number => 1;
 
 // Fake timers fake Date too, so the provider's clock advances with the fake clock.
 export const fakeNow = (): number => Date.now();
+
+// Drivers that are not about persistence drop every save.
+export const discardSave = (): void => undefined;

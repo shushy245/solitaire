@@ -54,6 +54,15 @@ export default [
         },
     },
 
+    // ── Composition root: console allowed — the shared config's `**/main.ts` exemption, for this app's
+    //    `main.tsx`. Only the Logger adapter speaks to the console; everything else logs through the port.
+    {
+        files: ['src/main.tsx'],
+        rules: {
+            'no-console': 'off',
+        },
+    },
+
     {
         settings: {
             'import/resolver': {

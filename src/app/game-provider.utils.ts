@@ -18,6 +18,8 @@ export type GameProviderProps = {
     seedSource: () => number;
     // Monotonic milliseconds (performance.now in the app) — the clock measures real gaps between ticks.
     now: () => number;
+    // Called with every new session, so the game survives a reload; never throws.
+    saveSession: (session: SessionModel) => void;
     children: React.ReactNode;
 };
 

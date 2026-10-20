@@ -13,7 +13,13 @@ const GameContext = createContext<GameContextValue | undefined>(undefined);
 
 const reducer = (session: SessionModel, action: SessionAction): SessionModel => reduceSession({ session, action });
 
-export const GameProvider = ({ createInitialSession, seedSource, now, children }: GameProviderProps): JSX.Element => {
+export const GameProvider = ({
+    createInitialSession,
+    seedSource,
+    now,
+    saveSession,
+    children,
+}: GameProviderProps): JSX.Element => {
     const [session, dispatch] = useReducer(reducer, undefined, createInitialSession);
 
     const lastTick = useRef(now());
@@ -35,6 +41,11 @@ export const GameProvider = ({ createInitialSession, seedSource, now, children }
             clearInterval(interval);
         };
     }, [flushClock]);
+
+    // Every change is saved as it happens — a tab can be closed at any moment, with no chance to save on the way out.
+    useEffect(() => {
+        saveSession(session);
+    }, [session, saveSession]);
 
     // One card per step; each new game state schedules the next, and leaving the phase cancels it.
     useEffect(() => {
