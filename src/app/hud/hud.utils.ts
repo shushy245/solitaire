@@ -41,6 +41,7 @@ export const drawModes: readonly DrawMode[] = [DrawMode.One, DrawMode.Three];
 // once that deal is replaced, the question no longer applies.
 export type LeaveRequestModel = { drawMode: DrawMode; dealNumber: number };
 
+// The question also lapses once leaving stops needing confirmation (everything undone, or the game won).
 export const openLeaveRequest = ({
     request,
     session,
@@ -48,11 +49,23 @@ export const openLeaveRequest = ({
     request: LeaveRequestModel | undefined;
     session: SessionModel;
 }): LeaveRequestModel | undefined =>
-    request !== undefined && request.dealNumber === session.dealNumber ? request : undefined;
+    request !== undefined && request.dealNumber === session.dealNumber && needsConfirmationToLeave(session)
+        ? request
+        : undefined;
+
+const LATIN_LETTER = /^[a-z]$/i;
+
+// A Latin layout names the letter (so AZERTY's Z is found where it is printed); any other layout falls back
+// to the key's position on the keyboard.
+const isZKey = (event: KeyboardEvent): boolean =>
+    LATIN_LETTER.test(event.key) ? event.key.toLowerCase() === 'z' : event.code === 'KeyZ';
+
+// AltGr reports as Ctrl+Alt, and types characters rather than issuing commands.
+const hasCommandModifier = (event: KeyboardEvent): boolean => (event.ctrlKey || event.metaKey) && !event.altKey;
 
 // Ctrl+Z (Cmd+Z on a Mac) undoes; a held key's auto-repeat does not undo again.
 export const isUndoShortcut = (event: KeyboardEvent): boolean =>
-    (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.repeat && event.key.toLowerCase() === 'z';
+    hasCommandModifier(event) && !event.shiftKey && !event.repeat && isZKey(event);
 
 export const countLabel = ({ count, singular, plural }: { count: number; singular: string; plural: string }): string =>
     count === 1 ? singular : plural;
