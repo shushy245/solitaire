@@ -330,6 +330,20 @@ describe('Hud', () => {
             driver.assert.record({ played: '2', won: '0', winRate: '0%', bestTime: '—', bestScore: '—' });
         });
 
+        it('counts a win with the time played right up to the winning card', async () => {
+            driver.given.session((s) => s.asReadyToAutoComplete().withElapsedMs(60_000));
+            await driver.when.created();
+
+            driver.time.pass(5_000);
+            driver.click.autoComplete();
+            driver.time.autoCompleteSteps(52);
+            driver.time.pass(30_000);
+            driver.click.record();
+
+            // 60s before, 5s of thought, then 52 steps of 90ms: 1:09.68 — the 30s after the win do not count
+            driver.assert.record({ played: '1', won: '1', winRate: '100%', bestTime: '1:09', bestScore: '520' });
+        });
+
         it('hides again when asked a second time', async () => {
             await driver.when.created();
 
