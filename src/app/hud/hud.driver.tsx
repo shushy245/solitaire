@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { DrawMode } from '~/engine/index.ts';
 import { aSession } from '~/testkit/builders/index.ts';
+import { fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Hud } from './hud.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
@@ -48,11 +49,6 @@ const passTime = (ms: number): void => {
         vi.advanceTimersByTime(ms);
     });
 };
-
-const fixedSeed = (): number => 3;
-
-// Fake timers fake Date too, so the provider's clock advances with the fake clock.
-const fakeNow = (): number => Date.now();
 
 export const makeHudDriver = (): HudDriver => {
     vi.useFakeTimers();

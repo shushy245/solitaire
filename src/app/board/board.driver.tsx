@@ -2,6 +2,7 @@ import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
+import { fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 import { CardModel, DrawMode, GameStateModel, Rank, Suit, topCard } from '~/engine/index.ts';
 
 import { Board } from './board.tsx';
@@ -50,11 +51,6 @@ export type BoardDriver = {
 
 const POINTER_ID = 1;
 const pointerEvents = new Set(['pointermove', 'pointerup', 'pointercancel']);
-
-const fixedSeed = (): number => 1;
-
-// Fake timers fake Date too, so the provider's clock advances with the fake clock.
-const fakeNow = (): number => Date.now();
 
 // Advances the fake clock inside act; one step per scheduled phase, as React schedules the next timer on render.
 const passTime = (ms: number): void => {
