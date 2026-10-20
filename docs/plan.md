@@ -114,6 +114,11 @@ type GameContextValue = {
   - board: a face-down card is rendered without its rank/suit text visible to assistive tech
   - deal animation: cards start stacked on the stock and fly to their slots with a stagger
   - concurrency: a double-click that also fires two single clicks on the stock draws twice at most as intended (click handlers are idempotent per event)
+  - pre-mortem: double-click sends a "send this card up" intent; the reducer resolves the foundation against the *current* game (no stale closure)
+  - pre-mortem: cards that just moved are lifted above every other card until their transition ends (no flying under the tableau)
+  - pre-mortem: starting a new game mid-deal cancels the old deal's timers (no flicker, no stuck stagger)
+  - pre-mortem: the deal starts with every card stacked on the stock, then moves to the dealt layout
+  - pre-mortem: the seed comes from an injected source (composition root), so tests deal deterministic games
 
 ### Story `drag` — drag single cards and runs, snap back on illegal drop
 - Owns: `src/app/drag/`
