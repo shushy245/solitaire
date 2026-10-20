@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './app.tsx';
 import { generateSeed } from './utils/generate-seed.ts';
 import { getElementById } from './utils/get-element-by-id.ts';
+import { makeSeedSource, seedFromSearch } from './utils/seed-source.utils.ts';
 
 import './styles/global.scss';
 
@@ -13,8 +14,10 @@ if (root === undefined) {
     throw new Error('main: root element not found — check index.html has <div id="root">');
 }
 
+const seedSource = makeSeedSource({ firstSeed: seedFromSearch(window.location.search), generateSeed });
+
 createRoot(root).render(
     <StrictMode>
-        <App seedSource={generateSeed} />
+        <App seedSource={seedSource} />
     </StrictMode>,
 );

@@ -1,8 +1,9 @@
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 
 import { makeDrawMove, MoveKind } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
+import { useCardDrag } from '../drag/use-card-drag.ts';
 import { useLiftedCards } from './use-lifted-cards.ts';
 import { useDealAnimation } from './use-deal-animation.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
@@ -37,6 +38,27 @@ export const Board = (): JSX.Element => {
     const dealPhase = useDealAnimation(session.dealNumber);
     const { lifted, handleLanded } = useLiftedCards(slots);
     const cards = shownCardsFor({ phase: dealPhase, slots });
+    const boardElement = useRef<HTMLElement | undefined>(undefined);
+    const { draggingIds, releasedIds, handleCardPointerDown, handleReleasedLanded } = useCardDrag({
+        game,
+        dealNumber: session.dealNumber,
+        isEnabled: isSettled(dealPhase),
+        dispatchMove,
+        boardRef: boardElement,
+    });
+
+    // React hands refs null on unmount; the board keeps undefined for "not mounted".
+    const handleBoardRef: React.RefCallback<HTMLElement> = useCallback((element) => {
+        boardElement.current = element ?? undefined;
+    }, []);
+
+    const handleCardLanded = useCallback(
+        (cardId: string) => {
+            handleLanded(cardId);
+            handleReleasedLanded(cardId);
+        },
+        [handleLanded, handleReleasedLanded],
+    );
 
     // A draw names the stock's top card, so a stale second click is rejected by the engine.
     const handleStockClick = (): void => {
@@ -45,6 +67,7 @@ export const Board = (): JSX.Element => {
 
     return (
         <section
+            ref={handleBoardRef}
             aria-label="Card table"
             className={joinClassNames(styles.board, ...boardHeightClassNames({ slots, styles }))}
             data-testid={BoardTestIds.Board}
@@ -83,7 +106,12 @@ export const Board = (): JSX.Element => {
                     key={slot.card.id}
                     slot={slot}
                     shownSlot={shown}
-                    isLifted={lifted.has(slot.card.id) || (isDealing(dealPhase) && order.has(slot.card.id))}
+                    isLifted={
+                        lifted.has(slot.card.id) ||
+                        releasedIds.has(slot.card.id) ||
+                        (isDealing(dealPhase) && order.has(slot.card.id))
+                    }
+                    isDragging={draggingIds.has(slot.card.id)}
                     isInteractive={isSettled(dealPhase)}
                     delayClassName={
                         isDealing(dealPhase)
@@ -91,7 +119,8 @@ export const Board = (): JSX.Element => {
                             : undefined
                     }
                     onSendToFoundation={sendToFoundation}
-                    onLanded={handleLanded}
+                    onLanded={handleCardLanded}
+                    onPointerDown={handleCardPointerDown}
                 />
             ))}
         </section>
@@ -104,10 +133,12 @@ type CardProps = {
     // … and where it is drawn right now (differs only before the deal).
     shownSlot: CardSlotModel;
     isLifted: boolean;
+    isDragging: boolean;
     isInteractive: boolean;
     delayClassName: string | undefined;
     onSendToFoundation: (cardId: string) => void;
     onLanded: (cardId: string) => void;
+    onPointerDown: (args: { cardId: string; event: React.PointerEvent }) => void;
 };
 
 // Memoised: the board re-renders on every clock tick, but a card only when its own props change.
@@ -115,16 +146,22 @@ const Card = memo(function Card({
     slot,
     shownSlot,
     isLifted,
+    isDragging,
     isInteractive,
     delayClassName,
     onSendToFoundation,
     onLanded,
+    onPointerDown,
 }: CardProps): JSX.Element {
     const { card } = slot;
     const isShownFaceUp = shownSlot.card.faceUp;
 
     const handleDoubleClick = (): void => {
         if (isInteractive) onSendToFoundation(card.id);
+    };
+
+    const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
+        onPointerDown({ cardId: card.id, event });
     };
 
     const handleTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>): void => {
@@ -141,6 +178,7 @@ const Card = memo(function Card({
                 !isShownFaceUp && styles.faceDown,
                 (shownSlot.pile === PileKind.Stock || !isInteractive) && styles.passive,
                 isLifted && styles.lifted,
+                isDragging && styles.dragging,
                 shownSlot.isBuried && styles.buried,
                 delayClassName,
             )}
@@ -149,7 +187,10 @@ const Card = memo(function Card({
             data-pile-index={slot.pileIndex}
             data-face={card.faceUp ? 'up' : 'down'}
             data-lifted={isLifted}
+            data-dragging={isDragging}
+            data-card-id={card.id}
             onDoubleClick={handleDoubleClick}
+            onPointerDown={handlePointerDown}
             onTransitionEnd={handleTransitionEnd}
         >
             <div className={styles.inner}>

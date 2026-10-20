@@ -74,9 +74,13 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     width: var(--card-w);
     height: var(--card-h);
     border-radius: var(--radius);
+    // --drag-x/--drag-y are written by the drag hook while a card follows the pointer.
     transform: translate(
-        calc(var(--col) * (var(--card-w) + var(--gap)) + var(--fan) * var(--fan-x)),
-        calc(var(--row) * (var(--card-h) + var(--row-gap)) + var(--down) * var(--down-y) + var(--up) * var(--up-y))
+        calc(var(--col) * (var(--card-w) + var(--gap)) + var(--fan) * var(--fan-x) + var(--drag-x, 0px)),
+        calc(
+            var(--row) * (var(--card-h) + var(--row-gap)) + var(--down) * var(--down-y) + var(--up) * var(--up-y) +
+                var(--drag-y, 0px)
+        )
     );
 }
 
@@ -125,6 +129,23 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 // A card in flight crosses other piles; it flies above all of them until it lands.
 .lifted {
     z-index: calc(var(--z) + 100);
+}
+
+.card:not(.faceDown, .passive) {
+    cursor: grab;
+    // Pointer events drive dragging on touch too; the browser must not take the gesture for scrolling.
+    touch-action: none;
+}
+
+// Following the pointer: no easing (it would lag the finger), above everything, slightly raised.
+.card.dragging {
+    z-index: calc(var(--z) + 200);
+    transition: none;
+    cursor: grabbing;
+
+    .front {
+        box-shadow: 0 10px 24px rgb(0 0 0 / 0.35);
+    }
 }
 
 .inner {

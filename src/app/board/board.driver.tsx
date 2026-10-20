@@ -20,7 +20,13 @@ export type BoardDriver = {
         waste: (cards: readonly CardName[]) => void;
         emptyStockWithWaste: () => void;
     };
-    when: { created: () => Promise<void>; dealt: () => void };
+    when: { created: () => Promise<void>; dealt: () => void; unmounted: () => void };
+    pointer: {
+        press: (card: CardName) => void;
+        moveBy: (args: { dx: number; dy: number }) => void;
+        release: () => void;
+        cancel: () => void;
+    };
     click: { stock: () => Promise<void> };
     doubleClick: { card: (card: CardName) => Promise<void> };
     fire: { landed: (card: CardName) => void };
@@ -35,8 +41,13 @@ export type BoardDriver = {
         dealPhase: (phase: DealPhase) => void;
         lifted: (args: { card: CardName; isLifted: boolean }) => void;
         dealtStockTopLifted: (isLifted: boolean) => void;
+        dragging: (args: { card: CardName; isDragging: boolean }) => void;
+        pointerListenersDetached: () => void;
     };
 };
+
+const POINTER_ID = 1;
+const pointerEvents = new Set(['pointermove', 'pointerup', 'pointercancel']);
 
 const fixedSeed = (): number => 1;
 
@@ -61,6 +72,15 @@ export const makeBoardDriver = (): BoardDriver => {
         builder: aGameState(),
         dealt: undefined,
     };
+
+    const rendered: { unmount: () => void } = { unmount: () => undefined };
+    const pointer = { x: 100, y: 100 };
+    const listenerSpies = {
+        add: vi.spyOn(window, 'addEventListener'),
+        remove: vi.spyOn(window, 'removeEventListener'),
+    };
+    const pointerListenerCount = (spy: typeof listenerSpies.add): number =>
+        spy.mock.calls.filter(([type]) => pointerEvents.has(type)).length;
 
     const cardElement = ({ rank, suit }: CardName): HTMLElement =>
         screen.getByTestId(BoardTestIds.Card(buildCard({ rank, suit }).id));
@@ -103,15 +123,39 @@ export const makeBoardDriver = (): BoardDriver => {
             created: async () => {
                 const session = sessionUnderTest();
                 const initialSession = (): SessionModel => session;
-                render(
+                rendered.unmount = render(
                     <GameProvider createInitialSession={initialSession} seedSource={fixedSeed}>
                         <Board />
                     </GameProvider>,
-                );
+                ).unmount;
             },
             dealt: () => {
                 passTime(STACK_HOLD_MS);
                 passTime(DEAL_TOTAL_MS);
+            },
+            unmounted: () => {
+                rendered.unmount();
+            },
+        },
+        pointer: {
+            press: (card) => {
+                fireEvent.pointerDown(cardElement(card), {
+                    pointerId: POINTER_ID,
+                    button: 0,
+                    clientX: pointer.x,
+                    clientY: pointer.y,
+                });
+            },
+            moveBy: ({ dx, dy }) => {
+                pointer.x += dx;
+                pointer.y += dy;
+                fireEvent.pointerMove(window, { pointerId: POINTER_ID, clientX: pointer.x, clientY: pointer.y });
+            },
+            release: () => {
+                fireEvent.pointerUp(window, { pointerId: POINTER_ID, clientX: pointer.x, clientY: pointer.y });
+            },
+            cancel: () => {
+                fireEvent.pointerCancel(window, { pointerId: POINTER_ID });
             },
         },
         click: {
@@ -161,6 +205,12 @@ export const makeBoardDriver = (): BoardDriver => {
             },
             lifted: ({ card, isLifted }) => {
                 expect(cardElement(card)).toHaveAttribute('data-lifted', String(isLifted));
+            },
+            dragging: ({ card, isDragging }) => {
+                expect(cardElement(card)).toHaveAttribute('data-dragging', String(isDragging));
+            },
+            pointerListenersDetached: () => {
+                expect(pointerListenerCount(listenerSpies.remove)).toBe(pointerListenerCount(listenerSpies.add));
             },
             dealtStockTopLifted: (isLifted) => {
                 expect(screen.getByTestId(BoardTestIds.Card(dealtStockTop().id))).toHaveAttribute(
