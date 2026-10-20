@@ -5,6 +5,7 @@ import { Board } from './app/board/board.tsx';
 import { GameProvider } from './app/game-provider.tsx';
 import { joinClassNames } from './utils/join-class-names.ts';
 import { SessionModel } from './app/session/session.utils.ts';
+import { Celebration } from './app/celebration/celebration.tsx';
 
 import styles from './app.module.scss';
 import tableStyles from './styles/table-metrics.module.scss';
@@ -16,11 +17,13 @@ export const App = ({
     saveSession,
     seedSource,
     now,
+    prefersReducedMotion,
 }: {
     initialSession: SessionModel;
     saveSession: (session: SessionModel) => void;
     seedSource: () => number;
     now: () => number;
+    prefersReducedMotion: () => boolean;
 }): JSX.Element => {
     const createInitialSession = (): SessionModel => initialSession;
 
@@ -40,6 +43,7 @@ export const App = ({
                         <Hud />
                     </header>
                     <Board />
+                    <Celebration prefersReducedMotion={prefersReducedMotion} />
                 </FullColumn>
             </main>
         </GameProvider>

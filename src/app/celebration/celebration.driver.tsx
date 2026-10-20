@@ -1,0 +1,146 @@
+import { expect, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+
+import { DrawMode } from '~/engine/index.ts';
+import { aSession } from '~/testkit/builders/index.ts';
+import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
+
+import { Board } from '../board/board.tsx';
+import { Celebration } from './celebration.tsx';
+import { SessionModel } from '../session/session.utils.ts';
+import { GameContextValue } from '../game-provider.utils.ts';
+import { GameProvider, useGame } from '../game-provider.tsx';
+import { CelebrationTestIds } from './celebration.test-ids.ts';
+
+const FRAME_WINDOW_MS = 100;
+
+export type CelebrationDriver = {
+    given: {
+        oneMoveFromWon: (drawMode: DrawMode) => void;
+        alreadyWon: () => void;
+        reducedMotion: () => void;
+    };
+    when: {
+        created: () => Promise<void>;
+        winningCardSentUp: () => void;
+        winUndone: () => void;
+        newGameStartedElsewhere: () => void;
+        unmounted: () => void;
+    };
+    click: { newGame: () => void };
+    assert: {
+        overlayShown: (isShown: boolean) => void;
+        summary: (summary: string) => void;
+        newGameFocused: () => void;
+        cascadeRunning: (isRunning: boolean) => void;
+        freshDealIn: (drawMode: DrawMode) => void;
+    };
+};
+
+// The board renders beside the celebration so the cascade can find the foundation cards it launches.
+export const makeCelebrationDriver = (): CelebrationDriver => {
+    vi.useFakeTimers();
+    const frameRequests = vi.spyOn(window, 'requestAnimationFrame');
+    const scenario: { session: SessionModel; isMotionReduced: boolean } = {
+        session: aSession().build(),
+        isMotionReduced: false,
+    };
+    const outside: { game: GameContextValue | undefined } = { game: undefined };
+    const rendered: { unmount: () => void } = { unmount: () => undefined };
+
+    const ElsewhereInTheApp = (): undefined => {
+        outside.game = useGame();
+
+        return undefined;
+    };
+
+    const game = (): GameContextValue => {
+        if (outside.game === undefined) throw new Error('celebration driver: call when.created() first');
+
+        return outside.game;
+    };
+
+    const prefersReducedMotion = (): boolean => scenario.isMotionReduced;
+
+    return {
+        given: {
+            oneMoveFromWon: (drawMode) => {
+                scenario.session = aSession().asOneMoveFromWon().withDrawMode(drawMode).build();
+            },
+            alreadyWon: () => {
+                scenario.session = aSession().asWon().build();
+            },
+            reducedMotion: () => {
+                scenario.isMotionReduced = true;
+            },
+        },
+        when: {
+            created: async () => {
+                const session = scenario.session;
+                const initialSession = (): SessionModel => session;
+                rendered.unmount = render(
+                    <GameProvider
+                        createInitialSession={initialSession}
+                        seedSource={fixedSeed}
+                        now={fakeNow}
+                        saveSession={discardSave}
+                    >
+                        <Board />
+                        <Celebration prefersReducedMotion={prefersReducedMotion} />
+                        <ElsewhereInTheApp />
+                    </GameProvider>,
+                ).unmount;
+            },
+            winningCardSentUp: () => {
+                act(() => {
+                    game().sendToFoundation('hearts-13');
+                });
+            },
+            winUndone: () => {
+                act(() => {
+                    game().undo();
+                });
+            },
+            newGameStartedElsewhere: () => {
+                act(() => {
+                    game().newGame({ drawMode: DrawMode.One });
+                });
+            },
+            unmounted: () => {
+                rendered.unmount();
+            },
+        },
+        click: {
+            newGame: () => {
+                fireEvent.click(screen.getByTestId(CelebrationTestIds.NewGame));
+            },
+        },
+        assert: {
+            overlayShown: (isShown) => {
+                if (isShown) expect(screen.getByTestId(CelebrationTestIds.Overlay)).toBeVisible();
+                else expect(screen.queryByTestId(CelebrationTestIds.Overlay)).not.toBeInTheDocument();
+            },
+            summary: (summary) => {
+                expect(screen.getByTestId(CelebrationTestIds.Summary)).toHaveTextContent(summary);
+            },
+            newGameFocused: () => {
+                expect(screen.getByTestId(CelebrationTestIds.NewGame)).toHaveFocus();
+            },
+            // Running means frames keep being requested; stopped means none are, whether or not a canvas remains.
+            cascadeRunning: (isRunning) => {
+                const before = frameRequests.mock.calls.length;
+                act(() => {
+                    vi.advanceTimersByTime(FRAME_WINDOW_MS);
+                });
+                const requested = frameRequests.mock.calls.length - before;
+
+                if (isRunning) expect(requested).toBeGreaterThan(0);
+                else expect(requested).toBe(0);
+            },
+            freshDealIn: (drawMode) => {
+                expect(game().session.game.moves).toBe(0);
+                expect(game().session.game.drawMode).toBe(drawMode);
+            },
+        },
+    };
+};

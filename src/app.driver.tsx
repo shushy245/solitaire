@@ -49,6 +49,8 @@ const snapshotTable = (): readonly string[] => [
 
 // Boots the app the way main.tsx does — the session store loads the first session, the provider saves every
 // change — over one in-memory storage that outlives a "reload" (unmount, then boot again).
+const motionIsFine = (): boolean => false;
+
 export const makeAppDriver = (): AppDriver => {
     vi.useFakeTimers();
     const storage = new MemoryStorage();
@@ -64,7 +66,15 @@ export const makeAppDriver = (): AppDriver => {
         const store = makeSessionStore({ store: makeBrowserKeyValueStore({ storage: () => storage, logger }), logger });
         const initialSession = store.load({ seedParam: scenario.seedParam, freshSeed: seedSource });
 
-        return <App initialSession={initialSession} saveSession={store.save} seedSource={seedSource} now={fakeNow} />;
+        return (
+            <App
+                initialSession={initialSession}
+                saveSession={store.save}
+                seedSource={seedSource}
+                now={fakeNow}
+                prefersReducedMotion={motionIsFine}
+            />
+        );
     };
 
     return {

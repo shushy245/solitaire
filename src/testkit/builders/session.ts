@@ -3,6 +3,7 @@ import Chance from 'chance';
 import { StatsModel } from '~/app/stats/stats.utils.ts';
 import { dealGame, DrawMode, GameStateModel, makeDrawMove } from '~/engine/index.ts';
 import {
+    DealProgress,
     makeSession,
     reduceSession,
     SessionActionKind,
@@ -87,6 +88,22 @@ class SessionBuilder {
     asReadyToAutoComplete(): this {
         const game = { ...aGameState().asReadyToAutoComplete().build(), moves: 1 };
         this.state = { ...this.state, game, history: [], phase: SessionPhase.Playing };
+
+        return this;
+    }
+
+    // Won but for the King of hearts on the first column; the deal was counted as played.
+    asOneMoveFromWon(): this {
+        const game = { ...aGameState().asOneMoveFromWon().build(), moves: 51, score: 500 };
+        this.state = { ...this.state, game, history: [], phase: SessionPhase.Playing, progress: DealProgress.Started };
+
+        return this;
+    }
+
+    // Every card home and the win already counted — a won game as it is restored after a reload.
+    asWon(): this {
+        const game = { ...aGameState().asWon().build(), moves: 52, score: 510 };
+        this.state = { ...this.state, game, history: [], phase: SessionPhase.Playing, progress: DealProgress.Won };
 
         return this;
     }

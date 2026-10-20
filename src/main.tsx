@@ -6,6 +6,7 @@ import { Logger } from './utils/logger.port.ts';
 import { generateSeed } from './utils/generate-seed.ts';
 import { getElementById } from './utils/get-element-by-id.ts';
 import { makeSessionStore } from './app/persistence/session-store.ts';
+import { prefersReducedMotion } from './utils/prefers-reduced-motion.ts';
 import { makeBrowserKeyValueStore } from './utils/browser-key-value-store.ts';
 import { searchWithoutSeed, seedFromSearch } from './utils/seed-source.utils.ts';
 
@@ -50,6 +51,7 @@ createRoot(root).render(
             saveSession={sessionStore.save}
             seedSource={generateSeed}
             now={monotonicNow}
+            prefersReducedMotion={prefersReducedMotion}
         />
     </StrictMode>,
 );
