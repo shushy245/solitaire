@@ -1,7 +1,7 @@
 import Chance from 'chance';
 
 import { StatsModel } from '~/app/stats/stats.utils.ts';
-import { dealGame, DrawMode, GameStateModel, makeDrawMove } from '~/engine/index.ts';
+import { dealGame, DrawMode, GameStateModel, listLegalMoves, makeDrawMove, MoveKind } from '~/engine/index.ts';
 import {
     DealProgress,
     makeSession,
@@ -48,6 +48,17 @@ class SessionBuilder {
 
             return reduceSession({ session, action: { kind: SessionActionKind.Move, move } });
         }, this.state);
+
+        return this;
+    }
+
+    // Really plays the first legal move of `kind` through the session reducer.
+    afterLegalMove(kind: MoveKind): this {
+        const move = listLegalMoves(this.state.game).find((candidate) => candidate.kind === kind);
+
+        if (move === undefined) throw new Error(`aSession.afterLegalMove: no legal ${kind} move in this game`);
+
+        this.state = reduceSession({ session: this.state, action: { kind: SessionActionKind.Move, move } });
 
         return this;
     }
