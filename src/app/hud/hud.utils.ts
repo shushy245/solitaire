@@ -122,4 +122,4 @@ export const recordEntries = (stats: StatsModel): readonly RecordEntryModel[] =>
     },
 ];
 
-export type RecordPanelProps = { id: string; stats: StatsModel };
+export type RecordPanelProps = { id: string; isOpen: boolean; stats: StatsModel };

@@ -128,7 +128,7 @@ export const Hud = (): JSX.Element => {
                     </button>
                 )}
             </Row>
-            {isRecordOpen && <RecordPanel id={recordId} stats={session.stats} />}
+            <RecordPanel id={recordId} isOpen={isRecordOpen} stats={session.stats} />
             {pending !== undefined && (
                 <LeaveConfirm
                     question={leaveQuestion({ requestedMode: pending.drawMode, currentMode: game.drawMode })}
@@ -140,8 +140,15 @@ export const Hud = (): JSX.Element => {
     );
 };
 
-const RecordPanel = ({ id, stats }: RecordPanelProps): JSX.Element => (
-    <section id={id} aria-label="Your record" className={styles.record} data-testid={HudTestIds.Record}>
+// Always in the page, hidden while closed, so the Stats button's aria-controls never points at nothing.
+const RecordPanel = ({ id, isOpen, stats }: RecordPanelProps): JSX.Element => (
+    <section
+        id={id}
+        hidden={!isOpen}
+        aria-label="Your record"
+        className={styles.record}
+        data-testid={HudTestIds.Record}
+    >
         <dl className={styles.recordList}>
             {recordEntries(stats).map(({ entry, label, value }) => (
                 <div key={entry} className={styles.recordEntry}>

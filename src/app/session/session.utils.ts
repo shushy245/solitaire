@@ -77,6 +77,9 @@ export const makeSession = ({ seed, drawMode }: { seed: number; drawMode: DrawMo
     stats: emptyStats,
 });
 
+// Not a move made on this deal yet (undoing back to the deal does not count as unstarted).
+export const isDealUnstarted = (session: SessionModel): boolean => session.progress === DealProgress.Unstarted;
+
 export const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
 
 // Started and not yet finished: the clock runs, and leaving would throw the player's progress away.

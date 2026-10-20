@@ -10,8 +10,8 @@ import { PileKind } from './layout.utils.ts';
 import { BoardTestIds } from './board.test-ids.ts';
 import { GameProvider, useGame } from '../game-provider.tsx';
 import { GameContextValue } from '../game-provider.utils.ts';
-import { makeSession, SessionModel } from '../session/session.utils.ts';
 import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
+import { DealProgress, makeSession, SessionModel } from '../session/session.utils.ts';
 
 type CardName = { rank: Rank; suit: Suit };
 type CardScenario = CardName & { faceUp?: boolean };
@@ -72,10 +72,11 @@ export const makeBoardDriver = (): BoardDriver => {
     // The board animates on timers (deal, clock), so every board test runs on a fake clock. Events are
     // fired synchronously: user-event's async wrapper waits on a real setTimeout that a fake clock never runs.
     vi.useFakeTimers();
-    const scenario: { builder: ReturnType<typeof aGameState>; dealt: SessionModel | undefined } = {
-        builder: aGameState(),
-        dealt: undefined,
-    };
+    const scenario: {
+        builder: ReturnType<typeof aGameState>;
+        dealt: SessionModel | undefined;
+        progress: DealProgress;
+    } = { builder: aGameState(), dealt: undefined, progress: DealProgress.Unstarted };
 
     const rendered: { unmount: () => void } = { unmount: () => undefined };
     const outside: { game: GameContextValue | undefined } = { game: undefined };
@@ -111,7 +112,7 @@ export const makeBoardDriver = (): BoardDriver => {
 
         const game: GameStateModel = scenario.builder.build();
 
-        return { ...makeSession({ seed: game.seed, drawMode: game.drawMode }), game };
+        return { ...makeSession({ seed: game.seed, drawMode: game.drawMode }), game, progress: scenario.progress };
     };
 
     return {
@@ -133,6 +134,7 @@ export const makeBoardDriver = (): BoardDriver => {
             // All 52 cards face-up down the tableau — far more than a fresh deal puts there.
             readyToAutoCompleteAfterMoves: (moves) => {
                 scenario.builder = scenario.builder.asReadyToAutoComplete().withMoves(moves);
+                scenario.progress = DealProgress.Started;
             },
             stock: (cards) => {
                 scenario.builder = scenario.builder.withStock(

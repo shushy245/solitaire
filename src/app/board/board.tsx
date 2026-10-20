@@ -7,6 +7,7 @@ import { BoardTestIds } from './board.test-ids.ts';
 import { useCardDrag } from '../drag/use-card-drag.ts';
 import { useLiftedCards } from './use-lifted-cards.ts';
 import { useDealAnimation } from './use-deal-animation.ts';
+import { isDealUnstarted } from '../session/session.utils.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
 import { CardSlotModel, dealOrder, layoutCards, PileKind } from './layout.utils.ts';
 import {
@@ -17,7 +18,6 @@ import {
     isCourtCard,
     isDealing,
     isSettled,
-    isFreshDeal,
     isRedSuit,
     pilePlaceholders,
     placeholderSlot,
@@ -36,7 +36,7 @@ export const Board = (): JSX.Element => {
     const { game } = session;
     const slots = useMemo(() => layoutCards(game), [game]);
     const order = useMemo(() => dealOrder(slots), [slots]);
-    const dealPhase = useDealAnimation({ dealKey: session.dealNumber, isFreshDeal: isFreshDeal(game) });
+    const dealPhase = useDealAnimation({ dealKey: session.dealNumber, isFreshDeal: isDealUnstarted(session) });
     const { lifted, liftUntilLanded, handleLanded } = useLiftedCards(slots);
     const cards = shownCardsFor({ phase: dealPhase, slots });
     const boardElement = useRef<HTMLElement | undefined>(undefined);

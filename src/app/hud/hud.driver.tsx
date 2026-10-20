@@ -212,10 +212,14 @@ export const makeHudDriver = (): HudDriver => {
             focusOn: (testId) => {
                 expect(screen.getByTestId(testId)).toHaveFocus();
             },
+            // The panel stays in the page while hidden, so the toggle's aria-controls always points at it.
             recordShown: (isShown) => {
-                expect(screen.getByTestId(HudTestIds.RecordToggle)).toHaveAttribute('aria-expanded', String(isShown));
-                if (isShown) expect(screen.getByTestId(HudTestIds.Record)).toBeVisible();
-                else expect(screen.queryByTestId(HudTestIds.Record)).not.toBeInTheDocument();
+                const toggle = screen.getByTestId(HudTestIds.RecordToggle);
+                const record = screen.getByTestId(HudTestIds.Record);
+                expect(toggle).toHaveAttribute('aria-expanded', String(isShown));
+                expect(toggle).toHaveAttribute('aria-controls', record.id);
+                if (isShown) expect(record).toBeVisible();
+                else expect(record).not.toBeVisible();
             },
             record: (entries) => {
                 Object.entries(entries).forEach(([entry, value]) => {
