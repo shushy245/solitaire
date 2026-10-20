@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { DrawMode } from '~/engine/index.ts';
 
@@ -21,6 +21,8 @@ import {
     ModeSwitchProps,
     needsConfirmationToLeave,
     openLeaveRequest,
+    recordEntries,
+    RecordPanelProps,
 } from './hud.utils.ts';
 
 import styles from './hud.module.scss';
@@ -30,6 +32,8 @@ export const Hud = (): JSX.Element => {
     const { game } = session;
     const [leaveRequest, setLeaveRequest] = useState<LeaveRequestModel | undefined>(undefined);
     const pending = openLeaveRequest({ request: leaveRequest, session });
+    const [isRecordOpen, setRecordOpen] = useState(false);
+    const recordId = useId();
 
     // A lapsed question is forgotten, not just hidden — otherwise the next move on this deal would revive it.
     if (leaveRequest !== undefined && pending === undefined) setLeaveRequest(undefined);
@@ -61,6 +65,10 @@ export const Hud = (): JSX.Element => {
 
     const handleKeepPlaying = (): void => {
         setLeaveRequest(undefined);
+    };
+
+    const handleRecordToggle = (): void => {
+        setRecordOpen((isOpen) => !isOpen);
     };
 
     return (
@@ -99,6 +107,16 @@ export const Hud = (): JSX.Element => {
                         <strong>{formatElapsed(session.elapsedMs)}</strong> {`played`}
                     </span>
                 </p>
+                <button
+                    type="button"
+                    className={styles.button}
+                    aria-expanded={isRecordOpen}
+                    aria-controls={recordId}
+                    data-testid={HudTestIds.RecordToggle}
+                    onClick={handleRecordToggle}
+                >
+                    {`Stats`}
+                </button>
                 {isAutoCompleteOffered(session) && (
                     <button
                         type="button"
@@ -110,6 +128,7 @@ export const Hud = (): JSX.Element => {
                     </button>
                 )}
             </Row>
+            {isRecordOpen && <RecordPanel id={recordId} stats={session.stats} />}
             {pending !== undefined && (
                 <LeaveConfirm
                     question={leaveQuestion({ requestedMode: pending.drawMode, currentMode: game.drawMode })}
@@ -120,6 +139,19 @@ export const Hud = (): JSX.Element => {
         </div>
     );
 };
+
+const RecordPanel = ({ id, stats }: RecordPanelProps): JSX.Element => (
+    <section id={id} aria-label="Your record" className={styles.record} data-testid={HudTestIds.Record}>
+        <dl className={styles.recordList}>
+            {recordEntries(stats).map(({ entry, label, value }) => (
+                <div key={entry} className={styles.recordEntry}>
+                    <dt>{label}</dt>
+                    <dd data-testid={HudTestIds.RecordEntry(entry)}>{value}</dd>
+                </div>
+            ))}
+        </dl>
+    </section>
+);
 
 const ModeSwitch = ({ selected, onSelect }: ModeSwitchProps): JSX.Element => (
     <div role="group" aria-label="Cards turned per draw" className={styles.modeSwitch}>

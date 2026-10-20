@@ -303,4 +303,40 @@ describe('Hud', () => {
             driver.assert.moves('0');
         });
     });
+
+    describe('the record', () => {
+        it('stays out of the way until asked for', async () => {
+            await driver.when.created();
+
+            driver.assert.recordShown(false);
+        });
+
+        it('shows games played, games won, win rate, best time and best score', async () => {
+            driver.given.session((s) => s.withStats({ played: 8, won: 3, best: { timeMs: 245_000, score: 1_120 } }));
+            await driver.when.created();
+
+            driver.click.record();
+
+            driver.assert.recordShown(true);
+            driver.assert.record({ played: '8', won: '3', winRate: '38%', bestTime: '4:05', bestScore: '1120' });
+        });
+
+        it('shows no bests before the first win', async () => {
+            driver.given.session((s) => s.withStats({ played: 2, won: 0, best: undefined }));
+            await driver.when.created();
+
+            driver.click.record();
+
+            driver.assert.record({ played: '2', won: '0', winRate: '0%', bestTime: '—', bestScore: '—' });
+        });
+
+        it('hides again when asked a second time', async () => {
+            await driver.when.created();
+
+            driver.click.record();
+            driver.click.record();
+
+            driver.assert.recordShown(false);
+        });
+    });
 });

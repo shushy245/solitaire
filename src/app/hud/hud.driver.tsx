@@ -30,6 +30,7 @@ export type HudDriver = {
         autoComplete: () => void;
         confirmLeave: () => void;
         keepPlaying: () => void;
+        record: () => void;
     };
     press: { undoShortcut: (args: { modifier: 'ctrl' | 'meta'; isRepeat?: boolean }) => void; escape: () => void };
     time: { pass: (ms: number) => void; autoCompleteSteps: (count: number) => void };
@@ -45,6 +46,8 @@ export type HudDriver = {
         autoCompleteOffered: (isOffered: boolean) => void;
         focusOn: (testId: string) => void;
         undoShortcutListenerRemoved: () => void;
+        recordShown: (isShown: boolean) => void;
+        record: (args: { played: string; won: string; winRate: string; bestTime: string; bestScore: string }) => void;
     };
 };
 
@@ -148,6 +151,7 @@ export const makeHudDriver = (): HudDriver => {
             autoComplete: () => click(HudTestIds.AutoComplete),
             confirmLeave: () => click(HudTestIds.ConfirmLeave),
             keepPlaying: () => click(HudTestIds.ConfirmStay),
+            record: () => click(HudTestIds.RecordToggle),
         },
         press: {
             undoShortcut: ({ modifier, isRepeat = false }) => {
@@ -207,6 +211,16 @@ export const makeHudDriver = (): HudDriver => {
             },
             focusOn: (testId) => {
                 expect(screen.getByTestId(testId)).toHaveFocus();
+            },
+            recordShown: (isShown) => {
+                expect(screen.getByTestId(HudTestIds.RecordToggle)).toHaveAttribute('aria-expanded', String(isShown));
+                if (isShown) expect(screen.getByTestId(HudTestIds.Record)).toBeVisible();
+                else expect(screen.queryByTestId(HudTestIds.Record)).not.toBeInTheDocument();
+            },
+            record: (entries) => {
+                Object.entries(entries).forEach(([entry, value]) => {
+                    expect(screen.getByTestId(HudTestIds.RecordEntry(entry))).toHaveTextContent(value);
+                });
             },
             undoShortcutListenerRemoved: () => {
                 const added = keydownHandlers(keySpies.add);

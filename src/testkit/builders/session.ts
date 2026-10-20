@@ -1,5 +1,6 @@
 import Chance from 'chance';
 
+import { StatsModel } from '~/app/stats/stats.utils.ts';
 import { dealGame, DrawMode, GameStateModel, makeDrawMove } from '~/engine/index.ts';
 import {
     makeSession,
@@ -58,6 +59,12 @@ class SessionBuilder {
 
     withScore(score: number): this {
         this.state = { ...this.state, game: { ...this.state.game, score } };
+
+        return this;
+    }
+
+    withStats(stats: StatsModel): this {
+        this.state = { ...this.state, stats };
 
         return this;
     }

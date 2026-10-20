@@ -1,5 +1,6 @@
 import { DrawMode, isAutoCompletable } from '~/engine/index.ts';
 
+import { StatsModel, winPercent } from '../stats/stats.utils.ts';
 import { isAutoCompleting, isGameUnderWay, SessionModel } from '../session/session.utils.ts';
 
 const MS_PER_SECOND = 1000;
@@ -91,3 +92,34 @@ export const isUndoShortcut = (event: KeyboardEvent): boolean =>
 
 export const countLabel = ({ count, singular, plural }: { count: number; singular: string; plural: string }): string =>
     count === 1 ? singular : plural;
+
+export enum RecordEntry {
+    Played = 'played',
+    Won = 'won',
+    WinRate = 'winRate',
+    BestTime = 'bestTime',
+    BestScore = 'bestScore',
+}
+
+export type RecordEntryModel = { readonly entry: RecordEntry; readonly label: string; readonly value: string };
+
+const NO_BEST_YET = '—';
+
+// The player's record as the stats panel lists it; bests read as a dash until the first win.
+export const recordEntries = (stats: StatsModel): readonly RecordEntryModel[] => [
+    { entry: RecordEntry.Played, label: 'Played', value: String(stats.played) },
+    { entry: RecordEntry.Won, label: 'Won', value: String(stats.won) },
+    { entry: RecordEntry.WinRate, label: 'Win rate', value: `${winPercent(stats)}%` },
+    {
+        entry: RecordEntry.BestTime,
+        label: 'Best time',
+        value: stats.best === undefined ? NO_BEST_YET : formatElapsed(stats.best.timeMs),
+    },
+    {
+        entry: RecordEntry.BestScore,
+        label: 'Best score',
+        value: stats.best === undefined ? NO_BEST_YET : String(stats.best.score),
+    },
+];
+
+export type RecordPanelProps = { id: string; stats: StatsModel };
