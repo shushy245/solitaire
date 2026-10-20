@@ -217,6 +217,8 @@ type GameContextValue = {
   aligned with the centred board (→ shared `table-metrics.module.scss`); stacked-stock shadow halo
   (→ `isBuried`). Not reproduced: a faint background artifact (reviewer saw it mid-HMR).
 - Observation kept: lots of empty felt below the tableau on phones — expected; the HUD story adds controls.
+- Pass A re-run on the fixed code: clean at 390/768/1280. Its note on small phone indices → fixed
+  (13px/11px floors, rank beside suit, measured to fit the 16px covered strip at 390).
 
 ## RF-backlog
 - Prettier coverage for JSON/SCSS/HTML (from `scaffold` review).

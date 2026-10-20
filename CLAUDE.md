@@ -25,11 +25,15 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 - Commands: `pnpm dev` · `pnpm test` · `pnpm lint` · `pnpm typecheck` · `pnpm cy:run` (needs `pnpm dev` running).
 
 ## Landmines — read before touching the named areas
+- **Fake timers + user-event hang:** RTL's async wrapper awaits a real `setTimeout` that Vitest's fake clock never runs. Board tests fire events with `fireEvent` (see `board.driver.tsx`).
+- **Commit gate runs before the command:** a fix and its `git commit` in one Bash call commits the *old* state's test result — run the fix, then commit in a separate call.
+- **Table sizes live in `src/styles/table-metrics.module.scss`** (`.metrics` on the column inside the `container-type` `main`); `board.module.scss` only consumes the vars. Spacing ratios are mirrored in `layout.utils.ts`.
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `board` — a playable, fully animated table (glide, flip, staggered deal, lift-in-flight), click the deck / double-click to send home. `src/app/board/` (layout slots → CSS classes → one transform), session reducer `src/app/session/`, `GameProvider`/`useGame` contract in `docs/plan.md`.
 - `engine` — every Klondike rule as pure, seed-deterministic logic, proven against hundreds of random games; a double-fired click can never move the wrong card. `src/engine/` (barrel `index.ts`), property tests in `invariants.test.ts`.
 - `scaffold` — new contributors get the house rules enforced automatically: lint, typecheck (app, configs, e2e), unit + browser tests and a commit gate all run on an empty app that boots.
 
 ## What's next
-Story `board` (`docs/plan.md`).
+Story `drag` (`docs/plan.md`).
