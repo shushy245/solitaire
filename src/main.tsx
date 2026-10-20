@@ -5,9 +5,9 @@ import { App } from './app.tsx';
 import { Logger } from './utils/logger.port.ts';
 import { generateSeed } from './utils/generate-seed.ts';
 import { getElementById } from './utils/get-element-by-id.ts';
-import { seedFromSearch } from './utils/seed-source.utils.ts';
 import { makeSessionStore } from './app/persistence/session-store.ts';
 import { makeBrowserKeyValueStore } from './utils/browser-key-value-store.ts';
+import { searchWithoutSeed, seedFromSearch } from './utils/seed-source.utils.ts';
 
 import './styles/global.scss';
 
@@ -35,6 +35,13 @@ const initialSession = sessionStore.load({
     seedParam: seedFromSearch(window.location.search),
     freshSeed: generateSeed,
 });
+
+// The seed is consumed: a reload resumes the replayed deal like any other game.
+window.history.replaceState(
+    window.history.state,
+    '',
+    `${window.location.pathname}${searchWithoutSeed(window.location.search)}${window.location.hash}`,
+);
 
 createRoot(root).render(
     <StrictMode>

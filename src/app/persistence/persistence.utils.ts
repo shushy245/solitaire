@@ -7,8 +7,7 @@ import { DealProgress, makeSession, SessionModel, SessionPhase } from '../sessio
 
 // localStorage is an external boundary: whatever is read back is parsed, never trusted. The game and the
 // record are saved under separate keys, so a game that can no longer be read never costs the player their stats.
-export const SAVED_GAME_KEY = 'solitaire.game';
-export const SAVED_STATS_KEY = 'solitaire.stats';
+export { SAVED_GAME_KEY, SAVED_STATS_KEY } from './storage-keys.utils.ts';
 
 const SAVE_VERSION = 1;
 const DECK_SIZE = 52;

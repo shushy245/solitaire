@@ -1,9 +1,8 @@
 import { HudTestIds } from '../../../src/app/hud/hud.test-ids.ts';
 import { BoardTestIds } from '../../../src/app/board/board.test-ids.ts';
+import { SAVED_GAME_KEY, SAVED_STATS_KEY } from '../../../src/app/persistence/storage-keys.utils.ts';
 
-// The keys and on-disk format the app saves under; the fixtures are saves exactly as the app writes them.
-const SAVED_GAME_KEY = 'solitaire.game';
-const SAVED_STATS_KEY = 'solitaire.stats';
+// The fixtures are saves exactly as the app writes them.
 const SWEEP_TIMEOUT_MS = 10_000;
 
 const waitForSettledDeal = (): void => {
@@ -27,6 +26,10 @@ export const persistenceDriver = {
     given: {
         freshVisit: (): void => {
             cy.visit('/');
+            waitForSettledDeal();
+        },
+        visitOfSeed: (seed: number): void => {
+            cy.visit(`/?seed=${seed}`);
             waitForSettledDeal();
         },
         // A save one auto-complete away from a win, and a record already holding one win out of four.
@@ -74,6 +77,9 @@ export const persistenceDriver = {
                 readTable().should('deep.equal', before);
             });
             cy.findByTestId(HudTestIds.Moves).should('contain.text', '1 move');
+        },
+        addressHasNoSeed: (): void => {
+            cy.location('search').should('not.contain', 'seed');
         },
         record: ({ played, won }: { played: string; won: string }): void => {
             cy.findByTestId(HudTestIds.RecordEntry('played')).should('have.text', played);

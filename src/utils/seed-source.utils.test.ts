@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { seedFromSearch } from './seed-source.utils.ts';
+import { searchWithoutSeed, seedFromSearch } from './seed-source.utils.ts';
 
 describe('seedFromSearch', () => {
     it('reads a whole-number seed from the URL', () => {
@@ -21,5 +21,12 @@ describe('seedFromSearch', () => {
         ];
 
         expect(rejected.map(seedFromSearch).filter((seed) => seed !== undefined)).toEqual([]);
+    });
+});
+
+describe('searchWithoutSeed', () => {
+    it('drops the seed and keeps every other parameter', () => {
+        expect(searchWithoutSeed('?seed=42')).toBe('');
+        expect(searchWithoutSeed('?debug=1&seed=42&x=y')).toBe('?debug=1&x=y');
     });
 });

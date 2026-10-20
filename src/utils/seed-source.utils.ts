@@ -17,3 +17,13 @@ export const seedFromSearch = (search: string): number | undefined => {
 
     return parsed.success ? parsed.data : undefined;
 };
+
+// Once its deal is on the table the seed has done its job; left in the address, every reload would deal it
+// again instead of resuming the game in progress.
+export const searchWithoutSeed = (search: string): string => {
+    const params = new URLSearchParams(search);
+    params.delete('seed');
+    const rest = params.toString();
+
+    return rest === '' ? '' : `?${rest}`;
+};
