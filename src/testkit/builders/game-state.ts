@@ -1,6 +1,7 @@
 import Chance from 'chance';
 
-import { CardModel, DrawMode, GameStateModel, PileModel } from '~/engine/model.ts';
+import { makeCardId } from '~/engine/deck.ts';
+import { CardModel, DrawMode, GameStateModel, PileModel, Rank, Suit } from '~/engine/model.ts';
 
 const chance = new Chance();
 
@@ -67,9 +68,38 @@ class GameStateBuilder {
         return this;
     }
 
+    // All 52 cards face-up in four King-to-Ace alternating-colour columns; stock and waste empty.
+    asReadyToAutoComplete(): this {
+        const columns = [
+            descendingRun({ first: Suit.Hearts, second: Suit.Spades }),
+            descendingRun({ first: Suit.Spades, second: Suit.Hearts }),
+            descendingRun({ first: Suit.Diamonds, second: Suit.Clubs }),
+            descendingRun({ first: Suit.Clubs, second: Suit.Diamonds }),
+        ];
+        this.state = {
+            ...this.state,
+            stock: [],
+            waste: [],
+            wasteFan: 0,
+            tableau: this.state.tableau.map((_, i) => columns[i] ?? []),
+        };
+
+        return this;
+    }
+
     build(): GameStateModel {
         return this.state;
     }
 }
 
 export const aGameState = (): GameStateBuilder => new GameStateBuilder();
+
+// King of `first`, Queen of `second`, Jack of `first`, … down to the Ace — alternating colours when
+// `first` and `second` differ in colour.
+const descendingRun = ({ first, second }: { first: Suit; second: Suit }): CardModel[] =>
+    Array.from({ length: Rank.King }, (_, i) => {
+        const suit = i % 2 === 0 ? first : second;
+        const rank = Rank.King - i;
+
+        return { id: makeCardId({ suit, rank }), suit, rank, faceUp: true };
+    });
