@@ -1,7 +1,27 @@
+@import '@fontsource-variable/bodoni-moda';
+@import '@fontsource/instrument-sans/400.css';
+@import '@fontsource/instrument-sans/600.css';
+
 :root {
-    --felt: #0f5132;
-    --felt-dark: #0a3a24;
-    --ink: #f4f1e8;
+    // Card-room baize: deep teal under a soft overhead light.
+    --baize: #0d4a43;
+    --baize-shadow: #062824;
+    --text: #efe6d2;
+    --text-muted: #b9c7bf;
+    --brass: #c9a24c;
+
+    --card-ivory: #fbf7ee;
+    --card-edge: #d8cfbc;
+    --ink: #1d1f27;
+    --ink-red: #b02a30;
+
+    --back: #5c1020;
+    --back-glow: #7b1a2e;
+    --back-line: rgb(201 162 76 / 0.45);
+
+    --slot-line: rgb(239 230 210 / 0.28);
+    --slot-fill: rgb(0 0 0 / 0.12);
+
     color-scheme: dark;
 }
 
@@ -17,8 +37,8 @@ body {
 }
 
 body {
-    background: radial-gradient(ellipse at top, var(--felt), var(--felt-dark));
-    color: var(--ink);
-    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
     min-height: 100dvh;
+    background: radial-gradient(ellipse 120% 80% at 50% 0%, var(--baize), var(--baize-shadow));
+    color: var(--text);
+    font-family: 'Instrument Sans', system-ui, sans-serif;
 }

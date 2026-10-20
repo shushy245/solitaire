@@ -1,0 +1,242 @@
+@use 'sass:math';
+
+// Motion timings mirror board.utils.ts (MOVE_MS, FLIP_MS, DEAL_STAGGER_MS).
+$move-ms: 260ms;
+$flip-ms: 300ms;
+$stagger-ms: 35;
+$ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+// ── The table: everything is sized off the card width, which follows the viewport ──────────────
+.board {
+    --gap: clamp(4px, 1.6vw, 16px);
+    --card-w: min(calc((100vw - 32px - 6 * var(--gap)) / 7), 104px);
+    --card-h: calc(var(--card-w) * 1.4);
+    --row-gap: calc(var(--card-h) * 0.2);
+    --down-y: calc(var(--card-h) * 0.08);
+    --up-y: calc(var(--card-h) * 0.25);
+    --fan-x: calc(var(--card-w) * 0.3);
+    --radius: calc(var(--card-w) * 0.08);
+
+    position: relative;
+    width: calc(7 * var(--card-w) + 6 * var(--gap));
+    height: calc(
+        2 * var(--card-h) + var(--row-gap) + var(--max-down, 0) * var(--down-y) + var(--max-up, 0) * var(--up-y)
+    );
+    margin: 0 auto;
+    transition: height $move-ms $ease-out;
+}
+
+@for $i from 0 through 6 {
+    .max-down-#{$i} {
+        --max-down: #{$i};
+    }
+}
+
+@for $i from 0 through 18 {
+    .max-up-#{$i} {
+        --max-up: #{$i};
+    }
+}
+
+// ── Slot position classes → one transform ───────────────────────────────────────────────────
+@for $i from 0 through 6 {
+    .col-#{$i} {
+        --col: #{$i};
+    }
+}
+
+@for $i from 0 through 1 {
+    .row-#{$i} {
+        --row: #{$i};
+    }
+}
+
+@for $i from 0 through 6 {
+    .down-#{$i} {
+        --down: #{$i};
+    }
+}
+
+@for $i from 0 through 18 {
+    .up-#{$i} {
+        --up: #{$i};
+    }
+}
+
+@for $i from 0 through 2 {
+    .fan-#{$i} {
+        --fan: #{$i};
+    }
+}
+
+@for $i from 0 through 52 {
+    .z-#{$i} {
+        --z: #{$i};
+    }
+}
+
+.slot,
+.card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--card-w);
+    height: var(--card-h);
+    border-radius: var(--radius);
+    transform: translate(
+        calc(var(--col) * (var(--card-w) + var(--gap)) + var(--fan) * var(--fan-x)),
+        calc(var(--row) * (var(--card-h) + var(--row-gap)) + var(--down) * var(--down-y) + var(--up) * var(--up-y))
+    );
+}
+
+// ── Empty piles and the stock button ─────────────────────────────────────────────────────────
+.placeholder {
+    border: 1px solid var(--slot-line);
+    background: var(--slot-fill);
+}
+
+.stockButton {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--slot-line);
+    background: var(--slot-fill);
+    color: var(--slot-line);
+    font: inherit;
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--brass);
+        outline-offset: 3px;
+    }
+}
+
+.recycleMark {
+    font-size: calc(var(--card-w) * 0.45);
+    line-height: 1;
+}
+
+// ── Cards ───────────────────────────────────────────────────────────────────────────────────
+.card {
+    z-index: var(--z);
+    perspective: 800px;
+    transition: transform $move-ms $ease-out;
+    cursor: default;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+// Stock cards let clicks through to the stock button beneath them.
+.inStock {
+    pointer-events: none;
+}
+
+// A card in flight crosses other piles; it flies above all of them until it lands.
+.lifted {
+    z-index: calc(var(--z) + 100);
+}
+
+.inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform $flip-ms $ease-out;
+}
+
+.faceDown .inner {
+    transform: rotateY(180deg);
+}
+
+.front,
+.back {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    backface-visibility: hidden;
+    box-shadow:
+        0 1px 0 rgb(0 0 0 / 0.25),
+        0 2px 6px rgb(0 0 0 / 0.18);
+}
+
+.front {
+    background: var(--card-ivory);
+    border: 1px solid var(--card-edge);
+    color: var(--ink);
+    font-family: 'Bodoni Moda Variable', 'Bodoni 72', Didot, serif;
+}
+
+.red {
+    color: var(--ink-red);
+}
+
+.index {
+    position: absolute;
+    top: calc(var(--card-w) * 0.05);
+    left: calc(var(--card-w) * 0.07);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 0.95;
+}
+
+.indexFlipped {
+    top: auto;
+    left: auto;
+    right: calc(var(--card-w) * 0.07);
+    bottom: calc(var(--card-w) * 0.05);
+    transform: rotate(180deg);
+}
+
+.rank {
+    font-size: calc(var(--card-w) * 0.27);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+}
+
+.suit {
+    font-size: calc(var(--card-w) * 0.2);
+}
+
+.center {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: calc(var(--card-w) * 0.5);
+}
+
+.court {
+    font-size: calc(var(--card-w) * 0.62);
+    font-weight: 500;
+    font-style: italic;
+}
+
+// Oxblood back with a fine brass lattice inside an ivory border, like a printed card.
+.back {
+    transform: rotateY(180deg);
+    border: calc(var(--card-w) * 0.05) solid var(--card-ivory);
+    background:
+        repeating-linear-gradient(45deg, var(--back-line) 0 1px, transparent 1px 6px),
+        repeating-linear-gradient(-45deg, var(--back-line) 0 1px, transparent 1px 6px),
+        radial-gradient(circle at 50% 50%, var(--back-glow), var(--back));
+}
+
+// Deal stagger — after .card/.inner so their transition shorthands don't reset the delay.
+@for $i from 0 through 27 {
+    .delay-#{$i} {
+        transition-delay: #{$i * $stagger-ms}ms;
+
+        .inner {
+            transition-delay: #{$i * $stagger-ms + math.div($move-ms, 1ms)}ms;
+        }
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .board,
+    .card,
+    .inner {
+        transition: none;
+    }
+}

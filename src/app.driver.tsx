@@ -4,6 +4,8 @@ import { render, screen } from '@testing-library/react';
 import { App } from './app.tsx';
 import { AppTestIds } from './app.utils.ts';
 
+const fixedSeed = (): number => 7;
+
 export type AppDriver = {
     when: { created: () => Promise<void> };
     assert: { titleShown: () => void };
@@ -12,7 +14,7 @@ export type AppDriver = {
 export const makeAppDriver = (): AppDriver => ({
     when: {
         created: async () => {
-            render(<App />);
+            render(<App seedSource={fixedSeed} />);
         },
     },
     assert: {

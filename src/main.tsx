@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './app.tsx';
+import { generateSeed } from './utils/generate-seed.ts';
 import { getElementById } from './utils/get-element-by-id.ts';
 
 import './styles/global.scss';
@@ -14,6 +15,6 @@ if (root === undefined) {
 
 createRoot(root).render(
     <StrictMode>
-        <App />
+        <App seedSource={generateSeed} />
     </StrictMode>,
 );
