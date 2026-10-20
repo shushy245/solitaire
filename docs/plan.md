@@ -181,7 +181,7 @@ type GameContextValue = {
   - pre-mortem: a valid-JSON save that no game could produce (51 cards, mixed foundations) is discarded
   - found by Cypress: a game resumed mid-play is shown where it was left, not re-dealt
 
-### Story `celebration` — win cascade
+### Story `celebration` — win cascade ✅
 - Owns: `src/app/celebration/`
 - Depends on: board
 - Parallel: safe with drag, hud, persistence
@@ -195,6 +195,7 @@ type GameContextValue = {
   - pre-mortem: a long gap between frames (background tab) is clamped, so no card tunnels through the floor
   - pre-mortem: a game already won when the page loads shows the overlay without replaying the cascade
   - pre-mortem: the overlay's New game takes focus when it appears and deals in the won game's mode
+  - review: a resize mid-cascade re-fits the canvas; the cascade really paints, and never above the foundation row (Cypress)
 
 ### Story `felt-and-sound` — a brighter table and sounds for card actions (requested 2026-10-20)
 - Owns: `src/styles/global.scss` (palette tokens), `src/app/sound/`
@@ -334,6 +335,24 @@ type GameContextValue = {
   panel text 16/18px, Lighthouse a11y 100, focus order Turn 1 → Turn 3 → New game → Stats → stock. Not seen:
   the panel with long values (only zeros rendered), settled 390/768 in the first pass (captured mid-deal).
 
+### `celebration` (code-review high, 10 findings; visual pass A+B)
+- Fixed — correctness (1): the winning King launched from mid-glide (measured while its move transition ran) →
+  launches start from the fixed foundation slots.
+- Fixed — robustness (3): nothing automated drew a card while the jsdom shim claimed browser coverage → the win
+  e2e reads the canvas (paint below the foundation row, none above); a resize stretched the canvas and moved the
+  floor → re-fit on resize; `role="dialog"` promised a modal it is not → a named region (play stays live behind
+  it by design).
+- Fixed — style (5): `nextRandom` via the engine barrel; App drilled `prefersReducedMotion` → `MotionProvider`;
+  `planLaunches` → discriminated union; `CascadeModel` named; a misplaced doc comment.
+- RF-backlog (1): the "panel takes focus when it appears" ref+effect is copied in `LeaveConfirm` and `WinOverlay`
+  (only the first returns focus) → a shared hook at the third copy.
+- Visual re-check (pass A, win screen, after the fixes): clean at 390/768/1280 — scoreboard never covered,
+  paint stops at the foundation row, panel opaque and fully on screen.
+- Visual pass A+B (win screen, 390/768/1280): no overflow, taps ≥44, Lighthouse a11y 100, New game focused on
+  open. Fixed: cascade trails covered the Stats button and time readout → paint clipped below the foundation row;
+  card faces showed through the panel → opaque. Not rendered: the reduced-motion path (source-checked; emulate
+  has no reduced-motion option). Noted, kept: two buttons share the name "New game" (HUD and panel) — same action.
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
@@ -347,3 +366,4 @@ type GameContextValue = {
 - (`hud`) `hud.utils.ts` reaches into `session.game.moves` / `session.history` — add session selectors.
 - (`persistence`) eslint-config-shalev: export the single syntax selectors (so a boundary override can drop
   only the null ban) and widen the composition-root `no-console` glob to `main.{ts,tsx}`.
+- (`celebration`) one focus-on-appear hook for `LeaveConfirm` and `WinOverlay` (the latter returns no focus).

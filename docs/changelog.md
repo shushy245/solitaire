@@ -1,5 +1,11 @@
 # Changelog
 
+## celebration — 2026-10-20
+- **Pain:** winning a game simply stopped — no payoff, and no obvious way on to the next deal.
+- **Fix:** the classic bouncing-card cascade pours off the foundations, and a panel shows the time and score with a ready New game button.
+- **Trade-off:** the panel is not a blocking dialog — the table stays live behind it, so undoing the last move (or dragging a card off a foundation) quietly ends the celebration.
+- **Result:** 255 tests pass (`vitest`, 20 more than before this story) plus a real-browser test that wins a game and checks the cascade actually paints; the review raised 10 issues — 9 fixed (including the last King launching from the wrong place) and 1 cleanup queued; the visual pass found trails covering the scoreboard (fixed) and a see-through panel (fixed); clean on phone, tablet and laptop widths, accessibility 100; players who prefer reduced motion get the panel without the cascade.
+
 ## persistence — 2026-10-20
 - **Pain:** closing or reloading the tab threw the game away, and nothing remembered how often the player had played or won.
 - **Fix:** the game in progress (with its full undo history and time) saves itself after every change and comes back on reload, and a Stats button shows games played, won, win rate, best time and best score.
