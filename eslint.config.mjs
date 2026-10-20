@@ -46,8 +46,9 @@ export default [
     },
 
     // ── Boundary files: null is allowed (normalise at the seam) ───────────────────────────────
+    //    The DOM lookup, and the in-memory fake of Web Storage, whose interface returns null.
     {
-        files: ['src/utils/get-element-by-id.ts'],
+        files: ['src/utils/get-element-by-id.ts', 'src/testkit/fakes/memory-storage.ts'],
         rules: {
             'no-restricted-syntax': 'off',
         },
