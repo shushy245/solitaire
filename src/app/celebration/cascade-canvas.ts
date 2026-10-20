@@ -31,26 +31,37 @@ export const readCardPaint = (): CardPaintModel => {
     };
 };
 
-export const measureCardRect = (cardId: string): RectModel | undefined => {
-    const [element] = document.querySelectorAll(`[data-card-id="${CSS.escape(cardId)}"]`);
+// The empty foundation slot the board draws under each pile (it carries no card id).
+export const measureFoundationRect = (foundation: number): RectModel | undefined => {
+    const [element] = document.querySelectorAll(
+        `[data-pile="foundation"][data-pile-index="${foundation}"]:not([data-card-id])`,
+    );
 
     return element === undefined ? undefined : element.getBoundingClientRect();
 };
 
-// Sized in device pixels so the cards stay sharp on high-density screens; drawing stays in CSS pixels.
+// Sized in device pixels so the cards stay sharp on high-density screens; drawing stays in CSS pixels and is
+// clipped to the band from `paintTop` down, so trails never cover the scoreboard. Resizing the bitmap clears it.
 export const prepareCanvas = ({
     canvas,
     bounds,
+    paintTop,
 }: {
     canvas: HTMLCanvasElement;
     bounds: BoundsModel;
+    paintTop: number;
 }): CanvasRenderingContext2D | undefined => {
     const ratio = window.devicePixelRatio;
     canvas.width = Math.round(bounds.width * ratio);
     canvas.height = Math.round(bounds.height * ratio);
     const context = getCanvasContext(canvas);
 
-    if (context !== undefined) context.scale(ratio, ratio);
+    if (context === undefined) return undefined;
+
+    context.scale(ratio, ratio);
+    context.beginPath();
+    context.rect(0, paintTop, bounds.width, bounds.height - paintTop);
+    context.clip();
 
     return context;
 };

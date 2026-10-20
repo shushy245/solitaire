@@ -27,6 +27,7 @@ export type CelebrationDriver = {
         winUndone: () => void;
         newGameStartedElsewhere: () => void;
         unmounted: () => void;
+        windowResizedTo: (args: { width: number; height: number }) => void;
     };
     click: { newGame: () => void };
     assert: {
@@ -35,6 +36,7 @@ export type CelebrationDriver = {
         newGameFocused: () => void;
         cascadeRunning: (isRunning: boolean) => void;
         freshDealIn: (drawMode: DrawMode) => void;
+        cascadeCanvasSize: (args: { width: number; height: number }) => void;
     };
 };
 
@@ -112,6 +114,11 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
             unmounted: () => {
                 rendered.unmount();
             },
+            windowResizedTo: ({ width, height }) => {
+                vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(width);
+                vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(height);
+                fireEvent(window, new Event('resize'));
+            },
         },
         click: {
             newGame: () => {
@@ -139,6 +146,12 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
 
                 if (isRunning) expect(requested).toBeGreaterThan(0);
                 else expect(requested).toBe(0);
+            },
+            // jsdom reports a device pixel ratio of 1, so the bitmap matches the window in CSS pixels.
+            cascadeCanvasSize: ({ width, height }) => {
+                const canvas = screen.getByTestId(CelebrationTestIds.Cascade);
+                expect(canvas).toHaveAttribute('width', String(width));
+                expect(canvas).toHaveAttribute('height', String(height));
             },
             freshDealIn: (drawMode) => {
                 expect(game().session.game.moves).toBe(0);

@@ -78,6 +78,16 @@ describe('Celebration', () => {
         driver.assert.cascadeRunning(false);
     });
 
+    it('re-fits the cascade to the window when it is resized or turned mid-cascade', async () => {
+        driver.given.oneMoveFromWon(DrawMode.One);
+        await driver.when.created();
+        driver.when.winningCardSentUp();
+
+        driver.when.windowResizedTo({ width: 640, height: 900 });
+
+        driver.assert.cascadeCanvasSize({ width: 640, height: 900 });
+    });
+
     it('stops asking for frames once the table is gone', async () => {
         driver.given.oneMoveFromWon(DrawMode.One);
         await driver.when.created();

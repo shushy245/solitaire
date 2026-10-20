@@ -7,6 +7,12 @@ export type WinOverlayProps = { elapsedMs: number; score: number; onNewGame: () 
 
 export type WinCascadeProps = { game: GameStateModel };
 
+// The canvas as sized for the current window, and its drawing context (none where the browser cannot draw).
+export type FittedCanvasModel = {
+    readonly bounds: BoundsModel;
+    readonly context: CanvasRenderingContext2D | undefined;
+};
+
 export type RectModel = {
     readonly left: number;
     readonly top: number;
@@ -20,24 +26,49 @@ export const winSummary = ({ elapsedMs, score }: { elapsedMs: number; score: num
 export const cardsById = (game: GameStateModel): ReadonlyMap<string, CardModel> =>
     new Map(game.foundations.flat().map((card) => [card.id, card]));
 
-// Each foundation card leaves from where it sits on screen; a card that is not on screen is not launched.
+export enum LaunchPlanKind {
+    Nothing = 'nothing',
+    Ready = 'ready',
+}
+
+export type SizeModel = { readonly width: number; readonly height: number };
+
+// Ready: cards to launch, the size to draw them, and the top of the band they may be painted in (the
+// foundation row — the scoreboard above it stays clear).
+export type LaunchPlanModel =
+    | { readonly kind: LaunchPlanKind.Nothing }
+    | {
+          readonly kind: LaunchPlanKind.Ready;
+          readonly launches: readonly LaunchModel[];
+          readonly cardSize: SizeModel;
+          readonly paintTop: number;
+      };
+
+// Each card leaves from its foundation's slot — measured from the slot, which never moves, rather than the card,
+// which may still be gliding home with the winning move. A foundation not on screen launches nothing.
 export const planLaunches = ({
     game,
-    rectOf,
+    foundationRect,
 }: {
     game: GameStateModel;
-    rectOf: (cardId: string) => RectModel | undefined;
-}): { launches: LaunchModel[]; cardSize: { width: number; height: number } | undefined } => {
-    const measured = launchOrder(game.foundations).flatMap((cardId) => {
-        const rect = rectOf(cardId);
+    foundationRect: (foundation: number) => RectModel | undefined;
+}): LaunchPlanModel => {
+    const slots = game.foundations.map((_, foundation) => foundationRect(foundation));
+    const launches = launchOrder(game.foundations).flatMap((cardId) => {
+        const rect = slots[game.foundations.findIndex((pile) => pile.some((card) => card.id === cardId))];
 
-        return rect === undefined ? [] : [{ cardId, rect }];
+        return rect === undefined ? [] : [{ cardId, from: { x: rect.left, y: rect.top } }];
     });
+    const measured = slots.filter((rect) => rect !== undefined);
     const [first] = measured;
 
+    if (first === undefined || launches.length === 0) return { kind: LaunchPlanKind.Nothing };
+
     return {
-        launches: measured.map(({ cardId, rect }) => ({ cardId, from: { x: rect.left, y: rect.top } })),
-        cardSize: first === undefined ? undefined : { width: first.rect.width, height: first.rect.height },
+        kind: LaunchPlanKind.Ready,
+        launches,
+        cardSize: { width: first.width, height: first.height },
+        paintTop: Math.min(...measured.map((rect) => rect.top)),
     };
 };
 
@@ -48,5 +79,5 @@ export const viewportBounds = ({
 }: {
     width: number;
     height: number;
-    cardSize: { width: number; height: number };
+    cardSize: SizeModel;
 }): BoundsModel => ({ width, height, cardWidth: cardSize.width, cardHeight: cardSize.height });

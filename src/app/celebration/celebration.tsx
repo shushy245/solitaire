@@ -6,9 +6,11 @@ import { useGame } from '../game-provider.tsx';
 import { CelebrationTestIds } from './celebration.test-ids.ts';
 import { usePrefersReducedMotion } from '../motion/motion-provider.tsx';
 import { CascadeModel, isCascadeOver, makeCascade, stepCascade } from './cascade.utils.ts';
-import { measureCardRect, paintCard, prepareCanvas, readCardPaint } from './cascade-canvas.ts';
+import { measureFoundationRect, paintCard, prepareCanvas, readCardPaint } from './cascade-canvas.ts';
 import {
     cardsById,
+    FittedCanvasModel,
+    LaunchPlanKind,
     planLaunches,
     viewportBounds,
     WinCascadeProps,
@@ -51,25 +53,38 @@ const WinCascade = ({ game }: WinCascadeProps): JSX.Element => {
     }, []);
 
     // The cascade lives in this effect, outside React state: each frame steps it and paints it, and leaving
-    // (a new game, an undo, unmount) cancels the next frame.
+    // (a new game, an undo, unmount) cancels the next frame. A resize re-fits the canvas to the new window.
     useEffect(() => {
         const canvas = canvasElement.current;
-        const { launches, cardSize } = planLaunches({ game, rectOf: measureCardRect });
+        const plan = planLaunches({ game, foundationRect: measureFoundationRect });
 
-        if (canvas === undefined || cardSize === undefined) return undefined;
+        if (canvas === undefined || plan.kind !== LaunchPlanKind.Ready) return undefined;
 
-        const bounds = viewportBounds({ width: window.innerWidth, height: window.innerHeight, cardSize });
-        const context = prepareCanvas({ canvas, bounds });
+        const { cardSize } = plan;
         const cards = cardsById(game);
         const paint = readCardPaint();
-        const loop: { cascade: CascadeModel; lastFrameAt: number | undefined; frame: number } = {
-            cascade: makeCascade({ launches, seed: game.seed }),
+        const fit = (): FittedCanvasModel => {
+            const remeasured = planLaunches({ game, foundationRect: measureFoundationRect });
+            const paintTop = remeasured.kind === LaunchPlanKind.Ready ? remeasured.paintTop : plan.paintTop;
+            const bounds = viewportBounds({ width: window.innerWidth, height: window.innerHeight, cardSize });
+
+            return { bounds, context: prepareCanvas({ canvas, bounds, paintTop }) };
+        };
+        const loop: {
+            cascade: CascadeModel;
+            lastFrameAt: number | undefined;
+            frame: number;
+            fitted: FittedCanvasModel;
+        } = {
+            cascade: makeCascade({ launches: plan.launches, seed: game.seed }),
             lastFrameAt: undefined,
             frame: 0,
+            fitted: fit(),
         };
 
         const handleFrame = (frameAt: number): void => {
             const dtMs = loop.lastFrameAt === undefined ? 0 : frameAt - loop.lastFrameAt;
+            const { bounds, context } = loop.fitted;
             loop.lastFrameAt = frameAt;
             loop.cascade = stepCascade({ cascade: loop.cascade, dtMs, bounds });
 
@@ -79,22 +94,23 @@ const WinCascade = ({ game }: WinCascadeProps): JSX.Element => {
 
                     if (card === undefined) return;
 
-                    paintCard({
-                        context,
-                        card,
-                        at: { left: x, top: y, width: cardSize.width, height: cardSize.height },
-                        paint,
-                    });
+                    paintCard({ context, card, at: { left: x, top: y, ...cardSize }, paint });
                 });
             }
 
             if (!isCascadeOver(loop.cascade)) loop.frame = window.requestAnimationFrame(handleFrame);
         };
 
+        const handleResize = (): void => {
+            loop.fitted = fit();
+        };
+
         loop.frame = window.requestAnimationFrame(handleFrame);
+        window.addEventListener('resize', handleResize);
 
         return () => {
             window.cancelAnimationFrame(loop.frame);
+            window.removeEventListener('resize', handleResize);
         };
     }, [game]);
 
