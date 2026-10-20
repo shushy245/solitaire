@@ -196,6 +196,14 @@ describe('reduceSession — auto-complete', () => {
         );
     });
 
+    it('a second start while the sweep runs changes nothing (a double-clicked button starts one sweep)', () => {
+        const started = reduceSession({ session: ready(), action: { kind: SessionActionKind.StartAutoComplete } });
+
+        expect(reduceSession({ session: started, action: { kind: SessionActionKind.StartAutoComplete } })).toBe(
+            started,
+        );
+    });
+
     it('each step sends one card up, and the last step returns to normal play', () => {
         const started = reduceSession({ session: ready(), action: { kind: SessionActionKind.StartAutoComplete } });
         const oneStep = reduceSession({ session: started, action: { kind: SessionActionKind.AutoCompleteStep } });

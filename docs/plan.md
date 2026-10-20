@@ -32,8 +32,10 @@ resume-after-reload.
   `listLegalMoves`), `apply.ts` (`applyMove`), `scoring.ts` (`scoreDeltaMap`),
   `auto-complete.ts` (`isAutoCompletable`, `nextAutoMove`).
 - **Session (`src/app/session/`)**: pure `reduceSession(session, action)` over
-  `{ game, history, stats, elapsedSeconds, phase }` — moves, undo, new game, tick, auto-complete
-  step. Stats are updated *inside* the transition that produces the win (never in an effect) so a
+  `{ game, history, elapsedMs, phase, dealNumber }` (stats join in `persistence`) — moves, undo, new
+  game, tick, auto-complete step. The clock is real milliseconds: the provider reads a monotonic `now()`
+  on a 1s interval and right before every game-changing action, so play time starts and stops at the
+  exact move. Stats are updated *inside* the transition that produces the win (never in an effect) so a
   win is recorded exactly once. `GameProvider` + `useGame()` is the thin shell (useReducer, timer,
   auto-complete cadence, persistence).
 - **Animation model:** all 52 cards render in one absolutely-positioned layer keyed by card id.
@@ -49,15 +51,16 @@ resume-after-reload.
 ```ts
 // useGame() — finalised in story `board` (src/app/game-provider.utils.ts), consumed unchanged by drag/hud/persistence/celebration
 type GameContextValue = {
-    session: SessionModel;                     // game, history, elapsedSeconds, phase (Playing | AutoCompleting)
+    session: SessionModel;                     // game, history, elapsedMs, phase (Playing | AutoCompleting), dealNumber
     dispatchMove: (move: Move) => void;        // illegal/stale moves are ignored, never thrown
     sendToFoundation: (cardId: string) => void; // intent, resolved against the current game
     undo: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;
 };
-// <GameProvider createInitialSession={() => SessionModel} seedSource={() => number}> — persistence plugs
-// a restored session into createInitialSession; main.tsx is the composition root.
+// <GameProvider createInitialSession={() => SessionModel} seedSource={() => number} now={() => number}>
+// — persistence plugs a restored session into createInitialSession; `now` is monotonic ms
+// (performance.now in the app, the fake clock in tests); main.tsx is the composition root.
 ```
 
 ---
@@ -150,7 +153,7 @@ type GameContextValue = {
   - undo button and Ctrl/Cmd+Z undo; disabled with no history
   - new game with no moves deals immediately; with moves, asks first (inline confirm), cancel keeps the game
   - switching turn mode with no moves redeals in the new mode; with moves, asks first
-  - auto-complete button appears only when eligible; clicking it sweeps the cards one by one and the controls are disabled while it runs
+  - auto-complete button appears only when eligible; clicking it sweeps the cards one by one and undo is locked while it runs (New game and the mode switch stay available — see the next case)
   - concurrency: double-clicking auto-complete starts one sweep; starting a new game mid-sweep stops it
   - pre-mortem: the clock counts real elapsed time, not interval ticks — a throttled background tab must not undercount
   - pre-mortem: Ctrl+Z and Cmd+Z both undo; the key listener is removed on unmount and never fires twice per press
