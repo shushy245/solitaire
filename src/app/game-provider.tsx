@@ -27,14 +27,14 @@ export const GameProvider = ({ createInitialSession, seedSource, now, children }
         lastTick.current = current;
     }, [now]);
 
+    // Restarting the interval (a new `now`) keeps lastTick, so time measured so far is never dropped.
     useEffect(() => {
-        lastTick.current = now();
         const interval = setInterval(flushClock, CLOCK_TICK_MS);
 
         return () => {
             clearInterval(interval);
         };
-    }, [now, flushClock]);
+    }, [flushClock]);
 
     // One card per step; each new game state schedules the next, and leaving the phase cancels it.
     useEffect(() => {

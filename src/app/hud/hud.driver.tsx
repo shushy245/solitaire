@@ -21,6 +21,7 @@ export type HudDriver = {
         newGameStartedElsewhere: () => void;
         cardDrawnElsewhere: () => void;
         focused: (testId: string) => void;
+        rerenderedWithANewClock: () => void;
     };
     click: {
         undo: () => void;
@@ -57,7 +58,10 @@ export const makeHudDriver = (): HudDriver => {
     vi.useFakeTimers();
     const scenario: { session: SessionModel } = { session: aSession().build() };
     const outside: { game: GameContextValue | undefined } = { game: undefined };
-    const rendered: { unmount: () => void } = { unmount: () => undefined };
+    const rendered: { unmount: () => void; rerender: (ui: JSX.Element) => void } = {
+        unmount: () => undefined,
+        rerender: () => undefined,
+    };
     const keySpies = { add: vi.spyOn(window, 'addEventListener'), remove: vi.spyOn(window, 'removeEventListener') };
 
     // Stands in for another part of the app (e.g. the win screen) that can start a new game.
@@ -68,6 +72,18 @@ export const makeHudDriver = (): HudDriver => {
     };
 
     // A real click focuses the button first; focus return depends on it.
+    const tree = (now: () => number): JSX.Element => {
+        const session = scenario.session;
+        const initialSession = (): SessionModel => session;
+
+        return (
+            <GameProvider createInitialSession={initialSession} seedSource={fixedSeed} now={now}>
+                <Hud />
+                <ElsewhereInTheApp />
+            </GameProvider>
+        );
+    };
+
     const click = (testId: string): void => {
         const element = screen.getByTestId(testId);
         element.focus();
@@ -85,14 +101,13 @@ export const makeHudDriver = (): HudDriver => {
         },
         when: {
             created: async () => {
-                const session = scenario.session;
-                const initialSession = (): SessionModel => session;
-                rendered.unmount = render(
-                    <GameProvider createInitialSession={initialSession} seedSource={fixedSeed} now={fakeNow}>
-                        <Hud />
-                        <ElsewhereInTheApp />
-                    </GameProvider>,
-                ).unmount;
+                const { unmount, rerender } = render(tree(fakeNow));
+                rendered.unmount = unmount;
+                rendered.rerender = rerender;
+            },
+            // A parent re-rendering with a fresh clock function — same time source, new identity.
+            rerenderedWithANewClock: () => {
+                rendered.rerender(tree(() => fakeNow()));
             },
             unmounted: () => {
                 rendered.unmount();

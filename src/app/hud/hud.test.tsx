@@ -51,6 +51,18 @@ describe('Hud', () => {
             driver.assert.time('0:05');
         });
 
+        it('keeps the time measured so far when the clock function is replaced mid-game', async () => {
+            driver.given.session((s) => s.asPlayed(2));
+            await driver.when.created();
+
+            driver.time.pass(900);
+            driver.when.rerenderedWithANewClock();
+            driver.time.pass(200);
+            driver.when.cardDrawnElsewhere();
+
+            driver.assert.time('0:01');
+        });
+
         it('leaves the clock at zero until the first move', async () => {
             await driver.when.created();
 
