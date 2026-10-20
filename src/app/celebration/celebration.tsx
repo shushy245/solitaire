@@ -135,12 +135,7 @@ const WinOverlay = ({ elapsedMs, score, onNewGame }: WinOverlayProps): JSX.Eleme
     }, []);
 
     return (
-        <section
-            role="dialog"
-            aria-labelledby={titleId}
-            className={styles.overlay}
-            data-testid={CelebrationTestIds.Overlay}
-        >
+        <section aria-labelledby={titleId} className={styles.overlay} data-testid={CelebrationTestIds.Overlay}>
             <h2 id={titleId} className={styles.title}>
                 {`You won!`}
             </h2>

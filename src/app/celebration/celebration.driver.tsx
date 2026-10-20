@@ -127,7 +127,8 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
         },
         assert: {
             overlayShown: (isShown) => {
-                if (isShown) expect(screen.getByTestId(CelebrationTestIds.Overlay)).toBeVisible();
+                // A named region, not a dialog: it is not modal — play stays live behind it.
+                if (isShown) expect(screen.getByRole('region', { name: 'You won!' })).toBeVisible();
                 else expect(screen.queryByTestId(CelebrationTestIds.Overlay)).not.toBeInTheDocument();
             },
             summary: (summary) => {
