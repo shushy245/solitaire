@@ -69,6 +69,9 @@ export const FACE_DOWN_LABEL = 'Face-down card';
 
 export const cardLabel = ({ rank, suit }: { rank: Rank; suit: Suit }): string => `${rankNameMap[rank]} of ${suit}`;
 
+// Nothing played yet: the cards still lie exactly as dealt, so the deal can be shown being dealt.
+export const isFreshDeal = (game: GameStateModel): boolean => game.moves === 0;
+
 export const isCourtCard = (rank: Rank): boolean => rank >= Rank.Jack;
 
 export const isRedSuit = (suit: Suit): boolean => suitColorOf(suit) === SuitColor.Red;

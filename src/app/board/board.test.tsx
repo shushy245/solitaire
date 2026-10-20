@@ -109,6 +109,15 @@ describe('Board', () => {
         driver.assert.lifted({ card: { rank: Rank.Ace, suit: Suit.Spades }, isLifted: false });
     });
 
+    it('shows a game resumed mid-play where it was left, without dealing it again', async () => {
+        driver.given.readyToAutoCompleteAfterMoves(96);
+
+        await driver.when.created();
+
+        driver.assert.dealPhase(DealPhase.Settled);
+        driver.assert.cardIn({ card: { rank: Rank.Ace, suit: Suit.Spades }, pile: PileKind.Tableau, pileIndex: 1 });
+    });
+
     it('deals from a stack on the stock out to the table, then settles', async () => {
         driver.given.dealtGame({ seed: 3, drawMode: DrawMode.Three });
         await driver.when.created();

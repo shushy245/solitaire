@@ -17,6 +17,7 @@ import {
     isCourtCard,
     isDealing,
     isSettled,
+    isFreshDeal,
     isRedSuit,
     pilePlaceholders,
     placeholderSlot,
@@ -35,7 +36,7 @@ export const Board = (): JSX.Element => {
     const { game } = session;
     const slots = useMemo(() => layoutCards(game), [game]);
     const order = useMemo(() => dealOrder(slots), [slots]);
-    const dealPhase = useDealAnimation(session.dealNumber);
+    const dealPhase = useDealAnimation({ dealKey: session.dealNumber, isFreshDeal: isFreshDeal(game) });
     const { lifted, liftUntilLanded, handleLanded } = useLiftedCards(slots);
     const cards = shownCardsFor({ phase: dealPhase, slots });
     const boardElement = useRef<HTMLElement | undefined>(undefined);

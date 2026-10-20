@@ -23,6 +23,7 @@ export type BoardDriver = {
         waste: (cards: readonly CardName[]) => void;
         emptyStockWithWaste: () => void;
         stock: (cards: readonly CardName[]) => void;
+        readyToAutoCompleteAfterMoves: (moves: number) => void;
     };
     when: { created: () => Promise<void>; dealt: () => void; unmounted: () => void; undoneElsewhere: () => void };
     pointer: {
@@ -128,6 +129,10 @@ export const makeBoardDriver = (): BoardDriver => {
                 scenario.builder = scenario.builder
                     .withStock([])
                     .withWaste([buildCard({ rank: Rank.Five, suit: Suit.Clubs })]);
+            },
+            // All 52 cards face-up down the tableau — far more than a fresh deal puts there.
+            readyToAutoCompleteAfterMoves: (moves) => {
+                scenario.builder = scenario.builder.asReadyToAutoComplete().withMoves(moves);
             },
             stock: (cards) => {
                 scenario.builder = scenario.builder.withStock(

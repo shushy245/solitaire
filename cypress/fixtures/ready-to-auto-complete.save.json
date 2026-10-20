@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "game": {
+    "seed": 2024,
+    "drawMode": "one",
+    "stock": [],
+    "waste": [],
+    "wasteFan": 0,
+    "foundations": [
+      [],
+      [],
+      [],
+      []
+    ],
+    "tableau": [
+      [
+        "hearts-13:up",
+        "spades-12:up",
+        "hearts-11:up",
+        "spades-10:up",
+        "hearts-9:up",
+        "spades-8:up",
+        "hearts-7:up",
+        "spades-6:up",
+        "hearts-5:up",
+        "spades-4:up",
+        "hearts-3:up",
+        "spades-2:up",
+        "hearts-1:up"
+      ],
+      [
+        "spades-13:up",
+        "hearts-12:up",
+        "spades-11:up",
+        "hearts-10:up",
+        "spades-9:up",
+        "hearts-8:up",
+        "spades-7:up",
+        "hearts-6:up",
+        "spades-5:up",
+        "hearts-4:up",
+        "spades-3:up",
+        "hearts-2:up",
+        "spades-1:up"
+      ],
+      [
+        "diamonds-13:up",
+        "clubs-12:up",
+        "diamonds-11:up",
+        "clubs-10:up",
+        "diamonds-9:up",
+        "clubs-8:up",
+        "diamonds-7:up",
+        "clubs-6:up",
+        "diamonds-5:up",
+        "clubs-4:up",
+        "diamonds-3:up",
+        "clubs-2:up",
+        "diamonds-1:up"
+      ],
+      [
+        "clubs-13:up",
+        "diamonds-12:up",
+        "clubs-11:up",
+        "diamonds-10:up",
+        "clubs-9:up",
+        "diamonds-8:up",
+        "clubs-7:up",
+        "diamonds-6:up",
+        "clubs-5:up",
+        "diamonds-4:up",
+        "clubs-3:up",
+        "diamonds-2:up",
+        "clubs-1:up"
+      ],
+      [],
+      [],
+      []
+    ],
+    "score": 180,
+    "moves": 96,
+    "recycles": 0
+  },
+  "history": [],
+  "elapsedMs": 312000,
+  "dealNumber": 0,
+  "progress": "started"
+}

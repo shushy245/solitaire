@@ -30,7 +30,9 @@ export const makeDealAnimationDriver = (): DealAnimationDriver => {
         },
         when: {
             mounted: (dealKey) => {
-                hook.current = renderHook(({ dealKey: key }) => useDealAnimation(key), { initialProps: { dealKey } });
+                hook.current = renderHook(({ dealKey: key }) => useDealAnimation({ dealKey: key, isFreshDeal: true }), {
+                    initialProps: { dealKey },
+                });
             },
             redealt: (dealKey) => {
                 mounted().rerender({ dealKey });

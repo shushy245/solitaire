@@ -62,6 +62,12 @@ class GameStateBuilder {
         return this;
     }
 
+    withMoves(moves: number): this {
+        this.state = { ...this.state, moves };
+
+        return this;
+    }
+
     withRecycles(recycles: number): this {
         this.state = { ...this.state, recycles };
 
