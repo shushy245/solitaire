@@ -35,6 +35,8 @@ const passTime = (ms: number): void => {
     });
 };
 
+const motionIsFine = (): boolean => false;
+
 // Where every card sits and which way up, plus the move count — what a player would see change.
 const snapshotTable = (): readonly string[] => [
     ...screen
@@ -49,8 +51,6 @@ const snapshotTable = (): readonly string[] => [
 
 // Boots the app the way main.tsx does — the session store loads the first session, the provider saves every
 // change — over one in-memory storage that outlives a "reload" (unmount, then boot again).
-const motionIsFine = (): boolean => false;
-
 export const makeAppDriver = (): AppDriver => {
     vi.useFakeTimers();
     const storage = new MemoryStorage();

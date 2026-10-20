@@ -4,7 +4,7 @@ import { GameStateModel, isWon } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
 import { CelebrationTestIds } from './celebration.test-ids.ts';
-import { isCascadeOver, makeCascade, stepCascade } from './cascade.utils.ts';
+import { CascadeModel, isCascadeOver, makeCascade, stepCascade } from './cascade.utils.ts';
 import { measureCardRect, paintCard, prepareCanvas, readCardPaint } from './cascade-canvas.ts';
 import {
     cardsById,
@@ -61,7 +61,7 @@ const WinCascade = ({ game }: WinCascadeProps): JSX.Element => {
         const context = prepareCanvas({ canvas, bounds });
         const cards = cardsById(game);
         const paint = readCardPaint();
-        const loop: { cascade: ReturnType<typeof makeCascade>; lastFrameAt: number | undefined; frame: number } = {
+        const loop: { cascade: CascadeModel; lastFrameAt: number | undefined; frame: number } = {
             cascade: makeCascade({ launches, seed: game.seed }),
             lastFrameAt: undefined,
             frame: 0,

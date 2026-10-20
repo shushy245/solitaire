@@ -1,5 +1,4 @@
-import { nextRandom } from '~/engine/prng.ts';
-import { PileModel } from '~/engine/index.ts';
+import { nextRandom, PileModel } from '~/engine/index.ts';
 
 // The classic win cascade: cards leave the foundations one after another, fall under gravity, bounce along the
 // bottom of the screen losing height each time, and are gone once they leave it sideways. Units: px and ms.
