@@ -40,9 +40,9 @@ export const GameProvider = ({ createInitialSession, seedSource, children }: Gam
         };
     }, [session.phase, session.game]);
 
-    const value = useMemo<GameContextValue>(
+    // Actions close over dispatch and seedSource only, so they stay stable across clock ticks.
+    const actions = useMemo<Omit<GameContextValue, 'session'>>(
         () => ({
-            session,
             dispatchMove: (move) => {
                 dispatch({ kind: SessionActionKind.Move, move });
             },
@@ -59,8 +59,9 @@ export const GameProvider = ({ createInitialSession, seedSource, children }: Gam
                 dispatch({ kind: SessionActionKind.StartAutoComplete });
             },
         }),
-        [session, seedSource],
+        [seedSource],
     );
+    const value = useMemo<GameContextValue>(() => ({ session, ...actions }), [session, actions]);
 
     return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 };

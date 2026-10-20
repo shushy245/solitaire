@@ -1,6 +1,8 @@
 .app {
     min-height: 100dvh;
-    padding: 0 16px;
+    padding: 0 16px 24px;
+    // The table sizes its cards from this box (cqw), so a vertical scrollbar never forces a sideways one.
+    container-type: inline-size;
 }
 
 .title {

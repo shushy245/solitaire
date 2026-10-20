@@ -6,19 +6,10 @@ $flip-ms: 300ms;
 $stagger-ms: 35;
 $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 
-// ── The table: everything is sized off the card width, which follows the viewport ──────────────
+// ── The table — sizes come from table-metrics.module.scss (.metrics on an ancestor) ─────────────
 .board {
-    --gap: clamp(4px, 1.6vw, 16px);
-    --card-w: min(calc((100vw - 32px - 6 * var(--gap)) / 7), 104px);
-    --card-h: calc(var(--card-w) * 1.4);
-    --row-gap: calc(var(--card-h) * 0.2);
-    --down-y: calc(var(--card-h) * 0.08);
-    --up-y: calc(var(--card-h) * 0.25);
-    --fan-x: calc(var(--card-w) * 0.3);
-    --radius: calc(var(--card-w) * 0.08);
-
     position: relative;
-    width: calc(7 * var(--card-w) + 6 * var(--gap));
+    width: var(--table-w);
     height: calc(
         2 * var(--card-h) + var(--row-gap) + var(--max-down, 0) * var(--down-y) + var(--max-up, 0) * var(--up-y)
     );
@@ -126,8 +117,8 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     -webkit-tap-highlight-color: transparent;
 }
 
-// Stock cards let clicks through to the stock button beneath them.
-.inStock {
+// Stock cards — and every card mid-deal — let clicks through to the stock button beneath them.
+.passive {
     pointer-events: none;
 }
 
@@ -210,6 +201,12 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     font-size: calc(var(--card-w) * 0.62);
     font-weight: 500;
     font-style: italic;
+}
+
+// Cards deep in a squared pile would stack their shadows into a dark halo.
+.buried .front,
+.buried .back {
+    box-shadow: none;
 }
 
 // Oxblood back with a fine brass lattice inside an ivory border, like a printed card.

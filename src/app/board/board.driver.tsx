@@ -1,5 +1,4 @@
 import { expect, vi } from 'vitest';
-import userEvent from '@testing-library/user-event';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
@@ -8,8 +7,8 @@ import { CardModel, DrawMode, GameStateModel, Rank, Suit, topCard } from '~/engi
 import { Board } from './board.tsx';
 import { PileKind } from './layout.utils.ts';
 import { GameProvider } from '../game-provider.tsx';
-import { BoardTestIds, DealPhase } from './board.utils.ts';
 import { makeSession, SessionModel } from '../session/session.utils.ts';
+import { BoardTestIds, DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 
 type CardName = { rank: Rank; suit: Suit };
 type CardScenario = CardName & { faceUp?: boolean };
@@ -20,9 +19,8 @@ export type BoardDriver = {
         column: (args: { index: number; cards: readonly CardScenario[] }) => void;
         waste: (cards: readonly CardName[]) => void;
         emptyStockWithWaste: () => void;
-        fakeClock: () => void;
     };
-    when: { created: () => Promise<void> };
+    when: { created: () => Promise<void>; dealt: () => void };
     click: { stock: () => Promise<void> };
     doubleClick: { card: (card: CardName) => Promise<void> };
     fire: { landed: (card: CardName) => void };
@@ -42,6 +40,13 @@ export type BoardDriver = {
 
 const fixedSeed = (): number => 1;
 
+// Advances the fake clock inside act; one step per scheduled phase, as React schedules the next timer on render.
+const passTime = (ms: number): void => {
+    act(() => {
+        vi.advanceTimersByTime(ms);
+    });
+};
+
 const buildCard = ({ rank, suit, faceUp = true }: CardScenario): CardModel => {
     const builder = aCard().withRank(rank).withSuit(suit);
 
@@ -49,7 +54,9 @@ const buildCard = ({ rank, suit, faceUp = true }: CardScenario): CardModel => {
 };
 
 export const makeBoardDriver = (): BoardDriver => {
-    const user = { current: userEvent.setup() };
+    // The board animates on timers (deal, clock), so every board test runs on a fake clock. Events are
+    // fired synchronously: user-event's async wrapper waits on a real setTimeout that a fake clock never runs.
+    vi.useFakeTimers();
     const scenario: { builder: ReturnType<typeof aGameState>; dealt: SessionModel | undefined } = {
         builder: aGameState(),
         dealt: undefined,
@@ -91,10 +98,6 @@ export const makeBoardDriver = (): BoardDriver => {
                     .withStock([])
                     .withWaste([buildCard({ rank: Rank.Five, suit: Suit.Clubs })]);
             },
-            fakeClock: () => {
-                vi.useFakeTimers();
-                user.current = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
-            },
         },
         when: {
             created: async () => {
@@ -106,15 +109,19 @@ export const makeBoardDriver = (): BoardDriver => {
                     </GameProvider>,
                 );
             },
+            dealt: () => {
+                passTime(STACK_HOLD_MS);
+                passTime(DEAL_TOTAL_MS);
+            },
         },
         click: {
             stock: async () => {
-                await user.current.click(screen.getByTestId(BoardTestIds.Stock));
+                fireEvent.click(screen.getByTestId(BoardTestIds.Stock));
             },
         },
         doubleClick: {
             card: async (card) => {
-                await user.current.dblClick(cardElement(card));
+                fireEvent.doubleClick(cardElement(card));
             },
         },
         fire: {
@@ -123,11 +130,7 @@ export const makeBoardDriver = (): BoardDriver => {
             },
         },
         time: {
-            pass: (ms) => {
-                act(() => {
-                    vi.advanceTimersByTime(ms);
-                });
-            },
+            pass: passTime,
         },
         assert: {
             cardCount: (count) => {

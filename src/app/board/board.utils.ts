@@ -1,6 +1,16 @@
 import { GameStateModel, hasStock, Rank, Suit, SuitColor, suitColorOf } from '~/engine/index.ts';
 
-import { CardSlotModel, PileKind, stackOnStock } from './layout.utils.ts';
+import {
+    CardSlotModel,
+    FOUNDATION_FIRST_COLUMN,
+    PileKind,
+    stackOnStock,
+    STOCK_COLUMN,
+    TABLEAU_ROW,
+    tallestColumn,
+    TOP_ROW,
+    WASTE_COLUMN,
+} from './layout.utils.ts';
 
 // Test IDs: the string value equals the access path.
 export const BoardTestIds = {
@@ -73,6 +83,9 @@ export const isRedSuit = (suit: Suit): boolean => suitColorOf(suit) === SuitColo
 
 type StyleMap = Readonly<Record<string, string>>;
 
+// The parts of a slot that decide where something is drawn.
+type SlotPositionModel = Pick<CardSlotModel, 'column' | 'row' | 'downOffset' | 'upOffset' | 'fan' | 'z'>;
+
 const classFor = ({ styles, name }: { styles: StyleMap; name: string }): string => {
     const className = styles[name];
 
@@ -82,13 +95,7 @@ const classFor = ({ styles, name }: { styles: StyleMap; name: string }): string 
 };
 
 // The position classes CSS turns into a transform (see the @for loops in board.module.scss).
-export const slotClassNames = ({
-    slot,
-    styles,
-}: {
-    slot: Omit<CardSlotModel, 'card' | 'pile' | 'pileIndex'>;
-    styles: StyleMap;
-}): string[] => [
+export const slotClassNames = ({ slot, styles }: { slot: SlotPositionModel; styles: StyleMap }): string[] => [
     classFor({ styles, name: `col-${slot.column}` }),
     classFor({ styles, name: `row-${slot.row}` }),
     classFor({ styles, name: `down-${slot.downOffset}` }),
@@ -105,7 +112,7 @@ export const dealDelayClassName = ({
     styles: StyleMap;
 }): string | undefined => (order === undefined ? undefined : classFor({ styles, name: `delay-${order}` }));
 
-// The tallest column decides the table's height (see .board in board.module.scss).
+// The column reaching furthest down decides the table's height (see .board in board.module.scss).
 export const boardHeightClassNames = ({
     slots,
     styles,
@@ -113,10 +120,9 @@ export const boardHeightClassNames = ({
     slots: readonly CardSlotModel[];
     styles: StyleMap;
 }): string[] => {
-    const maxDown = Math.max(0, ...slots.map((slot) => slot.downOffset));
-    const maxUp = Math.max(0, ...slots.map((slot) => slot.upOffset));
+    const { downOffset, upOffset } = tallestColumn(slots);
 
-    return [classFor({ styles, name: `max-down-${maxDown}` }), classFor({ styles, name: `max-up-${maxUp}` })];
+    return [classFor({ styles, name: `max-down-${downOffset}` }), classFor({ styles, name: `max-up-${upOffset}` })];
 };
 
 const shownSlotsMap: Record<DealPhase, (slots: readonly CardSlotModel[]) => readonly CardSlotModel[]> = {
@@ -141,6 +147,11 @@ export const shownCardsFor = ({
 
 export const isDealing = (phase: DealPhase): boolean => phase === DealPhase.Dealing;
 
+// Cards only respond once the deal has settled — mid-deal they sit over the stock and other piles.
+export const isSettled = (phase: DealPhase): boolean => phase === DealPhase.Settled;
+
+export const stockSlot = { column: STOCK_COLUMN, row: TOP_ROW };
+
 export const stockLabelFor = (game: GameStateModel): string =>
     hasStock(game) ? 'Draw from the stock' : 'Recycle the waste into the stock';
 
@@ -148,30 +159,24 @@ export type PilePlaceholderModel = { key: string; pile: PileKind; pileIndex: num
 
 // The empty-pile outlines under the cards: waste, 4 foundations and 7 tableau columns (the stock is a button).
 export const pilePlaceholders: readonly PilePlaceholderModel[] = [
-    { key: 'waste', pile: PileKind.Waste, pileIndex: 0, column: 1, row: 0 },
+    { key: 'waste', pile: PileKind.Waste, pileIndex: 0, column: WASTE_COLUMN, row: TOP_ROW },
     ...[0, 1, 2, 3].map((pileIndex) => ({
         key: `foundation-${pileIndex}`,
         pile: PileKind.Foundation,
         pileIndex,
-        column: 3 + pileIndex,
-        row: 0,
+        column: FOUNDATION_FIRST_COLUMN + pileIndex,
+        row: TOP_ROW,
     })),
     ...[0, 1, 2, 3, 4, 5, 6].map((pileIndex) => ({
         key: `tableau-${pileIndex}`,
         pile: PileKind.Tableau,
         pileIndex,
         column: pileIndex,
-        row: 1,
+        row: TABLEAU_ROW,
     })),
 ];
 
-export const placeholderSlot = ({
-    column,
-    row,
-}: {
-    column: number;
-    row: number;
-}): Omit<CardSlotModel, 'card' | 'pile' | 'pileIndex'> => ({
+export const placeholderSlot = ({ column, row }: { column: number; row: number }): SlotPositionModel => ({
     column,
     row,
     downOffset: 0,

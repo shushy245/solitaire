@@ -6,6 +6,7 @@ import { GameProvider } from './app/game-provider.tsx';
 import { makeSession } from './app/session/session.utils.ts';
 
 import styles from './app.module.scss';
+import tableStyles from './styles/table-metrics.module.scss';
 
 export const App = ({ seedSource }: { seedSource: () => number }): JSX.Element => {
     const createInitialSession = () => makeSession({ seed: seedSource(), drawMode: DrawMode.One });
@@ -13,10 +14,12 @@ export const App = ({ seedSource }: { seedSource: () => number }): JSX.Element =
     return (
         <GameProvider createInitialSession={createInitialSession} seedSource={seedSource}>
             <main className={styles.app}>
-                <FullColumn>
-                    <h1 className={styles.title} data-testid={AppTestIds.Title}>
-                        {`Solitaire`}
-                    </h1>
+                <FullColumn className={tableStyles.metrics}>
+                    <header className={tableStyles.tableWidth}>
+                        <h1 className={styles.title} data-testid={AppTestIds.Title}>
+                            {`Solitaire`}
+                        </h1>
+                    </header>
                     <Board />
                 </FullColumn>
             </main>

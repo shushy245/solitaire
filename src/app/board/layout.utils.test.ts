@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { at } from '~/testkit/at.ts';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
-import { applyMove, dealGame, DrawMode, makeDrawMove, Rank, Suit } from '~/engine/index.ts';
+import { applyMove, dealGame, DrawMode, makeDrawMove, MoveKind, Rank, Suit } from '~/engine/index.ts';
 
-import { dealOrder, layoutCards, movedCardIds, PileKind, stackOnStock } from './layout.utils.ts';
+import { dealOrder, layoutCards, movedCardIds, PileKind, stackOnStock, tallestColumn } from './layout.utils.ts';
 
 const slotOf = ({ slots, cardId }: { slots: ReturnType<typeof layoutCards>; cardId: string }) => {
     const slot = slots.find((s) => s.card.id === cardId);
@@ -128,5 +128,61 @@ describe('stackOnStock', () => {
         ).toBe(true);
         expect(slots.every((s) => !s.card.faceUp)).toBe(true);
         expect(new Set(slots.map((s) => s.z)).size).toBe(52);
+    });
+});
+
+describe('movedCardIds — flips', () => {
+    it('does not count a card turned face-up in place as moved', () => {
+        const hidden = aCard().withSuit(Suit.Clubs).withRank(Rank.Two).asFaceDown().build();
+        const nine = aCard().withSuit(Suit.Spades).withRank(Rank.Nine).build();
+        const ten = aCard().withSuit(Suit.Hearts).withRank(Rank.Ten).build();
+        const before = aGameState()
+            .withColumn({ index: 0, cards: [hidden, nine] })
+            .withColumn({ index: 1, cards: [ten] })
+            .build();
+        const after = applyMove({
+            state: before,
+            move: { kind: MoveKind.TableauToTableau, cardId: nine.id, from: 0, to: 1 },
+        });
+
+        expect(movedCardIds({ previous: layoutCards(before), next: layoutCards(after) })).toEqual(new Set([nine.id]));
+    });
+});
+
+describe('tallestColumn', () => {
+    it('picks the column reaching furthest down, counting face-down and face-up spacing together', () => {
+        const down = (rank: Rank) => aCard().withSuit(Suit.Clubs).withRank(rank).asFaceDown().build();
+        const up = (rank: Rank, suit: Suit) => aCard().withSuit(suit).withRank(rank).build();
+        const slots = layoutCards(
+            aGameState()
+                .withColumn({
+                    index: 6,
+                    cards: [down(Rank.Two), down(Rank.Three), down(Rank.Four), up(Rank.Five, Suit.Hearts)],
+                })
+                .withColumn({
+                    index: 0,
+                    cards: [up(Rank.King, Suit.Spades), up(Rank.Queen, Suit.Hearts), up(Rank.Jack, Suit.Spades)],
+                })
+                .build(),
+        );
+
+        // 3 face-down offsets (3 × 0.08) reach less far than 2 face-up offsets (2 × 0.25)
+        expect(tallestColumn(slots)).toEqual({ downOffset: 0, upOffset: 2 });
+    });
+
+    it('is zero for an empty table', () => {
+        expect(tallestColumn([])).toEqual({ downOffset: 0, upOffset: 0 });
+    });
+});
+
+describe('layoutCards — buried cards', () => {
+    it('marks all but the top two cards of a squared pile as buried, and never a tableau card', () => {
+        const game = dealGame({ seed: 30, drawMode: DrawMode.One });
+        const slots = layoutCards(game);
+        const stockBuried = game.stock.map((card) => slotOf({ slots, cardId: card.id }).isBuried);
+
+        expect(stockBuried.filter(Boolean)).toHaveLength(game.stock.length - 2);
+        expect(stockBuried.slice(-2)).toEqual([false, false]);
+        expect(slots.filter((s) => s.pile === PileKind.Tableau).every((s) => !s.isBuried)).toBe(true);
     });
 });

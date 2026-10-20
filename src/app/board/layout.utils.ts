@@ -18,9 +18,24 @@ export type CardSlotModel = {
     upOffset: number;
     fan: number;
     z: number;
+    // Deep inside a squared pile (stock, waste, foundation): hidden by the cards above, so it casts no shadow.
+    isBuried: boolean;
 };
 
-const FOUNDATION_FIRST_COLUMN = 3;
+const VISIBLE_STACK_DEPTH = 2;
+
+const isBuriedIn = ({ depth, size }: { depth: number; size: number }): boolean => depth < size - VISIBLE_STACK_DEPTH;
+
+// The table's columns — the one home of where each pile sits (board placeholders read these too).
+export const STOCK_COLUMN = 0;
+export const WASTE_COLUMN = 1;
+export const FOUNDATION_FIRST_COLUMN = 3;
+export const TOP_ROW = 0;
+export const TABLEAU_ROW = 1;
+
+// Vertical spacing per covered card, as a fraction of card height — mirrored by --down-y/--up-y in board.module.scss.
+const DOWN_SPACING = 0.08;
+const UP_SPACING = 0.25;
 
 const stackSlots = ({
     pile,
@@ -38,21 +53,24 @@ const stackSlots = ({
         pile: kind,
         pileIndex,
         column,
-        row: 0,
+        row: TOP_ROW,
         downOffset: 0,
         upOffset: 0,
         fan: 0,
         z: depth + 1,
+        isBuried: isBuriedIn({ depth, size: pile.length }),
     }));
 
 // The top `wasteFan` waste cards spread rightwards (fan 0, 1, 2); the rest sit squared under the first.
 const wasteSlots = (game: GameStateModel): CardSlotModel[] => {
     const firstFanned = game.waste.length - Math.min(game.wasteFan, game.waste.length);
 
-    return stackSlots({ pile: game.waste, kind: PileKind.Waste, pileIndex: 0, column: 1 }).map((slot, depth) => ({
-        ...slot,
-        fan: Math.max(0, depth - firstFanned),
-    }));
+    return stackSlots({ pile: game.waste, kind: PileKind.Waste, pileIndex: 0, column: WASTE_COLUMN }).map(
+        (slot, depth) => ({
+            ...slot,
+            fan: Math.max(0, depth - firstFanned),
+        }),
+    );
 };
 
 const tableauSlots = ({ pile, pileIndex }: { pile: PileModel; pileIndex: number }): CardSlotModel[] =>
@@ -65,16 +83,17 @@ const tableauSlots = ({ pile, pileIndex }: { pile: PileModel; pileIndex: number 
             pile: PileKind.Tableau,
             pileIndex,
             column: pileIndex,
-            row: 1,
+            row: TABLEAU_ROW,
             downOffset,
             upOffset: beneath.length - downOffset,
             fan: 0,
             z: depth + 1,
+            isBuried: false,
         };
     });
 
 export const layoutCards = (game: GameStateModel): CardSlotModel[] => [
-    ...stackSlots({ pile: game.stock, kind: PileKind.Stock, pileIndex: 0, column: 0 }),
+    ...stackSlots({ pile: game.stock, kind: PileKind.Stock, pileIndex: 0, column: STOCK_COLUMN }),
     ...wasteSlots(game),
     ...game.foundations.flatMap((pile, pileIndex) =>
         stackSlots({ pile, kind: PileKind.Foundation, pileIndex, column: FOUNDATION_FIRST_COLUMN + pileIndex }),
@@ -83,9 +102,10 @@ export const layoutCards = (game: GameStateModel): CardSlotModel[] => [
 ];
 
 const slotKey = (slot: CardSlotModel): string =>
-    `${slot.column}:${slot.row}:${slot.downOffset}:${slot.upOffset}:${slot.fan}:${slot.card.faceUp}`;
+    `${slot.column}:${slot.row}:${slot.downOffset}:${slot.upOffset}:${slot.fan}`;
 
-// Cards whose on-table position or face changed — these are lifted above everything while they fly.
+// Cards whose on-table position changed — these are lifted above everything while they fly. A card
+// turned over in place does not fly, so it is not lifted.
 export const movedCardIds = ({
     previous,
     next,
@@ -116,10 +136,22 @@ export const stackOnStock = (slots: readonly CardSlotModel[]): CardSlotModel[] =
     slots.map((slot, index) => ({
         ...slot,
         card: { ...slot.card, faceUp: false },
-        column: 0,
-        row: 0,
+        pile: PileKind.Stock,
+        column: STOCK_COLUMN,
+        row: TOP_ROW,
         downOffset: 0,
         upOffset: 0,
         fan: 0,
         z: index + 1,
     }));
+
+const reach = ({ downOffset, upOffset }: { downOffset: number; upOffset: number }): number =>
+    downOffset * DOWN_SPACING + upOffset * UP_SPACING;
+
+// The covered-card offsets of the card reaching furthest down the table — it decides the table's height.
+export const tallestColumn = (slots: readonly CardSlotModel[]): { downOffset: number; upOffset: number } =>
+    slots.reduce<{ downOffset: number; upOffset: number }>(
+        (tallest, slot) =>
+            reach(slot) > reach(tallest) ? { downOffset: slot.downOffset, upOffset: slot.upOffset } : tallest,
+        { downOffset: 0, upOffset: 0 },
+    );

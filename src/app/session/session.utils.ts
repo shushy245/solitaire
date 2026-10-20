@@ -24,6 +24,8 @@ export type SessionModel = {
     readonly history: readonly GameStateModel[];
     readonly elapsedSeconds: number;
     readonly phase: SessionPhase;
+    // Counts deals in this session, so replaying the same seed is still recognised as a new deal.
+    readonly dealNumber: number;
 };
 
 export enum SessionActionKind {
@@ -56,6 +58,7 @@ export const makeSession = ({ seed, drawMode }: { seed: number; drawMode: DrawMo
     history: [],
     elapsedSeconds: 0,
     phase: SessionPhase.Playing,
+    dealNumber: 0,
 });
 
 const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
@@ -106,7 +109,10 @@ const reducerMap: ReducerMap = {
 
         return { ...session, game: previous, history: session.history.slice(0, -1) };
     },
-    [SessionActionKind.NewGame]: ({ action }) => makeSession({ seed: action.seed, drawMode: action.drawMode }),
+    [SessionActionKind.NewGame]: ({ session, action }) => ({
+        ...makeSession({ seed: action.seed, drawMode: action.drawMode }),
+        dealNumber: session.dealNumber + 1,
+    }),
     [SessionActionKind.Tick]: ({ session }) =>
         isClockRunning(session) ? { ...session, elapsedSeconds: session.elapsedSeconds + 1 } : session,
     [SessionActionKind.StartAutoComplete]: ({ session }) =>
@@ -121,7 +127,8 @@ const reducerMap: ReducerMap = {
 
         const next = advance({ session, game: applyMove({ state: session.game, move }) });
 
-        return isWon(next.game) ? { ...next, phase: SessionPhase.Playing } : next;
+        // A rejected step (nothing changed) or a finished game ends the sweep — never stall in AutoCompleting.
+        return next === session || isWon(next.game) ? { ...next, phase: SessionPhase.Playing } : next;
     },
 };
 

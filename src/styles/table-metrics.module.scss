@@ -1,0 +1,22 @@
+// The one home of the table's sizes. Applied to the column that holds the header and the board, inside
+// a container (app.module.scss) — so cqw is the content width and a vertical scrollbar never forces a
+// sideways one. Everything is sized off the card width.
+.metrics {
+    --gap: clamp(4px, 1.6cqw, 16px);
+    --card-w: min(calc((100cqw - 6 * var(--gap)) / 7), 104px);
+    --card-h: calc(var(--card-w) * 1.4);
+    --table-w: calc(7 * var(--card-w) + 6 * var(--gap));
+    --row-gap: calc(var(--card-h) * 0.2);
+    // Spacing per covered card — mirrored by DOWN_SPACING / UP_SPACING in layout.utils.ts.
+    --down-y: calc(var(--card-h) * 0.08);
+    --up-y: calc(var(--card-h) * 0.25);
+    --fan-x: calc(var(--card-w) * 0.3);
+    --radius: calc(var(--card-w) * 0.08);
+
+    align-items: center;
+}
+
+// Matches the table's width, so headers and controls line up with the cards beneath them.
+.tableWidth {
+    width: var(--table-w);
+}

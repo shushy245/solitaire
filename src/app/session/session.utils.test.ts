@@ -67,7 +67,18 @@ describe('reduceSession — moves and undo', () => {
             action: { kind: SessionActionKind.NewGame, seed: 9, drawMode: DrawMode.Three },
         });
 
-        expect(next).toEqual(makeSession({ seed: 9, drawMode: DrawMode.Three }));
+        expect(next.game).toEqual(dealGame({ seed: 9, drawMode: DrawMode.Three }));
+        expect([next.history, next.elapsedSeconds, next.phase]).toEqual([[], 0, SessionPhase.Playing]);
+    });
+
+    it('numbers every deal, so replaying the same seed is still a new deal', () => {
+        const session = freshSession();
+        const action = { kind: SessionActionKind.NewGame, seed: 77, drawMode: DrawMode.One } as const;
+
+        const first = reduceSession({ session, action });
+        const second = reduceSession({ session: first, action });
+
+        expect([first.dealNumber, second.dealNumber]).toEqual([1, 2]);
     });
 });
 

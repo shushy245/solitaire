@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import { makeDrawMove, MoveKind } from '~/engine/index.ts';
 
@@ -15,6 +15,7 @@ import {
     FACE_DOWN_LABEL,
     isCourtCard,
     isDealing,
+    isSettled,
     isRedSuit,
     pilePlaceholders,
     placeholderSlot,
@@ -22,6 +23,7 @@ import {
     shownCardsFor,
     slotClassNames,
     stockLabelFor,
+    stockSlot,
     suitGlyphMap,
 } from './board.utils.ts';
 
@@ -32,7 +34,7 @@ export const Board = (): JSX.Element => {
     const { game } = session;
     const slots = useMemo(() => layoutCards(game), [game]);
     const order = useMemo(() => dealOrder(slots), [slots]);
-    const dealPhase = useDealAnimation(game.seed);
+    const dealPhase = useDealAnimation(session.dealNumber);
     const { lifted, handleLanded } = useLiftedCards(slots);
     const cards = shownCardsFor({ phase: dealPhase, slots });
 
@@ -54,7 +56,7 @@ export const Board = (): JSX.Element => {
                 className={joinClassNames(
                     styles.slot,
                     styles.stockButton,
-                    ...slotClassNames({ slot: placeholderSlot({ column: 0, row: 0 }), styles }),
+                    ...slotClassNames({ slot: placeholderSlot(stockSlot), styles }),
                 )}
                 data-testid={BoardTestIds.Stock}
                 onClick={handleStockClick}
@@ -81,7 +83,8 @@ export const Board = (): JSX.Element => {
                     key={slot.card.id}
                     slot={slot}
                     shownSlot={shown}
-                    isLifted={lifted.has(slot.card.id)}
+                    isLifted={lifted.has(slot.card.id) || (isDealing(dealPhase) && order.has(slot.card.id))}
+                    isInteractive={isSettled(dealPhase)}
                     delayClassName={
                         isDealing(dealPhase)
                             ? dealDelayClassName({ order: order.get(slot.card.id), styles })
@@ -101,17 +104,27 @@ type CardProps = {
     // … and where it is drawn right now (differs only before the deal).
     shownSlot: CardSlotModel;
     isLifted: boolean;
+    isInteractive: boolean;
     delayClassName: string | undefined;
     onSendToFoundation: (cardId: string) => void;
     onLanded: (cardId: string) => void;
 };
 
-const Card = ({ slot, shownSlot, isLifted, delayClassName, onSendToFoundation, onLanded }: CardProps): JSX.Element => {
+// Memoised: the board re-renders on every clock tick, but a card only when its own props change.
+const Card = memo(function Card({
+    slot,
+    shownSlot,
+    isLifted,
+    isInteractive,
+    delayClassName,
+    onSendToFoundation,
+    onLanded,
+}: CardProps): JSX.Element {
     const { card } = slot;
     const isShownFaceUp = shownSlot.card.faceUp;
 
     const handleDoubleClick = (): void => {
-        onSendToFoundation(card.id);
+        if (isInteractive) onSendToFoundation(card.id);
     };
 
     const handleTransitionEnd = (event: React.TransitionEvent<HTMLDivElement>): void => {
@@ -126,8 +139,9 @@ const Card = ({ slot, shownSlot, isLifted, delayClassName, onSendToFoundation, o
                 styles.card,
                 ...slotClassNames({ slot: shownSlot, styles }),
                 !isShownFaceUp && styles.faceDown,
-                shownSlot.pile === PileKind.Stock && styles.inStock,
+                (shownSlot.pile === PileKind.Stock || !isInteractive) && styles.passive,
                 isLifted && styles.lifted,
+                shownSlot.isBuried && styles.buried,
                 delayClassName,
             )}
             data-testid={BoardTestIds.Card(card.id)}
@@ -144,7 +158,7 @@ const Card = ({ slot, shownSlot, isLifted, delayClassName, onSendToFoundation, o
             </div>
         </div>
     );
-};
+});
 
 const CardFront = ({ card }: { card: CardSlotModel['card'] }): JSX.Element => {
     const rank = rankLabelMap[card.rank];

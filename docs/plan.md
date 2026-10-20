@@ -47,14 +47,17 @@ resume-after-reload.
 
 ## Contracts fixed where slices meet
 ```ts
-// useGame() — finalised at the end of story `board`, consumed unchanged by drag/hud/persistence/celebration
+// useGame() — finalised in story `board` (src/app/game-provider.utils.ts), consumed unchanged by drag/hud/persistence/celebration
 type GameContextValue = {
-    session: SessionModel;                 // game, history, stats, elapsedSeconds, phase
-    dispatchMove: (move: Move) => void;    // illegal moves are ignored (logged), never throw
+    session: SessionModel;                     // game, history, elapsedSeconds, phase (Playing | AutoCompleting)
+    dispatchMove: (move: Move) => void;        // illegal/stale moves are ignored, never thrown
+    sendToFoundation: (cardId: string) => void; // intent, resolved against the current game
     undo: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;
 };
+// <GameProvider createInitialSession={() => SessionModel} seedSource={() => number}> — persistence plugs
+// a restored session into createInitialSession; main.tsx is the composition root.
 ```
 
 ---
