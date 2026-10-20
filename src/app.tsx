@@ -4,9 +4,11 @@ import { AppTestIds } from './app.utils.ts';
 import styles from './app.module.scss';
 
 export const App = (): JSX.Element => (
-    <FullColumn className={styles.app}>
-        <h1 className={styles.title} data-testid={AppTestIds.Title}>
-            {`Solitaire`}
-        </h1>
-    </FullColumn>
+    <main className={styles.app}>
+        <FullColumn>
+            <h1 className={styles.title} data-testid={AppTestIds.Title}>
+                {`Solitaire`}
+            </h1>
+        </FullColumn>
+    </main>
 );

@@ -160,3 +160,28 @@ type GameContextValue = {
   - reduced motion: no cascade, the overlay appears directly
   - concurrency: starting a new game mid-cascade stops the animation loop (no leaked rAF)
   - Cypress: auto-complete a near-won game to the win overlay
+
+---
+
+## Review triage
+
+### `scaffold` (code-review high, 10 findings)
+- Fixed (7): cypress/ + config files now typechecked by the gate; Node types split into
+  `tsconfig.node.json`; vitest merges `vite.config.ts`; null DOM seam wrapped
+  (`src/utils/get-element-by-id.ts`) instead of disabling `no-restricted-syntax` on `main.tsx`;
+  primitives lose the `style` prop, move to `.module.scss`, built by one factory; `packageManager`
+  + `engines` pinned.
+- Dismissed (2): "unused" zod/chance/fast-check and the empty builders barrel — consumed by
+  `engine`/`persistence` immediately; precondition: if a dep is still unused at epic close, remove it.
+- RF-backlog (1): non-TS files (JSON/SCSS/HTML) are not formatted against `.prettierrc`; add a
+  `prettier --check` for them.
+
+### `scaffold` visual review (pass A + B)
+- VISUAL PASS FAILED TO RUN — no claim here is backed by a capture: screenshots timed out at 390/768
+  (background tab never painted); measurement script ran clean at 390/768/1280 (no overflow).
+- Fixed: no `main` landmark (Lighthouse a11y 94) → app root is `<main>`; favicon 404 → `public/favicon.svg`;
+  added meta description.
+- Carry-forward: from `board` on, the visual reviewer is told to bring its tab to the front before capturing.
+
+## RF-backlog
+- Prettier coverage for JSON/SCSS/HTML (from `scaffold` review).

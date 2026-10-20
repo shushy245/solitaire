@@ -28,7 +28,7 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 
 ## What's done
 Full history: `git log`.
-- `scaffold` — tooling, empty app boots.
+- `scaffold` — new contributors get the house rules enforced automatically: lint, typecheck (app, configs, e2e), unit + browser tests and a commit gate all run on an empty app that boots.
 
 ## What's next
 Story `engine` (`docs/plan.md`).
