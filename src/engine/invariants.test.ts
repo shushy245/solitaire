@@ -97,7 +97,10 @@ describe('engine invariants over random games', () => {
 
     it('a move not in the legal list never changes the state', () => {
         const strayMoveArb = fc.oneof(
-            fc.constant<Move>({ kind: MoveKind.Draw }),
+            fc.record({
+                kind: fc.constant(MoveKind.Draw),
+                cardId: fc.constantFrom('hearts-1', 'spades-13', 'clubs-7'),
+            }),
             fc.constant<Move>({ kind: MoveKind.Recycle }),
             fc.record({
                 kind: fc.constant(MoveKind.TableauToTableau),

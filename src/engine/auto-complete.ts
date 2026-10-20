@@ -1,13 +1,10 @@
-import { canStackOnFoundation, isWon, topCard } from './selectors.ts';
 import { CardModel, GameStateModel, MoveKind, MoveOf } from './model.ts';
+import { canStackOnFoundation, hasStock, hasWaste, isAllFaceUp, isLowerRank, isWon, topCard } from './selectors.ts';
 
 // Auto-complete is offered once nothing is hidden and nothing is left to draw: from there every card
 // can be sent up in rank order, so the game is guaranteed to finish.
 export const isAutoCompletable = (state: GameStateModel): boolean =>
-    state.stock.length === 0 &&
-    state.waste.length === 0 &&
-    state.tableau.every((column) => column.every((card) => card.faceUp)) &&
-    !isWon(state);
+    !hasStock(state) && !hasWaste(state) && state.tableau.every(isAllFaceUp) && !isWon(state);
 
 // The foundation a card may go onto: the one building its suit, or the first empty one for an Ace.
 export const findFoundationTarget = ({
@@ -34,7 +31,8 @@ export const nextAutoMove = (state: GameStateModel): MoveOf<MoveKind.TableauToFo
         return card === undefined || to === undefined ? [] : [{ card, from, to }];
     });
     const lowest = candidates.reduce<(typeof candidates)[number] | undefined>(
-        (best, candidate) => (best === undefined || candidate.card.rank < best.card.rank ? candidate : best),
+        (best, candidate) =>
+            best === undefined || isLowerRank({ card: candidate.card, than: best.card }) ? candidate : best,
         undefined,
     );
 

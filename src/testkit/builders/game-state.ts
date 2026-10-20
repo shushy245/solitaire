@@ -1,7 +1,7 @@
 import Chance from 'chance';
 
 import { makeCardId } from '~/engine/deck.ts';
-import { CardModel, DrawMode, GameStateModel, PileModel, Rank, Suit } from '~/engine/model.ts';
+import { CardModel, CARDS_PER_SUIT, DrawMode, GameStateModel, PileModel, Rank, Suit } from '~/engine/model.ts';
 
 const chance = new Chance();
 
@@ -97,7 +97,7 @@ export const aGameState = (): GameStateBuilder => new GameStateBuilder();
 // King of `first`, Queen of `second`, Jack of `first`, … down to the Ace — alternating colours when
 // `first` and `second` differ in colour.
 const descendingRun = ({ first, second }: { first: Suit; second: Suit }): CardModel[] =>
-    Array.from({ length: Rank.King }, (_, i) => {
+    Array.from({ length: CARDS_PER_SUIT }, (_, i) => {
         const suit = i % 2 === 0 ? first : second;
         const rank = Rank.King - i;
 

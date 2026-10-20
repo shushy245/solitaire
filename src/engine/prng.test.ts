@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { nextRandom, randomSequence } from './prng.ts';
+import { randomSequence } from '~/testkit/random-sequence.ts';
+
+import { nextRandom } from './prng.ts';
 
 describe('prng', () => {
     it('yields the same sequence for the same seed', () => {

@@ -1,6 +1,6 @@
 import { replaceAt } from './setters.ts';
 import { canApplyMove } from './rules.ts';
-import { isFaceDown, topCard } from './selectors.ts';
+import { isEmptyPile, isFaceDown, topCard } from './selectors.ts';
 import { clampScore, REVEAL_BONUS, scoreMove } from './scoring.ts';
 import { DrawMode, GameStateModel, MoveKind, MoveOf, PileModel } from './model.ts';
 
@@ -70,7 +70,7 @@ const transitionMap: TransitionMap = {
 const takeFromWaste = (state: GameStateModel): GameStateModel => {
     const waste = state.waste.slice(0, -1);
 
-    return { ...state, waste, wasteFan: waste.length === 0 ? 0 : Math.max(1, state.wasteFan - 1) };
+    return { ...state, waste, wasteFan: isEmptyPile(waste) ? 0 : Math.max(1, state.wasteFan - 1) };
 };
 
 const pileAt = ({ piles, index }: { piles: readonly PileModel[]; index: number }): PileModel => {
@@ -91,12 +91,18 @@ const placeOn = ({
     cards: PileModel;
 }): PileModel[] => replaceAt({ items: piles, index, value: [...pileAt({ piles, index }), ...cards] });
 
-// Any tableau column left with a face-down top card turns it face-up.
-const revealTableauTops = (tableau: readonly PileModel[]): { tableau: PileModel[]; revealed: number } => {
-    const revealed = tableau.filter(hasFaceDownTop).length;
-
-    return { tableau: tableau.map((column) => (hasFaceDownTop(column) ? revealTop(column) : column)), revealed };
+// The tableau column a move lifts cards from — the only column a move can uncover.
+const tableauSourceMap: { [K in MoveKind]: (move: MoveOf<K>) => number | undefined } = {
+    [MoveKind.Draw]: () => undefined,
+    [MoveKind.Recycle]: () => undefined,
+    [MoveKind.WasteToTableau]: () => undefined,
+    [MoveKind.WasteToFoundation]: () => undefined,
+    [MoveKind.TableauToTableau]: (move) => move.from,
+    [MoveKind.TableauToFoundation]: (move) => move.from,
+    [MoveKind.FoundationToTableau]: () => undefined,
 };
+
+const tableauSourceOf = <K extends MoveKind>(move: MoveOf<K>): number | undefined => tableauSourceMap[move.kind](move);
 
 const hasFaceDownTop = (column: PileModel): boolean => {
     const top = topCard(column);
@@ -106,6 +112,21 @@ const hasFaceDownTop = (column: PileModel): boolean => {
 
 const revealTop = (column: PileModel): PileModel =>
     column.map((card, i) => (i === column.length - 1 ? { ...card, faceUp: true } : card));
+
+// Turns the uncovered card of the source column face-up; reports whether it did.
+const revealSource = ({
+    tableau,
+    source,
+}: {
+    tableau: readonly PileModel[];
+    source: number | undefined;
+}): { tableau: readonly PileModel[]; revealed: boolean } => {
+    const column = source === undefined ? undefined : tableau[source];
+
+    if (source === undefined || column === undefined || !hasFaceDownTop(column)) return { tableau, revealed: false };
+
+    return { tableau: replaceAt({ items: tableau, index: source, value: revealTop(column) }), revealed: true };
+};
 
 // Applies a legal move and returns the next state; an illegal move returns the same state object.
 export const applyMove = <K extends MoveKind>({
@@ -118,12 +139,12 @@ export const applyMove = <K extends MoveKind>({
     if (!canApplyMove({ state, move })) return state;
 
     const moved = transitionMap[move.kind]({ state, move });
-    const { tableau, revealed } = revealTableauTops(moved.tableau);
+    const { tableau, revealed } = revealSource({ tableau: moved.tableau, source: tableauSourceOf(move) });
 
     return {
         ...moved,
         tableau,
-        score: clampScore(state.score + scoreMove({ state, move }) + revealed * REVEAL_BONUS),
+        score: clampScore(state.score + scoreMove({ state, move }) + (revealed ? REVEAL_BONUS : 0)),
         moves: state.moves + 1,
     };
 };

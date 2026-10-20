@@ -11,7 +11,14 @@ export const createDeck = (): CardModel[] =>
     );
 
 // Fisher–Yates driven by the seeded PRNG. Swaps happen on a local copy; the input is never touched.
-export const shuffle = <T>({ items, seed }: { items: readonly T[]; seed: number }): T[] => {
+// T excludes undefined so a missing element can only mean an out-of-range index.
+export const shuffle = <T extends NonNullable<unknown>>({
+    items,
+    seed,
+}: {
+    items: readonly T[];
+    seed: number;
+}): T[] => {
     const result = [...items];
     const swapIndices = Array.from({ length: Math.max(result.length - 1, 0) }, (_, k) => result.length - 1 - k);
 

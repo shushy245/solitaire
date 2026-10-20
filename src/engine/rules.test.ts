@@ -2,14 +2,29 @@ import { describe, expect, it } from 'vitest';
 
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
 
-import { listLegalMoves } from './rules.ts';
 import { MoveKind, Rank, Suit } from './model.ts';
+import { listLegalMoves, makeDrawMove } from './rules.ts';
+
+describe('makeDrawMove', () => {
+    it('names the top stock card, or offers nothing for an empty stock', () => {
+        const top = aCard().asFaceDown().build();
+
+        expect(makeDrawMove(aGameState().withStock([aCard().asFaceDown().build(), top]).build())).toEqual({
+            kind: MoveKind.Draw,
+            cardId: top.id,
+        });
+        expect(makeDrawMove(aGameState().build())).toBeUndefined();
+    });
+});
 
 describe('listLegalMoves', () => {
     it('lists draw while the stock has cards and recycle once only the waste does', () => {
         const card = aCard().asFaceDown().build();
 
-        expect(listLegalMoves(aGameState().withStock([card]).build())).toContainEqual({ kind: MoveKind.Draw });
+        expect(listLegalMoves(aGameState().withStock([card]).build())).toContainEqual({
+            kind: MoveKind.Draw,
+            cardId: card.id,
+        });
         expect(
             listLegalMoves(
                 aGameState()

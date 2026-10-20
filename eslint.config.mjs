@@ -18,9 +18,20 @@ export default [
         rules: {
             'no-restricted-imports': [
                 'error',
-                { patterns: [{ group: ['react', 'react-*', '~/app/*', '../app/*', '../../app/*'], message: 'src/engine is pure — no React or app-shell imports.' }] },
+                {
+                    patterns: [
+                        {
+                            group: ['react', 'react-*', '~/*', '../*', '!~/engine/*'],
+                            message: 'src/engine is pure — it imports only its own modules (./) and pure libraries.',
+                        },
+                    ],
+                },
             ],
-            'no-restricted-globals': ['error', 'window', 'document', 'crypto', 'localStorage', 'Date', 'performance'],
+            'no-restricted-globals': [
+                'error',
+                ...['window', 'document', 'navigator', 'globalThis', 'self', 'crypto', 'localStorage', 'sessionStorage'],
+                ...['Date', 'performance', 'setTimeout', 'setInterval', 'requestAnimationFrame', 'fetch'],
+            ],
             'no-restricted-properties': ['error', { object: 'Math', property: 'random', message: 'src/engine is deterministic — take a seed.' }],
         },
     },

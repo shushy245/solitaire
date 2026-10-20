@@ -1,4 +1,4 @@
-import { CardModel, GameStateModel, PileModel, Rank, Suit, SuitColor } from './model.ts';
+import { CardModel, CARDS_PER_SUIT, GameStateModel, PileModel, Rank, Suit, SuitColor } from './model.ts';
 
 const suitColorMap: Record<Suit, SuitColor> = {
     [Suit.Clubs]: SuitColor.Black,
@@ -56,4 +56,16 @@ export const isMovableRun = (run: PileModel): boolean =>
         );
     });
 
-export const isWon = (state: GameStateModel): boolean => state.foundations.every((pile) => pile.length === Rank.King);
+const isCompleteFoundation = (pile: PileModel): boolean => pile.length === CARDS_PER_SUIT;
+
+export const isWon = (state: GameStateModel): boolean => state.foundations.every(isCompleteFoundation);
+
+export const hasStock = (state: GameStateModel): boolean => !isEmptyPile(state.stock);
+
+export const hasWaste = (state: GameStateModel): boolean => !isEmptyPile(state.waste);
+
+export const canRecycle = (state: GameStateModel): boolean => !hasStock(state) && hasWaste(state);
+
+export const isAllFaceUp = (pile: PileModel): boolean => pile.every((card) => card.faceUp);
+
+export const isLowerRank = ({ card, than }: { card: CardModel; than: CardModel }): boolean => card.rank < than.rank;

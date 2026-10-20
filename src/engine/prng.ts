@@ -7,13 +7,3 @@ export const nextRandom = (seed: number): { value: number; seed: number } => {
 
     return { value: ((remixed ^ (remixed >>> 14)) >>> 0) / 0x100000000, seed: next };
 };
-
-export const randomSequence = ({ seed, length }: { seed: number; length: number }): number[] =>
-    Array.from({ length }).reduce<{ values: number[]; seed: number }>(
-        (acc) => {
-            const { value, seed: next } = nextRandom(acc.seed);
-
-            return { values: [...acc.values, value], seed: next };
-        },
-        { values: [], seed },
-    ).values;

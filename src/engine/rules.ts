@@ -1,11 +1,11 @@
 import { CardModel, GameStateModel, Move, MoveKind, MoveOf, PileModel } from './model.ts';
-import { canStackOnFoundation, canStackOnTableau, isMovableRun, isTopCard, topCard } from './selectors.ts';
+import { canRecycle, canStackOnFoundation, canStackOnTableau, isMovableRun, isTopCard, topCard } from './selectors.ts';
 
 type RuleMap = { [K in MoveKind]: (args: { state: GameStateModel; move: MoveOf<K> }) => boolean };
 
 const ruleMap: RuleMap = {
-    [MoveKind.Draw]: ({ state }) => state.stock.length > 0,
-    [MoveKind.Recycle]: ({ state }) => state.stock.length === 0 && state.waste.length > 0,
+    [MoveKind.Draw]: ({ state, move }) => isTopCard({ pile: state.stock, cardId: move.cardId }),
+    [MoveKind.Recycle]: ({ state }) => canRecycle(state),
     [MoveKind.WasteToTableau]: ({ state, move }) =>
         canMoveTopCard({
             source: state.waste,
@@ -38,7 +38,7 @@ const ruleMap: RuleMap = {
         const source = state.tableau[move.from];
         const target = state.tableau[move.to];
 
-        if (source === undefined || target === undefined || move.from === move.to) return false;
+        if (source === undefined || target === undefined || isSamePile(move)) return false;
 
         const run = source.slice(source.findIndex((card) => card.id === move.cardId));
         const head = run[0];
@@ -48,6 +48,8 @@ const ruleMap: RuleMap = {
         return isMovableRun(run) && canStackOnTableau({ card: head, pile: target });
     },
 };
+
+const isSamePile = ({ from, to }: { from: number; to: number }): boolean => from === to;
 
 const canMoveTopCard = ({
     source,
@@ -77,7 +79,9 @@ export const canApplyMove = <K extends MoveKind>({
 
 const indices = (count: number): number[] => Array.from({ length: count }, (_, i) => i);
 
-// Every move that canApplyMove accepts from this state — the source of truth for "what can I do?".
+// Every move that canApplyMove accepts from this state. Exactly the legal set — it includes legal no-op
+// moves (a King-based column to another empty column); a hint or "no moves left" feature must filter
+// those out first (review finding, engine story).
 export const listLegalMoves = (state: GameStateModel): Move[] => {
     const tableauIndices = indices(state.tableau.length);
     const foundationIndices = indices(state.foundations.length);
@@ -94,9 +98,11 @@ export const listLegalMoves = (state: GameStateModel): Move[] => {
               ];
 
     const fromTableau: Move[] = state.tableau.flatMap((column, from) => [
-        ...column.flatMap((card) =>
-            tableauIndices.map((to) => ({ kind: MoveKind.TableauToTableau, cardId: card.id, from, to }) as const),
-        ),
+        ...column
+            .filter((card) => card.faceUp)
+            .flatMap((card) =>
+                tableauIndices.map((to) => ({ kind: MoveKind.TableauToTableau, cardId: card.id, from, to }) as const),
+            ),
         ...topCards(column).flatMap((card) =>
             foundationIndices.map((to) => ({ kind: MoveKind.TableauToFoundation, cardId: card.id, from, to }) as const),
         ),
@@ -108,8 +114,11 @@ export const listLegalMoves = (state: GameStateModel): Move[] => {
         ),
     );
 
+    const draw = makeDrawMove(state);
+    const fromStock: Move[] = draw === undefined ? [] : [draw];
+
     const candidates: Move[] = [
-        { kind: MoveKind.Draw },
+        ...fromStock,
         { kind: MoveKind.Recycle },
         ...fromWaste,
         ...fromTableau,
@@ -123,4 +132,11 @@ const topCards = (pile: PileModel): CardModel[] => {
     const top = topCard(pile);
 
     return top === undefined ? [] : [top];
+};
+
+// The draw for this state, naming the stock's top card; nothing to draw from an empty stock.
+export const makeDrawMove = (state: GameStateModel): MoveOf<MoveKind.Draw> | undefined => {
+    const top = topCard(state.stock);
+
+    return top === undefined ? undefined : { kind: MoveKind.Draw, cardId: top.id };
 };

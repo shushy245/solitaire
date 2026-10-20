@@ -4,11 +4,14 @@ import { at } from '~/testkit/at.ts';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
 
 import { applyMove } from './apply.ts';
-import { DrawMode, MoveKind, Rank, Suit } from './model.ts';
+import { makeDrawMove } from './rules.ts';
+import { DrawMode, GameStateModel, MoveKind, Rank, Suit } from './model.ts';
 
 const stockOf = (ranks: readonly Rank[]) =>
     ranks.map((rank) => aCard().withSuit(Suit.Clubs).withRank(rank).asFaceDown().build());
 const wasteOf = (ranks: readonly Rank[]) => ranks.map((rank) => aCard().withSuit(Suit.Hearts).withRank(rank).build());
+// The draw for a state; an empty stock gets a draw naming no real card, which must be rejected.
+const drawFrom = (state: GameStateModel) => makeDrawMove(state) ?? { kind: MoveKind.Draw, cardId: 'empty-stock' };
 const idsOf = (cards: readonly { id: string }[]) => cards.map((c) => c.id);
 
 describe('applyMove — draw', () => {
@@ -17,7 +20,7 @@ describe('applyMove — draw', () => {
             .withStock(stockOf([Rank.Two, Rank.Three]))
             .build();
 
-        const next = applyMove({ state, move: { kind: MoveKind.Draw } });
+        const next = applyMove({ state, move: drawFrom(state) });
 
         expect(idsOf(next.stock)).toEqual(idsOf(state.stock.slice(0, 1)));
         expect(idsOf(next.waste)).toEqual([at(state.stock, 1).id]);
@@ -31,7 +34,7 @@ describe('applyMove — draw', () => {
             .withStock(stockOf([Rank.Two, Rank.Three, Rank.Four, Rank.Five]))
             .build();
 
-        const next = applyMove({ state, move: { kind: MoveKind.Draw } });
+        const next = applyMove({ state, move: drawFrom(state) });
 
         // stock top is the last element: Five, then Four, then Three are drawn — Three ends on top
         expect(next.waste.map((c) => c.rank)).toEqual([Rank.Five, Rank.Four, Rank.Three]);
@@ -45,7 +48,7 @@ describe('applyMove — draw', () => {
             .withStock(stockOf([Rank.Two, Rank.Three]))
             .build();
 
-        const next = applyMove({ state, move: { kind: MoveKind.Draw } });
+        const next = applyMove({ state, move: drawFrom(state) });
 
         expect(next.waste.map((c) => c.rank)).toEqual([Rank.Three, Rank.Two]);
         expect(next.stock).toEqual([]);
@@ -57,7 +60,18 @@ describe('applyMove — draw', () => {
             .withWaste(wasteOf([Rank.Two]))
             .build();
 
-        expect(applyMove({ state, move: { kind: MoveKind.Draw } })).toBe(state);
+        expect(applyMove({ state, move: drawFrom(state) })).toBe(state);
+    });
+
+    it('draws once when the same draw is fired twice (double-click on the stock)', () => {
+        const state = aGameState()
+            .withStock(stockOf([Rank.Two, Rank.Three, Rank.Four]))
+            .build();
+        const move = drawFrom(state);
+
+        const once = applyMove({ state, move });
+
+        expect(applyMove({ state: once, move })).toBe(once);
     });
 
     it('counts the draw as a move', () => {
@@ -65,7 +79,7 @@ describe('applyMove — draw', () => {
             .withStock(stockOf([Rank.Two]))
             .build();
 
-        expect(applyMove({ state, move: { kind: MoveKind.Draw } }).moves).toBe(1);
+        expect(applyMove({ state, move: drawFrom(state) }).moves).toBe(1);
     });
 });
 
@@ -74,7 +88,7 @@ describe('applyMove — recycle', () => {
         const original = aGameState()
             .withStock(stockOf([Rank.Two, Rank.Three, Rank.Four]))
             .build();
-        const drawnThrice = [1, 2, 3].reduce((s) => applyMove({ state: s, move: { kind: MoveKind.Draw } }), original);
+        const drawnThrice = [1, 2, 3].reduce((s) => applyMove({ state: s, move: drawFrom(s) }), original);
 
         const recycled = applyMove({ state: drawnThrice, move: { kind: MoveKind.Recycle } });
 
@@ -265,6 +279,19 @@ describe('applyMove — tableau', () => {
         expect(next.score).toBe(5);
     });
 
+    it('reveals and scores only the column the move uncovered', () => {
+        const hidden = card({ rank: Rank.Two, suit: Suit.Clubs, faceUp: false });
+        const state = aGameState()
+            .withColumn({ index: 3, cards: [hidden] })
+            .withStock(stockOf([Rank.Five]))
+            .build();
+
+        const next = applyMove({ state, move: drawFrom(state) });
+
+        expect(at(at(next.tableau, 3), 0).faceUp).toBe(false);
+        expect(next.score).toBe(0);
+    });
+
     it('scores 5 for waste to tableau', () => {
         const state = aGameState()
             .withWaste([blackNine])
@@ -406,6 +433,6 @@ describe('applyMove — stale moves', () => {
         const next = applyMove({ state, move: { kind: MoveKind.WasteToFoundation, cardId: aceOfSpades.id, to: 0 } });
 
         expect(next.moves).toBe(1);
-        expect(applyMove({ state: next, move: { kind: MoveKind.Draw } }).moves).toBe(1);
+        expect(applyMove({ state: next, move: drawFrom(next) }).moves).toBe(1);
     });
 });

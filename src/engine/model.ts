@@ -65,10 +65,12 @@ export enum MoveKind {
     FoundationToTableau = 'foundation-to-tableau',
 }
 
-// Every card-moving move names the card it moves, so a stale move (computed against an older state,
-// e.g. a double-fired click) is rejected instead of moving whatever now sits in that position.
+// Every card-moving move names the card it moves (a draw names the stock's top card), so a stale move
+// computed against an older state — e.g. a double-fired click — is rejected instead of moving whatever
+// now sits in that position. Recycle needs no name: it is only legal with an empty stock, which a
+// recycle refills, so a repeated recycle is rejected by its own rule.
 type MovePayloadMap = {
-    [MoveKind.Draw]: object;
+    [MoveKind.Draw]: { readonly cardId: string };
     [MoveKind.Recycle]: object;
     [MoveKind.WasteToTableau]: { readonly cardId: string; readonly to: number };
     [MoveKind.WasteToFoundation]: { readonly cardId: string; readonly to: number };
@@ -82,4 +84,5 @@ export type MoveOf<K extends MoveKind> = { [P in K]: { readonly kind: P } & Move
 export type Move = MoveOf<MoveKind>;
 
 export const FOUNDATION_COUNT = 4;
+export const CARDS_PER_SUIT = 13;
 export const TABLEAU_COUNT = 7;
