@@ -134,4 +134,18 @@ describe('dragging cards', () => {
 
         driver.assert.pointerListenersDetached();
     });
+
+    it('lets go of the cards when the game changes under them mid-drag (e.g. Ctrl+Z)', async () => {
+        driver.given.stock([redTen]);
+        await driver.when.created();
+        driver.when.dealt();
+        await driver.click.stock();
+
+        driver.pointer.press(redTen);
+        driver.pointer.moveBy({ dx: 30, dy: 40 });
+        driver.when.undoneElsewhere();
+
+        driver.assert.dragging({ card: redTen, isDragging: false });
+        driver.assert.cardIn({ card: redTen, pile: PileKind.Stock, pileIndex: 0 });
+    });
 });

@@ -104,14 +104,12 @@ const clearDragOffset = (elements: readonly HTMLElement[]): void => {
 // Released cards are handed to onRelease so the board keeps them lifted until they land.
 export const useCardDrag = ({
     game,
-    dealNumber,
     isEnabled,
     dispatchMove,
     onRelease,
     boardRef,
 }: {
     game: GameStateModel;
-    dealNumber: number;
     isEnabled: boolean;
     dispatchMove: (move: Move) => void;
     onRelease: (cardIds: readonly string[]) => void;
@@ -238,8 +236,9 @@ export const useCardDrag = ({
         [isEnabled, handleMove, handleUp, handleCancel],
     );
 
-    // A new deal or unmount mid-drag ends the drag and drops the window listeners. Read through a ref so
-    // a new endDrag identity never cancels a live drag on its own.
+    // Any change to the game mid-drag (undo, a new deal) or unmount ends the drag and drops the window
+    // listeners: the picked-up cards may no longer be where the drag found them. Read through a ref so a
+    // new endDrag identity never cancels a live drag on its own.
     const latestEndDrag = useRef(endDrag);
 
     useLayoutEffect(() => {
@@ -250,7 +249,7 @@ export const useCardDrag = ({
         () => () => {
             if (active.current !== undefined) latestEndDrag.current();
         },
-        [dealNumber],
+        [game],
     );
 
     return { draggingIds, handleCardPointerDown };

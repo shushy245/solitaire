@@ -41,7 +41,6 @@ export const Board = (): JSX.Element => {
     const boardElement = useRef<HTMLElement | undefined>(undefined);
     const { draggingIds, handleCardPointerDown } = useCardDrag({
         game,
-        dealNumber: session.dealNumber,
         isEnabled: isSettled(dealPhase),
         dispatchMove,
         onRelease: liftUntilLanded,

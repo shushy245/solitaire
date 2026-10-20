@@ -8,7 +8,8 @@ import { CardModel, DrawMode, GameStateModel, Rank, Suit, topCard } from '~/engi
 import { Board } from './board.tsx';
 import { PileKind } from './layout.utils.ts';
 import { BoardTestIds } from './board.test-ids.ts';
-import { GameProvider } from '../game-provider.tsx';
+import { GameProvider, useGame } from '../game-provider.tsx';
+import { GameContextValue } from '../game-provider.utils.ts';
 import { makeSession, SessionModel } from '../session/session.utils.ts';
 import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 
@@ -21,8 +22,9 @@ export type BoardDriver = {
         column: (args: { index: number; cards: readonly CardScenario[] }) => void;
         waste: (cards: readonly CardName[]) => void;
         emptyStockWithWaste: () => void;
+        stock: (cards: readonly CardName[]) => void;
     };
-    when: { created: () => Promise<void>; dealt: () => void; unmounted: () => void };
+    when: { created: () => Promise<void>; dealt: () => void; unmounted: () => void; undoneElsewhere: () => void };
     pointer: {
         press: (card: CardName) => void;
         moveBy: (args: { dx: number; dy: number }) => void;
@@ -75,6 +77,7 @@ export const makeBoardDriver = (): BoardDriver => {
     };
 
     const rendered: { unmount: () => void } = { unmount: () => undefined };
+    const outside: { game: GameContextValue | undefined } = { game: undefined };
     const pointer = { x: 100, y: 100 };
     const listenerSpies = {
         add: vi.spyOn(window, 'addEventListener'),
@@ -82,6 +85,13 @@ export const makeBoardDriver = (): BoardDriver => {
     };
     const pointerListenerCount = (spy: typeof listenerSpies.add): number =>
         spy.mock.calls.filter(([type]) => pointerEvents.has(type)).length;
+
+    // Stands in for another part of the app (e.g. the HUD's undo shortcut) acting on the game.
+    const ElsewhereInTheApp = (): undefined => {
+        outside.game = useGame();
+
+        return undefined;
+    };
 
     const cardElement = ({ rank, suit }: CardName): HTMLElement =>
         screen.getByTestId(BoardTestIds.Card(buildCard({ rank, suit }).id));
@@ -119,6 +129,11 @@ export const makeBoardDriver = (): BoardDriver => {
                     .withStock([])
                     .withWaste([buildCard({ rank: Rank.Five, suit: Suit.Clubs })]);
             },
+            stock: (cards) => {
+                scenario.builder = scenario.builder.withStock(
+                    cards.map((card) => buildCard({ ...card, faceUp: false })),
+                );
+            },
         },
         when: {
             created: async () => {
@@ -127,6 +142,7 @@ export const makeBoardDriver = (): BoardDriver => {
                 rendered.unmount = render(
                     <GameProvider createInitialSession={initialSession} seedSource={fixedSeed} now={fakeNow}>
                         <Board />
+                        <ElsewhereInTheApp />
                     </GameProvider>,
                 ).unmount;
             },
@@ -136,6 +152,15 @@ export const makeBoardDriver = (): BoardDriver => {
             },
             unmounted: () => {
                 rendered.unmount();
+            },
+            undoneElsewhere: () => {
+                const game = outside.game;
+
+                if (game === undefined) throw new Error('board driver: undoneElsewhere needs when.created first');
+
+                act(() => {
+                    game.undo();
+                });
             },
         },
         pointer: {
