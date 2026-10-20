@@ -1,7 +1,13 @@
 import Chance from 'chance';
 
-import { DrawMode, GameStateModel } from '~/engine/index.ts';
-import { makeSession, SessionModel, SessionPhase } from '~/app/session/session.utils.ts';
+import { dealGame, DrawMode, GameStateModel, makeDrawMove } from '~/engine/index.ts';
+import {
+    makeSession,
+    reduceSession,
+    SessionActionKind,
+    SessionModel,
+    SessionPhase,
+} from '~/app/session/session.utils.ts';
 
 import { aGameState } from './game-state.ts';
 
@@ -15,6 +21,31 @@ class SessionBuilder {
 
     withGame(game: GameStateModel): this {
         this.state = { ...this.state, game };
+
+        return this;
+    }
+
+    withDeal({ seed, drawMode }: { seed: number; drawMode: DrawMode }): this {
+        this.state = { ...this.state, game: dealGame({ seed, drawMode }) };
+
+        return this;
+    }
+
+    withDealNumber(dealNumber: number): this {
+        this.state = { ...this.state, dealNumber };
+
+        return this;
+    }
+
+    // Really plays `draws` draws through the session reducer, so history and the record are what play produces.
+    afterDraws(draws: number): this {
+        this.state = Array.from({ length: draws }).reduce<SessionModel>((session) => {
+            const move = makeDrawMove(session.game);
+
+            if (move === undefined) throw new Error(`aSession.afterDraws: stock ran out before ${draws} draws`);
+
+            return reduceSession({ session, action: { kind: SessionActionKind.Move, move } });
+        }, this.state);
 
         return this;
     }

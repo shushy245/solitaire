@@ -1,0 +1,147 @@
+import { z } from 'zod';
+import { describe, expect, it } from 'vitest';
+
+import { dealGame, DrawMode } from '~/engine/index.ts';
+import { aSession } from '~/testkit/builders/index.ts';
+
+import { emptyStats, recordPlayed, recordWin } from '../stats/stats.utils.ts';
+import { DealProgress, makeSession, SessionModel } from '../session/session.utils.ts';
+import {
+    chooseInitialSession,
+    parseSavedGame,
+    parseSavedStats,
+    SavedKind,
+    serializeGame,
+    serializeStats,
+} from './persistence.utils.ts';
+
+const playedSession = (): SessionModel =>
+    aSession()
+        .withDeal({ seed: 4242, drawMode: DrawMode.Three })
+        .afterDraws(3)
+        .withElapsedMs(83_250)
+        .withDealNumber(3)
+        .build();
+
+const savedGameWith = (change: (saved: Record<string, unknown>) => Record<string, unknown>): string => {
+    const saved = z.record(z.string(), z.unknown()).parse(JSON.parse(serializeGame(playedSession())));
+
+    return JSON.stringify(change(saved));
+};
+
+const reasonOf = (raw: string): string => {
+    const result = parseSavedGame(raw);
+
+    if (result.kind !== SavedKind.Corrupt) throw new Error(`persistence test: expected corrupt, got ${result.kind}`);
+
+    return result.reason;
+};
+
+describe('saved game', () => {
+    it('restores the game, its undo history, the time played, the draw mode and the deal count', () => {
+        const session = playedSession();
+
+        expect(parseSavedGame(serializeGame(session))).toEqual({
+            kind: SavedKind.Found,
+            value: {
+                game: session.game,
+                history: session.history,
+                elapsedMs: 83_250,
+                dealNumber: 3,
+                progress: DealProgress.Started,
+            },
+        });
+    });
+
+    it('is missing when nothing was saved', () => {
+        expect(parseSavedGame(undefined)).toEqual({ kind: SavedKind.Missing });
+    });
+
+    it('is corrupt when it is not JSON', () => {
+        expect(reasonOf('{"version":1,')).toMatch(/JSON/);
+    });
+
+    it('is corrupt when a field is missing or has the wrong type', () => {
+        expect(reasonOf(savedGameWith(({ elapsedMs: _, ...rest }) => rest))).toMatch(/elapsedMs/);
+        expect(reasonOf(savedGameWith((saved) => ({ ...saved, dealNumber: 'three' })))).toMatch(/dealNumber/);
+    });
+
+    it('is corrupt when it was saved by another version', () => {
+        expect(reasonOf(savedGameWith((saved) => ({ ...saved, version: 0 })))).toMatch(/version/);
+    });
+
+    it('is corrupt when a game does not hold the 52 cards exactly once', () => {
+        const deal = dealGame({ seed: 1, drawMode: DrawMode.One });
+        const [, ...rest] = deal.stock;
+        const duplicated = { ...deal, stock: [...rest, ...rest.slice(0, 1)] };
+        const missingOne = { ...deal, stock: rest };
+        const withGame = (game: typeof deal) =>
+            serializeGame({ ...makeSession({ seed: 1, drawMode: DrawMode.One }), game });
+
+        expect(reasonOf(withGame(duplicated))).toMatch(/52 cards/);
+        expect(reasonOf(withGame(missingOne))).toMatch(/52 cards/);
+    });
+
+    it('is corrupt when a card is not a real card', () => {
+        const raw = serializeGame(playedSession()).replace('"spades-13:', '"spades-14:');
+
+        expect(parseSavedGame(raw).kind).toBe(SavedKind.Corrupt);
+    });
+});
+
+describe('saved stats', () => {
+    it('restores played, won and both bests', () => {
+        const stats = recordWin({ stats: recordPlayed(recordPlayed(emptyStats)), timeMs: 61_000, score: 512 });
+
+        expect(parseSavedStats(serializeStats(stats))).toEqual({ kind: SavedKind.Found, value: stats });
+    });
+
+    it('restores a record with no win yet', () => {
+        expect(parseSavedStats(serializeStats(recordPlayed(emptyStats)))).toEqual({
+            kind: SavedKind.Found,
+            value: recordPlayed(emptyStats),
+        });
+    });
+
+    it('is corrupt when it claims more wins than games played', () => {
+        const raw = serializeStats(recordWin({ stats: emptyStats, timeMs: 1, score: 1 }));
+
+        expect(parseSavedStats(raw).kind).toBe(SavedKind.Corrupt);
+    });
+
+    it('is missing when nothing was saved', () => {
+        expect(parseSavedStats(undefined)).toEqual({ kind: SavedKind.Missing });
+    });
+});
+
+describe('chooseInitialSession', () => {
+    const stats = recordPlayed(emptyStats);
+    const freshSeed = (): number => 99;
+
+    it('resumes the saved game with the saved record', () => {
+        const session = playedSession();
+        const saved = { ...session, progress: DealProgress.Started };
+
+        const initial = chooseInitialSession({ savedGame: saved, stats, seedParam: undefined, freshSeed });
+
+        expect(initial.game).toEqual(session.game);
+        expect(initial.history).toEqual(session.history);
+        expect(initial.elapsedMs).toBe(83_250);
+        expect(initial.stats).toEqual(stats);
+    });
+
+    it('deals a fresh random game with the saved record when there is no saved game', () => {
+        const initial = chooseInitialSession({ savedGame: undefined, stats, seedParam: undefined, freshSeed });
+
+        expect(initial.game).toEqual(dealGame({ seed: 99, drawMode: DrawMode.One }));
+        expect(initial.stats).toEqual(stats);
+    });
+
+    it('deals the requested seed instead of resuming when the page asks for one, keeping the record', () => {
+        const initial = chooseInitialSession({ savedGame: playedSession(), stats, seedParam: 7, freshSeed });
+
+        expect(initial.game).toEqual(dealGame({ seed: 7, drawMode: DrawMode.One }));
+        expect(initial.history).toEqual([]);
+        expect(initial.stats).toEqual(stats);
+    });
+});
