@@ -7,6 +7,7 @@ describe('winning in a real browser', () => {
         celebrationDriver.when.autoCompleted();
 
         celebrationDriver.assert.winShown();
+        celebrationDriver.assert.cascadePainted();
 
         celebrationDriver.when.newGameChosen();
 
