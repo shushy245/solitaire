@@ -123,7 +123,7 @@ type GameContextValue = {
   - pre-mortem: the deal starts with every card stacked on the stock, then moves to the dealt layout
   - pre-mortem: the seed comes from an injected source (composition root), so tests deal deterministic games
 
-### Story `drag` — drag single cards and runs, snap back on illegal drop
+### Story `drag` — drag single cards and runs, snap back on illegal drop ✅
 - Owns: `src/app/drag/`
 - Depends on: board
 - Parallel: safe with hud, persistence, celebration
@@ -195,6 +195,7 @@ type GameContextValue = {
   - reduced motion does not mute sound (they are independent preferences)
   - Cypress: actions in a real browser schedule the expected sounds (audio port faked in-page), and mute silences them
   - manual: listen in Chrome and Safari — every action audible, nothing clipped or too loud
+  - the background has no visible edge or banding (two visual passes saw a faint shape low on the page — likely the radial gradient's ellipse edge)
 
 ---
 
@@ -245,6 +246,27 @@ type GameContextValue = {
 - Observation kept: lots of empty felt below the tableau on phones — expected; the HUD story adds controls.
 - Pass A re-run on the fixed code: clean at 390/768/1280. Its note on small phone indices → fixed
   (13px/11px floors, rank beside suit, measured to fit the 16px covered strip at 390).
+
+### `drag` (code-review high, 10 findings; visual pass A+B)
+- Found by the Cypress drag spec before review (fixed): the drop box was measured mid-transition at
+  release → pick-up box + pointer travel; StrictMode double-ran the session initialiser and lost the
+  `?seed=` deal → the composition root decides the first seed once.
+- Fixed — correctness (4): a drop mostly over the source pile jumped to a grazed neighbour → best
+  overlap first, source means no-op; released cards could stay lifted / lose their lift to a stray
+  click → one lift set (`liftUntilLanded`) with replace-on-layout-change; a lost pointerup left cards
+  following the mouse → a move with `buttons === 0` ends the drag.
+- Fixed — robustness (2): DOM pile attributes and `?seed=` parsed with strict Zod (`Number(null) === 0`,
+  hex/exponent/whitespace seeds).
+- Fixed — efficiency/structure (4): dragged elements resolved once; `measurePiles` builds one Map;
+  second lift mechanism removed; pointer checks named (`isSamePointer`, `isReleaseLost`, `isPrimaryButton`).
+- Visual pass A re-run after fixes: measurements clean at 390/768/1280; its captures were mid-deal, so
+  settled 390/768 rest on the earlier A+B pass (delta since: one colour token, measured 4.17:1).
+- Visual pass A+B: clean at 390/768/1280, Lighthouse a11y 100. Fixed: empty stock outline ~2:1 →
+  `--control-line`, measured 4.17:1. Deferred (out of v1 scope, logged below): keyboard play.
+
+## Deferred (not in v1 scope)
+- Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
+  focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
 
 ## RF-backlog
 - Prettier coverage for JSON/SCSS/HTML (from `scaffold` review).

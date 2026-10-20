@@ -1,5 +1,11 @@
 # Changelog
 
+## drag — 2026-10-20
+- **Pain:** cards could only move by double-clicking them home; building columns, the heart of the game, was impossible.
+- **Fix:** pick up any face-up card (with everything on top of it) and drop it where it belongs; an illegal or abandoned drop glides back.
+- **Trade-off:** a drop mostly back over its own column always counts as a change of mind, even if it grazes a legal neighbour.
+- **Result:** 145 tests plus a real-browser drag test pass; that test and the review together caught 6 real bugs (fixed), including drops that missed and a replayed deal that dealt the wrong game.
+
 ## board — 2026-10-20
 - **Pain:** the rules existed only as logic — there was nothing to see or play.
 - **Fix:** a card table where every card glides to its new place, turns over in 3D, deals out from the deck one by one, and plays by clicking the deck or double-clicking a card to send it home.

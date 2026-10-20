@@ -27,13 +27,16 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 ## Landmines — read before touching the named areas
 - **Fake timers + user-event hang:** RTL's async wrapper awaits a real `setTimeout` that Vitest's fake clock never runs. Board tests fire events with `fireEvent` (see `board.driver.tsx`).
 - **Commit gate runs before the command:** a fix and its `git commit` in one Bash call commits the *old* state's test result — run the fix, then commit in a separate call.
+- **Synthetic pointer events must carry `buttons: 1` while pressed** — a move with `buttons === 0` ends a drag (lost-release guard).
+- **Never draw a seed inside a React initialiser** — StrictMode runs it twice; `main.tsx` decides the first seed.
 - **Table sizes live in `src/styles/table-metrics.module.scss`** (`.metrics` on the column inside the `container-type` `main`); `board.module.scss` only consumes the vars. Spacing ratios are mirrored in `layout.utils.ts`.
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `drag` — drag a card or run onto any legal pile; illegal drops glide back. `src/app/drag/` (pure rules in `drag.utils.ts`, pointer hook `use-card-drag.ts`); `?seed=N` replays a deal.
 - `board` — a playable, fully animated table (glide, flip, staggered deal, lift-in-flight), click the deck / double-click to send home. `src/app/board/` (layout slots → CSS classes → one transform), session reducer `src/app/session/`, `GameProvider`/`useGame` contract in `docs/plan.md`.
 - `engine` — every Klondike rule as pure, seed-deterministic logic, proven against hundreds of random games; a double-fired click can never move the wrong card. `src/engine/` (barrel `index.ts`), property tests in `invariants.test.ts`.
 - `scaffold` — new contributors get the house rules enforced automatically: lint, typecheck (app, configs, e2e), unit + browser tests and a commit gate all run on an empty app that boots.
 
 ## What's next
-Story `drag` (`docs/plan.md`).
+Story `hud` (`docs/plan.md`).
