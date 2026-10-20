@@ -87,6 +87,21 @@ class GameStateBuilder {
         return this;
     }
 
+    // Every card home: four complete foundations, nothing anywhere else.
+    asWon(): this {
+        const suits = [Suit.Hearts, Suit.Spades, Suit.Diamonds, Suit.Clubs];
+        this.state = {
+            ...this.state,
+            stock: [],
+            waste: [],
+            wasteFan: 0,
+            tableau: this.state.tableau.map(() => []),
+            foundations: suits.map((suit) => descendingRun({ first: suit, second: suit }).reverse()),
+        };
+
+        return this;
+    }
+
     build(): GameStateModel {
         return this.state;
     }
