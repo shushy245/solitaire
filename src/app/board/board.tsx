@@ -3,13 +3,13 @@ import { memo, useCallback, useMemo, useRef } from 'react';
 import { makeDrawMove, MoveKind } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
+import { BoardTestIds } from './board.test-ids.ts';
 import { useCardDrag } from '../drag/use-card-drag.ts';
 import { useLiftedCards } from './use-lifted-cards.ts';
 import { useDealAnimation } from './use-deal-animation.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
 import { CardSlotModel, dealOrder, layoutCards, PileKind } from './layout.utils.ts';
 import {
-    BoardTestIds,
     boardHeightClassNames,
     cardLabel,
     dealDelayClassName,

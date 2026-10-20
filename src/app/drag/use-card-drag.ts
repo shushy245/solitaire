@@ -8,13 +8,23 @@ import {
     findDropTarget,
     hasMovedBeyondClick,
     legalDropMove,
+    offsetRect,
     PileRectModel,
     pickUp,
     RectModel,
     unionRects,
 } from './drag.utils.ts';
 
-type ActiveDrag = { pickup: DragPickupModel; pointerId: number; startX: number; startY: number; isDragging: boolean };
+// startRect is the lead card's box at pick-up: the drop box is computed from it plus the pointer travel,
+// never measured at release, when the card may still be easing toward the pointer.
+type ActiveDrag = {
+    pickup: DragPickupModel;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startRect: RectModel;
+    isDragging: boolean;
+};
 
 type CardDragResult = {
     // Cards following the pointer right now.
@@ -157,15 +167,15 @@ export const useCardDrag = ({
                 return;
             }
 
-            const [lead] = draggedElements();
-            const target =
-                lead === undefined
-                    ? undefined
-                    : findDropTarget({
-                          dragged: toRect(lead),
-                          piles: measurePiles({ board, draggedIds: drag.pickup.cardIds }),
-                          source: drag.pickup.source,
-                      });
+            const target = findDropTarget({
+                dragged: offsetRect({
+                    rect: drag.startRect,
+                    dx: event.clientX - drag.startX,
+                    dy: event.clientY - drag.startY,
+                }),
+                piles: measurePiles({ board, draggedIds: drag.pickup.cardIds }),
+                source: drag.pickup.source,
+            });
             const move =
                 target === undefined
                     ? undefined
@@ -195,6 +205,7 @@ export const useCardDrag = ({
                 pointerId: event.pointerId,
                 startX: event.clientX,
                 startY: event.clientY,
+                startRect: toRect(event.currentTarget),
                 isDragging: false,
             };
             window.addEventListener('pointermove', handleMove);

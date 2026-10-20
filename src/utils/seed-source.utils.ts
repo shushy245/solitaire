@@ -13,16 +13,3 @@ export const seedFromSearch = (search: string): number | undefined => {
 
     return raw === '' || !parsed.success ? undefined : parsed.data;
 };
-
-// Deals the requested seed first (replay a deal), then fresh random seeds for every new game.
-export const makeSeedSource = ({
-    firstSeed,
-    generateSeed,
-}: {
-    firstSeed: number | undefined;
-    generateSeed: () => number;
-}): (() => number) => {
-    const pending = firstSeed === undefined ? [] : [firstSeed];
-
-    return () => pending.shift() ?? generateSeed();
-};

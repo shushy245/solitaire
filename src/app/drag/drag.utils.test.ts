@@ -4,7 +4,7 @@ import { MoveKind, Rank, Suit } from '~/engine/index.ts';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
 
 import { PileKind } from '../board/layout.utils.ts';
-import { findDropTarget, hasMovedBeyondClick, legalDropMove, pickUp, unionRects } from './drag.utils.ts';
+import { findDropTarget, hasMovedBeyondClick, legalDropMove, offsetRect, pickUp, unionRects } from './drag.utils.ts';
 
 const up = ({ rank, suit }: { rank: Rank; suit: Suit }) => aCard().withRank(rank).withSuit(suit).build();
 const down = ({ rank, suit }: { rank: Rank; suit: Suit }) => aCard().withRank(rank).withSuit(suit).asFaceDown().build();
@@ -137,5 +137,16 @@ describe('hasMovedBeyondClick', () => {
     it('treats a few pixels of jitter as a click and a longer travel as a drag', () => {
         expect(hasMovedBeyondClick({ dx: 2, dy: 3 })).toBe(false);
         expect(hasMovedBeyondClick({ dx: 6, dy: 0 })).toBe(true);
+    });
+});
+
+describe('offsetRect', () => {
+    it('moves a box by the pointer travel', () => {
+        expect(offsetRect({ rect: { left: 10, top: 20, right: 60, bottom: 90 }, dx: 5, dy: -10 })).toEqual({
+            left: 15,
+            top: 10,
+            right: 65,
+            bottom: 80,
+        });
     });
 });

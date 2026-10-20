@@ -6,9 +6,10 @@ import { CardModel, DrawMode, GameStateModel, Rank, Suit, topCard } from '~/engi
 
 import { Board } from './board.tsx';
 import { PileKind } from './layout.utils.ts';
+import { BoardTestIds } from './board.test-ids.ts';
 import { GameProvider } from '../game-provider.tsx';
 import { makeSession, SessionModel } from '../session/session.utils.ts';
-import { BoardTestIds, DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
+import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 
 type CardName = { rank: Rank; suit: Suit };
 type CardScenario = CardName & { faceUp?: boolean };

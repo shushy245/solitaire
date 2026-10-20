@@ -108,3 +108,10 @@ export const unionRects = (rects: readonly RectModel[]): RectModel => ({
     right: Math.max(...rects.map((r) => r.right)),
     bottom: Math.max(...rects.map((r) => r.bottom)),
 });
+
+export const offsetRect = ({ rect, dx, dy }: { rect: RectModel; dx: number; dy: number }): RectModel => ({
+    left: rect.left + dx,
+    top: rect.top + dy,
+    right: rect.right + dx,
+    bottom: rect.bottom + dy,
+});

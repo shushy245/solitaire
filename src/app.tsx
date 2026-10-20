@@ -8,8 +8,10 @@ import { makeSession } from './app/session/session.utils.ts';
 import styles from './app.module.scss';
 import tableStyles from './styles/table-metrics.module.scss';
 
-export const App = ({ seedSource }: { seedSource: () => number }): JSX.Element => {
-    const createInitialSession = () => makeSession({ seed: seedSource(), drawMode: DrawMode.One });
+// firstSeed is decided once by the composition root: React may run the session initialiser twice
+// (StrictMode), so it must not draw from seedSource itself.
+export const App = ({ firstSeed, seedSource }: { firstSeed: number; seedSource: () => number }): JSX.Element => {
+    const createInitialSession = () => makeSession({ seed: firstSeed, drawMode: DrawMode.One });
 
     return (
         <GameProvider createInitialSession={createInitialSession} seedSource={seedSource}>

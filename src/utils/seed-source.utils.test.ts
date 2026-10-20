@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { makeSeedSource, seedFromSearch } from './seed-source.utils.ts';
+import { seedFromSearch } from './seed-source.utils.ts';
 
 describe('seedFromSearch', () => {
     it('reads a whole-number seed from the URL', () => {
@@ -16,20 +16,5 @@ describe('seedFromSearch', () => {
             undefined,
             undefined,
         ]);
-    });
-});
-
-describe('makeSeedSource', () => {
-    it('deals the requested seed first, then fresh random seeds', () => {
-        const randoms = [7, 8];
-        const next = makeSeedSource({ firstSeed: 42, generateSeed: () => randoms.shift() ?? 0 });
-
-        expect([next(), next(), next()]).toEqual([42, 7, 8]);
-    });
-
-    it('is purely random when no seed was requested', () => {
-        const next = makeSeedSource({ firstSeed: undefined, generateSeed: () => 5 });
-
-        expect([next(), next()]).toEqual([5, 5]);
     });
 });
