@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 
 import { dealGame, DrawMode } from '~/engine/index.ts';
-import { aSession } from '~/testkit/builders/index.ts';
+import { aGameState, aSession } from '~/testkit/builders/index.ts';
 
 import { emptyStats, recordPlayed, recordWin } from '../stats/stats.utils.ts';
 import { DealProgress, makeSession, SessionModel } from '../session/session.utils.ts';
@@ -80,6 +80,35 @@ describe('saved game', () => {
 
         expect(reasonOf(withGame(duplicated))).toMatch(/52 cards/);
         expect(reasonOf(withGame(missingOne))).toMatch(/52 cards/);
+    });
+
+    it('is corrupt when a foundation is not built up from the Ace in one suit (it would fake a win)', () => {
+        const won = aGameState().asWon().build();
+        const [hearts = [], spades = [], ...rest] = won.foundations;
+        const swapKings = [
+            [...hearts.slice(0, -1), ...spades.slice(-1)],
+            [...spades.slice(0, -1), ...hearts.slice(-1)],
+            ...rest,
+        ];
+        const mixed = { ...won, foundations: swapKings };
+
+        expect(reasonOf(serializeGame({ ...makeSession({ seed: 1, drawMode: DrawMode.One }), game: mixed }))).toMatch(
+            /foundation/,
+        );
+    });
+
+    it('is corrupt when more waste cards are fanned out than the waste holds or a draw turns', () => {
+        const session = playedSession();
+        const overFanned = { ...session, game: { ...session.game, wasteFan: session.game.waste.length + 1 } };
+
+        expect(reasonOf(serializeGame(overFanned))).toMatch(/fan/);
+    });
+
+    it('is corrupt when its undo history belongs to another deal', () => {
+        const session = playedSession();
+        const otherDeal = dealGame({ seed: session.game.seed + 1, drawMode: session.game.drawMode });
+
+        expect(reasonOf(serializeGame({ ...session, history: [otherDeal, ...session.history] }))).toMatch(/history/);
     });
 
     it('is corrupt when a card is not a real card', () => {

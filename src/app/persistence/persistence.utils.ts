@@ -61,6 +61,23 @@ const holdsEveryCardOnce = (game: GameStateModel): boolean => {
     return ids.length === DECK_SIZE && new Set(ids).size === DECK_SIZE;
 };
 
+const MAX_WASTE_FAN = 3;
+
+// Ace first, then each rank one higher in the Ace's suit, all face-up — anything else could fake a win.
+const isBuiltUpInOneSuit = (pile: readonly CardModel[]): boolean => {
+    const [ace] = pile;
+
+    if (ace === undefined) return true;
+
+    return pile.every((card, i) => card.faceUp && card.rank === i + Rank.Ace && card.suit === ace.suit);
+};
+
+const hasPossibleWasteFan = (game: GameStateModel): boolean =>
+    game.wasteFan <= Math.min(game.waste.length, MAX_WASTE_FAN);
+
+const isSameDeal = ({ a, b }: { a: GameStateModel; b: GameStateModel }): boolean =>
+    a.seed === b.seed && a.drawMode === b.drawMode;
+
 const GameSchema = z
     .object({
         seed: count,
@@ -74,16 +91,26 @@ const GameSchema = z
         moves: count,
         recycles: count,
     })
-    .refine(holdsEveryCardOnce, { message: `a game must hold the 52 cards exactly once` });
+    .refine(holdsEveryCardOnce, { message: `a game must hold the 52 cards exactly once` })
+    .refine((game) => game.foundations.every(isBuiltUpInOneSuit), {
+        message: 'every foundation must build up from the Ace in one suit, face-up',
+    })
+    .refine(hasPossibleWasteFan, {
+        message: 'the waste fan cannot show more cards than the waste holds or a draw turns',
+    });
 
-const SavedGameSchema = z.object({
-    version: z.literal(SAVE_VERSION),
-    game: GameSchema,
-    history: z.array(GameSchema),
-    elapsedMs: z.number().min(0),
-    dealNumber: count,
-    progress: z.enum(DealProgress),
-});
+const SavedGameSchema = z
+    .object({
+        version: z.literal(SAVE_VERSION),
+        game: GameSchema,
+        history: z.array(GameSchema),
+        elapsedMs: z.number().min(0),
+        dealNumber: count,
+        progress: z.enum(DealProgress),
+    })
+    .refine(({ game, history }) => history.every((earlier) => isSameDeal({ a: earlier, b: game })), {
+        message: 'every undo history entry must come from the same deal as the game',
+    });
 
 const BestSchema = z.object({ timeMs: z.number().min(0), score: count });
 
