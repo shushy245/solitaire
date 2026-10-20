@@ -43,6 +43,9 @@ export const GameProvider = ({
     }, [flushClock]);
 
     // Every change is saved as it happens — a tab can be closed at any moment, with no chance to save on the way out.
+    // Cost, measured 2026-10-20: ~3.5ms and ~0.49MB per save at 500 undo steps (desktop). Once a second while
+    // playing and every auto-complete step is fine at that size; if a trace ever shows saves janking a phone,
+    // save the history only when the game changes and the clock under its own key (persistence review triage).
     useEffect(() => {
         saveSession(session);
     }, [session, saveSession]);

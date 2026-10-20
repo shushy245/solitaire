@@ -1,5 +1,11 @@
 # Changelog
 
+## persistence — 2026-10-20
+- **Pain:** closing or reloading the tab threw the game away, and nothing remembered how often the player had played or won.
+- **Fix:** the game in progress (with its full undo history and time) saves itself after every change and comes back on reload, and a Stats button shows games played, won, win rate, best time and best score.
+- **Trade-off:** a saved game that fails any check is set aside (logged) and a fresh deal starts, so a damaged save costs that one game but never the record, which is kept separately.
+- **Result:** 235 tests pass (`vitest`, 43 more than before this story) plus 3 new browser tests (reload resumes, a replayed deal resumes, a win survives a reload); the browser test caught a crash when resuming a long game, and the review raised 10 issues — 8 fixed (including a second tab erasing a win), 1 deferred with a measured cost, 1 kept with reasons; two visual passes clean on phone, tablet and laptop widths, accessibility 100.
+
 ## hud — 2026-10-20
 - **Pain:** the table played, but there was no way to start over, choose turn-1 or turn-3, take a move back, see the score or time, or let a finished game play itself out.
 - **Fix:** a control bar with turn-1/turn-3, Undo (also Ctrl/Cmd+Z), a New game that asks before throwing away a game in progress, live score, moves and time, and an Auto-complete button once the game can finish itself.

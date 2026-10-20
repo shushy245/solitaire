@@ -29,14 +29,15 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 - **Commit gate runs before the command:** a fix and its `git commit` in one Bash call commits the *old* state's test result — run the fix, then commit in a separate call.
 - **Synthetic pointer events must carry `buttons: 1` while pressed** — a move with `buttons === 0` ends a drag (lost-release guard).
 - **Never draw a seed inside a React initialiser** — StrictMode runs it twice; `main.tsx` decides the first seed.
+- **Node 25 shadows jsdom's `localStorage`** with its own empty global — tests use `src/testkit/fakes/memory-storage.ts`, never `window.localStorage`.
+- **`?seed=N` is consumed on load** (stripped from the address), so a reload resumes; Cypress specs that need a deal visit `?seed=` each time.
 - **Table sizes live in `src/styles/table-metrics.module.scss`** (`.metrics` on the column inside the `container-type` `main`); `board.module.scss` only consumes the vars. Spacing ratios are mirrored in `layout.utils.ts`.
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `persistence` — the game in progress (undo history, time, mode) survives a reload; a Stats panel shows played/won/win rate/bests. `src/app/persistence/` (Zod save format `persistence.utils.ts`, shell `session-store.ts` over the never-throwing `src/utils/browser-key-value-store.ts`); stats rules `src/app/stats/stats.utils.ts`, counted inside `reduceSession` via `progress`; `main.tsx` loads, the provider saves every change; Cypress seeds saves from `cypress/fixtures/`.
 - `hud` — new game (asks first mid-game), turn-1/turn-3, Undo + Ctrl/Cmd+Z, live score/moves/time, auto-complete. `src/app/hud/` (pure rules in `hud.utils.ts`; session-level rules `isGameUnderWay`/`canUndo` in `session.utils.ts`); the provider reads the clock before every game action, so time is exact to the move.
 - `drag` — drag a card or run onto any legal pile; illegal drops glide back. `src/app/drag/` (pure rules in `drag.utils.ts`, pointer hook `use-card-drag.ts`); `?seed=N` replays a deal.
-- `board` — a playable, fully animated table (glide, flip, staggered deal, lift-in-flight), click the deck / double-click to send home. `src/app/board/` (layout slots → CSS classes → one transform), session reducer `src/app/session/`, `GameProvider`/`useGame` contract in `docs/plan.md`.
-- `engine` — every Klondike rule as pure, seed-deterministic logic, proven against hundreds of random games; a double-fired click can never move the wrong card. `src/engine/` (barrel `index.ts`), property tests in `invariants.test.ts`.
 
 ## What's next
-Story `persistence` (`docs/plan.md`).
+Story `celebration` (`docs/plan.md`).

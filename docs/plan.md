@@ -165,7 +165,7 @@ type GameContextValue = {
   - pre-mortem: Escape or "Keep playing" closes the confirmation without changing the game
   - pre-mortem: the turn-1/turn-3 control always shows the current game's mode — cancelling a switch leaves it unchanged
 
-### Story `persistence` — resume after reload, stats
+### Story `persistence` — resume after reload, stats ✅
 - Owns: `src/app/persistence/`
 - Depends on: board
 - Parallel: with-care with hud
@@ -175,6 +175,11 @@ type GameContextValue = {
   - stats: played increments on the first move of a deal; won/best time/best score update on a win, exactly once
   - stats panel shows played, won, win %, best time, best score
   - Cypress: make a move, reload, the board is the same; win, reload, stats show the win
+  - pre-mortem: undoing back to the deal and playing again counts it once; undoing a win and winning again counts it once
+  - pre-mortem: the best time runs to the winning card, not the last clock tick
+  - pre-mortem: storage that refuses calls (blocked, quota) never stops the game
+  - pre-mortem: a valid-JSON save that no game could produce (51 cards, mixed foundations) is discarded
+  - found by Cypress: a game resumed mid-play is shown where it was left, not re-dealt
 
 ### Story `celebration` — win cascade
 - Owns: `src/app/celebration/`
@@ -303,6 +308,28 @@ type GameContextValue = {
 - Visual re-check after the close fixes (1280, DOM reads only, no captures — no style changed): all 7
   focus landings unchanged; undo to 0 moves closes the question and the next draw does not revive it.
 
+### `persistence` (code-review high, 10 findings; visual pass A+B ×2)
+- Found by the Cypress spec before review (fixed): resuming a game with more than 28 tableau cards crashed the
+  deal animation (missing delay class) → a deal animates only while the deal is unstarted.
+- Fixed — correctness (3): a second tab erased the other's win by rewriting its stale record every tick → the
+  record is written only when this tab changed it, merged onto the saved one (`mergeStats`); a failed game
+  write with a successful stats write let a win be counted twice after reload → stats save only after the
+  game saves; a `?seed=` page re-dealt on every reload → the composition root strips the seed once dealt.
+- Fixed — robustness (3): refused storage warned every second → once per key until a write succeeds; the save
+  check accepted mixed-suit foundations / over-wide waste fans / history from another deal → schema refines;
+  the Stats button's `aria-controls` pointed at nothing while closed → panel stays mounted, `hidden`.
+- Fixed — style (2): Cypress copied the storage keys → `storage-keys.utils.ts`; the board's fresh-deal rule
+  duplicated the session's → `isDealUnstarted` (progress).
+- Deferred (1): saving the whole history on every tick — measured ~3.5ms / ~0.49MB per save at 500 undo steps
+  (desktop); precondition recorded on the save effect in `game-provider.tsx`.
+- Kept (1): `no-restricted-syntax: off` for `src/testkit/fakes/memory-storage.ts` — the shared config's
+  documented boundary-file mechanism (Web Storage speaks null); it does not export single selectors, so a
+  narrower override would copy the shared config → RF-backlog. Likewise `no-console` for `src/main.tsx`
+  mirrors the shared `**/main.ts` composition-root exemption.
+- Visual pass A+B (load state) and A+B (Stats panel open): clean at 390/768/1280 — no overflow, taps ≥44,
+  panel text 16/18px, Lighthouse a11y 100, focus order Turn 1 → Turn 3 → New game → Stats → stock. Not seen:
+  the panel with long values (only zeros rendered), settled 390/768 in the first pass (captured mid-deal).
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
@@ -314,3 +341,5 @@ type GameContextValue = {
 - (`hud`) `GameProvider` `useRef(now())` reads the clock on every render; a lazy initial value would do.
 - (`hud`) HUD driver `modifier: 'ctrl' | 'meta'` string union → an enum.
 - (`hud`) `hud.utils.ts` reaches into `session.game.moves` / `session.history` — add session selectors.
+- (`persistence`) eslint-config-shalev: export the single syntax selectors (so a boundary override can drop
+  only the null ban) and widen the composition-root `no-console` glob to `main.{ts,tsx}`.
