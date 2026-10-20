@@ -135,6 +135,11 @@ type GameContextValue = {
   - a tiny pointer movement (< threshold) is a click, not a drag (double-click still works)
   - concurrency: pointercancel / pointerup outside the window ends the drag and snaps back
   - Cypress: drag a card to a legal column in a real browser and see it land
+  - pre-mortem: the dropped card animates from where it was released (not from its old slot) to its target, and a rejected drop animates back
+  - pre-mortem: unmount or a new deal mid-drag removes the window listeners and ends the drag
+  - pre-mortem: dropping back on the source pile is a no-op snap-back, never a move
+  - pre-mortem: the pointer-up handler reads the latest game, and the move names its card, so a stale drop is rejected
+  - pre-mortem: cards can't be picked up while the deal is still running
 
 ### Story `hud` — new game, mode, undo, score/timer/moves, auto-complete
 - Owns: `src/app/hud/`
