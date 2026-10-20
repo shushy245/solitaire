@@ -83,8 +83,8 @@ export const makeBoardDriver = (): BoardDriver => {
         add: vi.spyOn(window, 'addEventListener'),
         remove: vi.spyOn(window, 'removeEventListener'),
     };
-    const pointerListenerCount = (spy: typeof listenerSpies.add): number =>
-        spy.mock.calls.filter(([type]) => pointerEvents.has(type)).length;
+    const pointerHandlers = (spy: typeof listenerSpies.add): unknown[] =>
+        spy.mock.calls.filter(([type]) => pointerEvents.has(type)).map(([, handler]) => handler);
 
     // Stands in for another part of the app (e.g. the HUD's undo shortcut) acting on the game.
     const ElsewhereInTheApp = (): undefined => {
@@ -252,7 +252,10 @@ export const makeBoardDriver = (): BoardDriver => {
                 expect(cardElement(card)).toHaveAttribute('data-dragging', String(isDragging));
             },
             pointerListenersDetached: () => {
-                expect(pointerListenerCount(listenerSpies.remove)).toBe(pointerListenerCount(listenerSpies.add));
+                const added = pointerHandlers(listenerSpies.add);
+
+                expect(added).not.toHaveLength(0);
+                expect(pointerHandlers(listenerSpies.remove)).toEqual(expect.arrayContaining(added));
             },
             dealtStockTopLifted: (isLifted) => {
                 expect(screen.getByTestId(BoardTestIds.Card(dealtStockTop().id))).toHaveAttribute(

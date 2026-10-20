@@ -73,8 +73,8 @@ export const makeHudDriver = (): HudDriver => {
         fireEvent.click(element);
     };
 
-    const keydownCount = (spy: typeof keySpies.add): number =>
-        spy.mock.calls.filter(([type]) => type === 'keydown').length;
+    const keydownHandlers = (spy: typeof keySpies.add): unknown[] =>
+        spy.mock.calls.filter(([type]) => type === 'keydown').map(([, handler]) => handler);
 
     return {
         given: {
@@ -185,7 +185,10 @@ export const makeHudDriver = (): HudDriver => {
                 expect(screen.getByTestId(testId)).toHaveFocus();
             },
             undoShortcutListenerRemoved: () => {
-                expect(keydownCount(keySpies.remove)).toBe(keydownCount(keySpies.add));
+                const added = keydownHandlers(keySpies.add);
+
+                expect(added).not.toHaveLength(0);
+                expect(keydownHandlers(keySpies.remove)).toEqual(expect.arrayContaining(added));
             },
         },
     };
