@@ -1,4 +1,4 @@
-import { isAutoCompletable, isWon } from '~/engine/index.ts';
+import { DrawMode, isAutoCompletable, isWon } from '~/engine/index.ts';
 
 import { SessionModel, SessionPhase } from '../session/session.utils.ts';
 
@@ -29,3 +29,30 @@ export const canUndo = (session: SessionModel): boolean => session.history.lengt
 
 export const isAutoCompleteOffered = (session: SessionModel): boolean =>
     isAutoCompletable(session.game) && !isAutoCompleting(session);
+
+export const drawModeLabelMap: Record<DrawMode, string> = {
+    [DrawMode.One]: 'Turn 1',
+    [DrawMode.Three]: 'Turn 3',
+};
+
+export const drawModes: readonly DrawMode[] = [DrawMode.One, DrawMode.Three];
+
+// A request to leave the current game, remembered while the player confirms. It belongs to one deal:
+// once that deal is replaced, the question no longer applies.
+export type LeaveRequestModel = { drawMode: DrawMode; dealNumber: number };
+
+export const openLeaveRequest = ({
+    request,
+    session,
+}: {
+    request: LeaveRequestModel | undefined;
+    session: SessionModel;
+}): LeaveRequestModel | undefined =>
+    request !== undefined && request.dealNumber === session.dealNumber ? request : undefined;
+
+// Ctrl+Z (Cmd+Z on a Mac) undoes; a held key's auto-repeat does not undo again.
+export const isUndoShortcut = (event: KeyboardEvent): boolean =>
+    (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.repeat && event.key.toLowerCase() === 'z';
+
+export const countLabel = ({ count, singular, plural }: { count: number; singular: string; plural: string }): string =>
+    count === 1 ? singular : plural;

@@ -1,8 +1,10 @@
+import { Hud } from './app/hud/hud.tsx';
 import { FullColumn } from './ui/box.tsx';
 import { AppTestIds } from './app.utils.ts';
 import { DrawMode } from './engine/index.ts';
 import { Board } from './app/board/board.tsx';
 import { GameProvider } from './app/game-provider.tsx';
+import { joinClassNames } from './utils/join-class-names.ts';
 import { makeSession } from './app/session/session.utils.ts';
 
 import styles from './app.module.scss';
@@ -25,10 +27,11 @@ export const App = ({
         <GameProvider createInitialSession={createInitialSession} seedSource={seedSource} now={now}>
             <main className={styles.app}>
                 <FullColumn className={tableStyles.metrics}>
-                    <header className={tableStyles.tableWidth}>
+                    <header className={joinClassNames(tableStyles.tableWidth, styles.header)}>
                         <h1 className={styles.title} data-testid={AppTestIds.Title}>
                             {`Solitaire`}
                         </h1>
+                        <Hud />
                     </header>
                     <Board />
                 </FullColumn>

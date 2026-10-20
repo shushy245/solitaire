@@ -1,0 +1,135 @@
+// The HUD's rows join the header's wrapping row: the controls sit beside the title (or wrap under it
+// on narrow screens); the stats and any question take full lines below.
+.hud {
+    display: contents;
+}
+
+.controls {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.statusRow {
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 44px;
+}
+
+.stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+
+    strong {
+        color: var(--text);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+.button {
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--control-line);
+    border-radius: 999px;
+    background: rgb(0 0 0 / 0.18);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background 150ms ease,
+        border-color 150ms ease,
+        opacity 150ms ease;
+
+    &:hover:not(:disabled) {
+        background: rgb(255 255 255 / 0.08);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--brass);
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        opacity: 0.45;
+        cursor: default;
+    }
+}
+
+.primary {
+    border-color: var(--brass);
+}
+
+.accent {
+    border-color: var(--brass);
+    background: var(--brass);
+    color: var(--ink);
+}
+
+// Two joined buttons; the pressed one is filled.
+.modeSwitch {
+    display: inline-flex;
+    border: 1px solid var(--control-line);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.modeButton {
+    min-height: 44px;
+    padding: 0 14px;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--brass);
+        outline-offset: -3px;
+    }
+}
+
+.modeSelected {
+    background: var(--text);
+    color: var(--ink);
+}
+
+.confirm {
+    flex: 1 0 100%;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px 16px;
+    padding: 10px 14px;
+    border: 1px solid var(--brass);
+    border-radius: 12px;
+    background: rgb(0 0 0 / 0.28);
+}
+
+.confirmText {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.confirmActions {
+    gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .button {
+        transition: none;
+    }
+}

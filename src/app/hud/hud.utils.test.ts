@@ -4,7 +4,7 @@ import { DrawMode } from '~/engine/index.ts';
 import { aGameState } from '~/testkit/builders/index.ts';
 
 import { makeSession, SessionPhase } from '../session/session.utils.ts';
-import { canUndo, formatElapsed, isAutoCompleteOffered, needsConfirmationToLeave } from './hud.utils.ts';
+import { canUndo, countLabel, formatElapsed, isAutoCompleteOffered, needsConfirmationToLeave } from './hud.utils.ts';
 
 const session = () => makeSession({ seed: 5, drawMode: DrawMode.One });
 
@@ -50,5 +50,15 @@ describe('isAutoCompleteOffered', () => {
         expect(isAutoCompleteOffered(session())).toBe(false);
         expect(isAutoCompleteOffered(ready)).toBe(true);
         expect(isAutoCompleteOffered({ ...ready, phase: SessionPhase.AutoCompleting })).toBe(false);
+    });
+});
+
+describe('countLabel', () => {
+    it('uses the singular for exactly one', () => {
+        expect([0, 1, 2].map((count) => countLabel({ count, singular: 'move', plural: 'moves' }))).toEqual([
+            'moves',
+            'move',
+            'moves',
+        ]);
     });
 });
