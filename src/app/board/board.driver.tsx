@@ -53,6 +53,9 @@ const pointerEvents = new Set(['pointermove', 'pointerup', 'pointercancel']);
 
 const fixedSeed = (): number => 1;
 
+// Fake timers fake Date too, so the provider's clock advances with the fake clock.
+const fakeNow = (): number => Date.now();
+
 // Advances the fake clock inside act; one step per scheduled phase, as React schedules the next timer on render.
 const passTime = (ms: number): void => {
     act(() => {
@@ -126,7 +129,7 @@ export const makeBoardDriver = (): BoardDriver => {
                 const session = sessionUnderTest();
                 const initialSession = (): SessionModel => session;
                 rendered.unmount = render(
-                    <GameProvider createInitialSession={initialSession} seedSource={fixedSeed}>
+                    <GameProvider createInitialSession={initialSession} seedSource={fixedSeed} now={fakeNow}>
                         <Board />
                     </GameProvider>,
                 ).unmount;

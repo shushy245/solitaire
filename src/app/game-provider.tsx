@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 
 import { AUTO_COMPLETE_STEP_MS, CLOCK_TICK_MS, GameContextValue, GameProviderProps } from './game-provider.utils.ts';
 import {
@@ -13,19 +13,25 @@ const GameContext = createContext<GameContextValue | undefined>(undefined);
 
 const reducer = (session: SessionModel, action: SessionAction): SessionModel => reduceSession({ session, action });
 
-export const GameProvider = ({ createInitialSession, seedSource, children }: GameProviderProps): JSX.Element => {
+export const GameProvider = ({ createInitialSession, seedSource, now, children }: GameProviderProps): JSX.Element => {
     const [session, dispatch] = useReducer(reducer, undefined, createInitialSession);
 
+    const lastTick = useRef(now());
+
     // The reducer only advances the clock while a game is in progress, so an always-on tick is safe.
+    // Each tick carries the real time since the previous one, however late the browser ran it.
     useEffect(() => {
+        lastTick.current = now();
         const interval = setInterval(() => {
-            dispatch({ kind: SessionActionKind.Tick });
+            const current = now();
+            dispatch({ kind: SessionActionKind.Tick, elapsedMs: current - lastTick.current });
+            lastTick.current = current;
         }, CLOCK_TICK_MS);
 
         return () => {
             clearInterval(interval);
         };
-    }, []);
+    }, [now]);
 
     // One card per step; each new game state schedules the next, and leaving the phase cancels it.
     useEffect(() => {

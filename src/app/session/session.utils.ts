@@ -22,7 +22,8 @@ export type SessionModel = {
     readonly game: GameStateModel;
     // Earlier games, oldest first — undo pops the last one.
     readonly history: readonly GameStateModel[];
-    readonly elapsedSeconds: number;
+    // Play time measured in real milliseconds (ticks carry the measured gap, so throttled timers can't undercount).
+    readonly elapsedMs: number;
     readonly phase: SessionPhase;
     // Counts deals in this session, so replaying the same seed is still recognised as a new deal.
     readonly dealNumber: number;
@@ -44,7 +45,7 @@ type SessionPayloadMap = {
     [SessionActionKind.SendToFoundation]: { readonly cardId: string };
     [SessionActionKind.Undo]: object;
     [SessionActionKind.NewGame]: { readonly seed: number; readonly drawMode: DrawMode };
-    [SessionActionKind.Tick]: object;
+    [SessionActionKind.Tick]: { readonly elapsedMs: number };
     [SessionActionKind.StartAutoComplete]: object;
     [SessionActionKind.AutoCompleteStep]: object;
 };
@@ -56,7 +57,7 @@ export type SessionAction = SessionActionOf<SessionActionKind>;
 export const makeSession = ({ seed, drawMode }: { seed: number; drawMode: DrawMode }): SessionModel => ({
     game: dealGame({ seed, drawMode }),
     history: [],
-    elapsedSeconds: 0,
+    elapsedMs: 0,
     phase: SessionPhase.Playing,
     dealNumber: 0,
 });
@@ -113,8 +114,8 @@ const reducerMap: ReducerMap = {
         ...makeSession({ seed: action.seed, drawMode: action.drawMode }),
         dealNumber: session.dealNumber + 1,
     }),
-    [SessionActionKind.Tick]: ({ session }) =>
-        isClockRunning(session) ? { ...session, elapsedSeconds: session.elapsedSeconds + 1 } : session,
+    [SessionActionKind.Tick]: ({ session, action }) =>
+        isClockRunning(session) ? { ...session, elapsedMs: session.elapsedMs + action.elapsedMs } : session,
     [SessionActionKind.StartAutoComplete]: ({ session }) =>
         isAutoCompletable(session.game) && !isAutoCompleting(session)
             ? { ...session, phase: SessionPhase.AutoCompleting }

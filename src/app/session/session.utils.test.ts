@@ -21,7 +21,7 @@ describe('makeSession', () => {
 
         expect(session.game).toEqual(dealGame({ seed: 77, drawMode: DrawMode.One }));
         expect(session.history).toEqual([]);
-        expect(session.elapsedSeconds).toBe(0);
+        expect(session.elapsedMs).toBe(0);
         expect(session.phase).toBe(SessionPhase.Playing);
     });
 });
@@ -60,7 +60,7 @@ describe('reduceSession — moves and undo', () => {
     });
 
     it('a new game deals the given seed and mode and forgets history and time', () => {
-        const played = { ...drawIn(freshSession()), elapsedSeconds: 42 };
+        const played = { ...drawIn(freshSession()), elapsedMs: 42_000 };
 
         const next = reduceSession({
             session: played,
@@ -68,7 +68,7 @@ describe('reduceSession — moves and undo', () => {
         });
 
         expect(next.game).toEqual(dealGame({ seed: 9, drawMode: DrawMode.Three }));
-        expect([next.history, next.elapsedSeconds, next.phase]).toEqual([[], 0, SessionPhase.Playing]);
+        expect([next.history, next.elapsedMs, next.phase]).toEqual([[], 0, SessionPhase.Playing]);
     });
 
     it('numbers every deal, so replaying the same seed is still a new deal', () => {
@@ -151,13 +151,19 @@ describe('reduceSession — timer', () => {
     it('does not tick before the first move', () => {
         const session = freshSession();
 
-        expect(reduceSession({ session, action: { kind: SessionActionKind.Tick } })).toBe(session);
+        expect(reduceSession({ session, action: { kind: SessionActionKind.Tick, elapsedMs: 1000 } })).toBe(session);
     });
 
-    it('ticks one second at a time once play has started', () => {
-        expect(
-            reduceSession({ session: drawIn(freshSession()), action: { kind: SessionActionKind.Tick } }).elapsedSeconds,
-        ).toBe(1);
+    it('adds the real time measured since the last tick once play has started', () => {
+        const played = drawIn(freshSession());
+        const afterTicks = [1000, 61_500].reduce(
+            (current, elapsedMs) =>
+                reduceSession({ session: current, action: { kind: SessionActionKind.Tick, elapsedMs } }),
+            played,
+        );
+
+        // a throttled background tab reports one long gap, not many ticks — it must still count it all
+        expect(afterTicks.elapsedMs).toBe(62_500);
     });
 
     it('stops ticking once the game is won', () => {
@@ -172,7 +178,9 @@ describe('reduceSession — timer', () => {
         );
 
         expect(isWon(finished.game)).toBe(true);
-        expect(reduceSession({ session: finished, action: { kind: SessionActionKind.Tick } })).toBe(finished);
+        expect(reduceSession({ session: finished, action: { kind: SessionActionKind.Tick, elapsedMs: 1000 } })).toBe(
+            finished,
+        );
     });
 });
 

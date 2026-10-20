@@ -10,11 +10,19 @@ import tableStyles from './styles/table-metrics.module.scss';
 
 // firstSeed is decided once by the composition root: React may run the session initialiser twice
 // (StrictMode), so it must not draw from seedSource itself.
-export const App = ({ firstSeed, seedSource }: { firstSeed: number; seedSource: () => number }): JSX.Element => {
+export const App = ({
+    firstSeed,
+    seedSource,
+    now,
+}: {
+    firstSeed: number;
+    seedSource: () => number;
+    now: () => number;
+}): JSX.Element => {
     const createInitialSession = () => makeSession({ seed: firstSeed, drawMode: DrawMode.One });
 
     return (
-        <GameProvider createInitialSession={createInitialSession} seedSource={seedSource}>
+        <GameProvider createInitialSession={createInitialSession} seedSource={seedSource} now={now}>
             <main className={styles.app}>
                 <FullColumn className={tableStyles.metrics}>
                     <header className={tableStyles.tableWidth}>

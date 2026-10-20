@@ -15,10 +15,12 @@ if (root === undefined) {
 }
 
 // ?seed= replays a deal; otherwise the first deal is random like every later one.
+const monotonicNow = (): number => performance.now();
+
 const firstSeed = seedFromSearch(window.location.search) ?? generateSeed();
 
 createRoot(root).render(
     <StrictMode>
-        <App firstSeed={firstSeed} seedSource={generateSeed} />
+        <App firstSeed={firstSeed} seedSource={generateSeed} now={monotonicNow} />
     </StrictMode>,
 );

@@ -6,6 +6,8 @@ import { App } from './app.tsx';
 import { AppTestIds } from './app.utils.ts';
 import { BoardTestIds } from './app/board/board.test-ids.ts';
 
+const realNow = (): number => Date.now();
+
 export type AppDriver = {
     given: { firstDeal: (seed: number) => void; laterDealsFrom: (seeds: readonly number[]) => void };
     when: { created: () => Promise<void>; createdInStrictMode: () => Promise<void> };
@@ -27,12 +29,12 @@ export const makeAppDriver = (): AppDriver => {
         },
         when: {
             created: async () => {
-                render(<App firstSeed={scenario.firstSeed} seedSource={seedSource} />);
+                render(<App firstSeed={scenario.firstSeed} seedSource={seedSource} now={realNow} />);
             },
             createdInStrictMode: async () => {
                 render(
                     <StrictMode>
-                        <App firstSeed={scenario.firstSeed} seedSource={seedSource} />
+                        <App firstSeed={scenario.firstSeed} seedSource={seedSource} now={realNow} />
                     </StrictMode>,
                 );
             },

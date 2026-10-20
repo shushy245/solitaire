@@ -16,6 +16,8 @@ export type GameContextValue = {
 export type GameProviderProps = {
     createInitialSession: () => SessionModel;
     seedSource: () => number;
+    // Monotonic milliseconds (performance.now in the app) — the clock measures real gaps between ticks.
+    now: () => number;
     children: React.ReactNode;
 };
 

@@ -152,6 +152,11 @@ type GameContextValue = {
   - switching turn mode with no moves redeals in the new mode; with moves, asks first
   - auto-complete button appears only when eligible; clicking it sweeps the cards one by one and the controls are disabled while it runs
   - concurrency: double-clicking auto-complete starts one sweep; starting a new game mid-sweep stops it
+  - pre-mortem: the clock counts real elapsed time, not interval ticks — a throttled background tab must not undercount
+  - pre-mortem: Ctrl+Z and Cmd+Z both undo; the key listener is removed on unmount and never fires twice per press
+  - pre-mortem: an open confirmation closes when the game it was about is replaced (no confirming against a stale game)
+  - pre-mortem: Escape or "Keep playing" closes the confirmation without changing the game
+  - pre-mortem: the turn-1/turn-3 control always shows the current game's mode — cancelling a switch leaves it unchanged
 
 ### Story `persistence` — resume after reload, stats
 - Owns: `src/app/persistence/`
