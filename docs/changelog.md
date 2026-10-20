@@ -1,5 +1,11 @@
 # Changelog
 
+## hud — 2026-10-20
+- **Pain:** the table played, but there was no way to start over, choose turn-1 or turn-3, take a move back, see the score or time, or let a finished game play itself out.
+- **Fix:** a control bar with turn-1/turn-3, Undo (also Ctrl/Cmd+Z), a New game that asks before throwing away a game in progress, live score, moves and time, and an Auto-complete button once the game can finish itself.
+- **Trade-off:** while auto-complete runs only Undo locks; New game and the mode switch stay live and stop the sweep, so a player is never trapped watching it.
+- **Result:** 187 tests pass (`vitest`, 42 more than before this story) plus 2 browser specs; two reviews raised 20 issues — 15 fixed (including Ctrl+Z moving cards out from under a drag and a "leave this game?" question that could reappear one keypress from losing the game), 5 small cleanups queued; visual passes clean on phone, tablet and laptop widths, accessibility score 100.
+
 ## drag — 2026-10-20
 - **Pain:** cards could only move by double-clicking them home; building columns, the heart of the game, was impossible.
 - **Fix:** pick up any face-up card (with everything on top of it) and drop it where it belongs; an illegal or abandoned drop glides back.

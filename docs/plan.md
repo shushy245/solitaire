@@ -144,7 +144,7 @@ type GameContextValue = {
   - pre-mortem: the pointer-up handler reads the latest game, and the move names its card, so a stale drop is rejected
   - pre-mortem: cards can't be picked up while the deal is still running
 
-### Story `hud` — new game, mode, undo, score/timer/moves, auto-complete
+### Story `hud` — new game, mode, undo, score/timer/moves, auto-complete ✅
 - Owns: `src/app/hud/`
 - Depends on: board
 - Parallel: with-care with persistence (both read `useGame`; neither edits the provider)
@@ -290,6 +290,14 @@ type GameContextValue = {
   390/768/1280 — no overflow, taps ≥44, text 16px, Lighthouse a11y 100 both states; focus lands on
   "Deal new game", returns to the asker on every answer and on Escape. Not reached: Auto-complete (needs a
   near-won deal; no URL fixture) — rests on the HUD tests.
+- Story-close review (code-review high over `story/hud`, 10 findings): fixed 5 — a lapsed leave
+  question revived on the next move and grabbed focus (correctness) → cleared when it lapses; a
+  self-closing question stole focus → returns focus only if it went with it; the clock interval reset
+  dropped measured time on re-run → the reading survives; "game under way"/undo rules duplicated across
+  session and HUD → one home in `session.utils.ts`; unnamed request predicate → `isRequestForCurrentDeal`.
+  Batched 5 to RF-backlog.
+- Visual re-check after the close fixes (1280, DOM reads only, no captures — no style changed): all 7
+  focus landings unchanged; undo to 0 moves closes the question and the next draw does not revive it.
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
@@ -297,3 +305,8 @@ type GameContextValue = {
 
 ## RF-backlog
 - Prettier coverage for JSON/SCSS/HTML (from `scaffold` review).
+- (`hud`) `app.driver.tsx` `realNow` duplicates `testkit/provider-fakes.ts` `fakeNow` — one test clock.
+- (`hud`) the `ElsewhereInTheApp` useGame probe is copy-pasted in the board and HUD drivers → testkit.
+- (`hud`) `GameProvider` `useRef(now())` reads the clock on every render; a lazy initial value would do.
+- (`hud`) HUD driver `modifier: 'ctrl' | 'meta'` string union → an enum.
+- (`hud`) `hud.utils.ts` reaches into `session.game.moves` / `session.history` — add session selectors.

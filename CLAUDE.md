@@ -33,10 +33,10 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `hud` — new game (asks first mid-game), turn-1/turn-3, Undo + Ctrl/Cmd+Z, live score/moves/time, auto-complete. `src/app/hud/` (pure rules in `hud.utils.ts`; session-level rules `isGameUnderWay`/`canUndo` in `session.utils.ts`); the provider reads the clock before every game action, so time is exact to the move.
 - `drag` — drag a card or run onto any legal pile; illegal drops glide back. `src/app/drag/` (pure rules in `drag.utils.ts`, pointer hook `use-card-drag.ts`); `?seed=N` replays a deal.
 - `board` — a playable, fully animated table (glide, flip, staggered deal, lift-in-flight), click the deck / double-click to send home. `src/app/board/` (layout slots → CSS classes → one transform), session reducer `src/app/session/`, `GameProvider`/`useGame` contract in `docs/plan.md`.
 - `engine` — every Klondike rule as pure, seed-deterministic logic, proven against hundreds of random games; a double-fired click can never move the wrong card. `src/engine/` (barrel `index.ts`), property tests in `invariants.test.ts`.
-- `scaffold` — new contributors get the house rules enforced automatically: lint, typecheck (app, configs, e2e), unit + browser tests and a commit gate all run on an empty app that boots.
 
 ## What's next
-Story `hud` (`docs/plan.md`).
+Story `persistence` (`docs/plan.md`).
