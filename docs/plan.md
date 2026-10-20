@@ -32,7 +32,8 @@ resume-after-reload.
   `listLegalMoves`), `apply.ts` (`applyMove`), `scoring.ts` (`scoreDeltaMap`),
   `auto-complete.ts` (`isAutoCompletable`, `nextAutoMove`).
 - **Session (`src/app/session/`)**: pure `reduceSession(session, action)` over
-  `{ game, history, elapsedMs, phase, dealNumber }` (stats join in `persistence`) — moves, undo, new
+  `{ game, history, elapsedMs, phase, dealNumber, progress, stats }` (`progress` = this deal's place in the
+  record: unstarted → started → won, forward only) — moves, undo, new
   game, tick, auto-complete step. The clock is real milliseconds: the provider reads a monotonic `now()`
   on a 1s interval and right before every game-changing action, so play time starts and stops at the
   exact move. Stats are updated *inside* the transition that produces the win (never in an effect) so a
@@ -51,16 +52,19 @@ resume-after-reload.
 ```ts
 // useGame() — finalised in story `board` (src/app/game-provider.utils.ts), consumed unchanged by drag/hud/persistence/celebration
 type GameContextValue = {
-    session: SessionModel;                     // game, history, elapsedMs, phase (Playing | AutoCompleting), dealNumber
+    session: SessionModel;                     // game, history, elapsedMs, phase (Playing | AutoCompleting), dealNumber, progress, stats
     dispatchMove: (move: Move) => void;        // illegal/stale moves are ignored, never thrown
     sendToFoundation: (cardId: string) => void; // intent, resolved against the current game
     undo: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;
 };
-// <GameProvider createInitialSession={() => SessionModel} seedSource={() => number} now={() => number}>
-// — persistence plugs a restored session into createInitialSession; `now` is monotonic ms
-// (performance.now in the app, the fake clock in tests); main.tsx is the composition root.
+// <GameProvider createInitialSession={() => SessionModel} seedSource={() => number} now={() => number}
+//               saveSession={(session) => void}>
+// — main.tsx (composition root) loads the first session via the session store (?seed= deal, else the saved
+// game, else a fresh deal, always with the saved record) and passes store.save as saveSession, which the
+// provider calls on every session change; `now` is monotonic ms (performance.now in the app, the fake clock
+// in tests).
 ```
 
 ---
