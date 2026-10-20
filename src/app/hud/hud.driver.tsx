@@ -41,6 +41,7 @@ export type HudDriver = {
         confirmShown: (isShown: boolean) => void;
         dealNumber: (dealNumber: number) => void;
         autoCompleteOffered: (isOffered: boolean) => void;
+        focusOn: (testId: string) => void;
         undoShortcutListenerRemoved: () => void;
     };
 };
@@ -65,8 +66,11 @@ export const makeHudDriver = (): HudDriver => {
         return undefined;
     };
 
+    // A real click focuses the button first; focus return depends on it.
     const click = (testId: string): void => {
-        fireEvent.click(screen.getByTestId(testId));
+        const element = screen.getByTestId(testId);
+        element.focus();
+        fireEvent.click(element);
     };
 
     const keydownCount = (spy: typeof keySpies.add): number =>
@@ -130,8 +134,9 @@ export const makeHudDriver = (): HudDriver => {
                     repeat: isRepeat,
                 });
             },
+            // Focus may be anywhere (e.g. on the page after a card was clicked), so Escape is pressed on the page.
             escape: () => {
-                fireEvent.keyDown(screen.getByTestId(HudTestIds.Confirm), { key: 'Escape' });
+                fireEvent.keyDown(document.body, { key: 'Escape' });
             },
         },
         time: {
@@ -175,6 +180,9 @@ export const makeHudDriver = (): HudDriver => {
             autoCompleteOffered: (isOffered) => {
                 if (isOffered) expect(screen.getByTestId(HudTestIds.AutoComplete)).toBeInTheDocument();
                 else expect(screen.queryByTestId(HudTestIds.AutoComplete)).not.toBeInTheDocument();
+            },
+            focusOn: (testId) => {
+                expect(screen.getByTestId(testId)).toHaveFocus();
             },
             undoShortcutListenerRemoved: () => {
                 expect(keydownCount(keySpies.remove)).toBe(keydownCount(keySpies.add));

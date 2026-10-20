@@ -2,6 +2,7 @@ import { beforeEach, describe, it } from 'vitest';
 
 import { DrawMode } from '~/engine/index.ts';
 
+import { HudTestIds } from './hud.test-ids.ts';
 import { HudDriver, makeHudDriver } from './hud.driver.tsx';
 
 describe('Hud', () => {
@@ -158,6 +159,17 @@ describe('Hud', () => {
 
             driver.assert.confirmShown(false);
             driver.assert.dealNumber(0);
+        });
+
+        it('hands focus back to the button that asked once the question is answered', async () => {
+            driver.given.session((s) => s.asPlayed(5));
+            await driver.when.created();
+
+            driver.click.newGame();
+            driver.assert.focusOn(HudTestIds.ConfirmLeave);
+            driver.click.keepPlaying();
+
+            driver.assert.focusOn(HudTestIds.NewGame);
         });
 
         it('drops the question if the game it was about is replaced elsewhere', async () => {

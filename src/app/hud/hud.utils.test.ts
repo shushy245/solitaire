@@ -10,6 +10,7 @@ import {
     formatElapsed,
     isAutoCompleteOffered,
     isUndoShortcut,
+    leaveQuestion,
     needsConfirmationToLeave,
     openLeaveRequest,
 } from './hud.utils.ts';
@@ -112,5 +113,16 @@ describe('isUndoShortcut', () => {
 
     it('ignores AltGr (Ctrl+Alt), which types characters on some layouts', () => {
         expect(isUndoShortcut(press({ key: 'z', code: 'KeyZ', ctrlKey: true, altKey: true }))).toBe(false);
+    });
+});
+
+describe('leaveQuestion', () => {
+    it('names the new mode when the request switches mode, and plainly asks otherwise', () => {
+        expect(leaveQuestion({ requestedMode: DrawMode.Three, currentMode: DrawMode.One })).toBe(
+            'Switch to Turn 3? This game will be lost.',
+        );
+        expect(leaveQuestion({ requestedMode: DrawMode.One, currentMode: DrawMode.One })).toBe(
+            'Deal a new game? This one will be lost.',
+        );
     });
 });

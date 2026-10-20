@@ -37,6 +37,24 @@ export const drawModeLabelMap: Record<DrawMode, string> = {
 
 export const drawModes: readonly DrawMode[] = [DrawMode.One, DrawMode.Three];
 
+// Asking for the other mode is a mode switch; asking for the same one is a plain new deal.
+export const leaveQuestion = ({
+    requestedMode,
+    currentMode,
+}: {
+    requestedMode: DrawMode;
+    currentMode: DrawMode;
+}): string =>
+    requestedMode === currentMode
+        ? 'Deal a new game? This one will be lost.'
+        : `Switch to ${drawModeLabelMap[requestedMode]}? This game will be lost.`;
+
+export type ModeSwitchProps = { selected: DrawMode; onSelect: (drawMode: DrawMode) => void };
+
+export type ModeButtonProps = { mode: DrawMode; isSelected: boolean; onSelect: (drawMode: DrawMode) => void };
+
+export type LeaveConfirmProps = { question: string; onLeave: () => void; onStay: () => void };
+
 // A request to leave the current game, remembered while the player confirms. It belongs to one deal:
 // once that deal is replaced, the question no longer applies.
 export type LeaveRequestModel = { drawMode: DrawMode; dealNumber: number };

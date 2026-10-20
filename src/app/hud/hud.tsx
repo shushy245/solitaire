@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { DrawMode } from '~/engine/index.ts';
 
@@ -14,7 +14,11 @@ import {
     drawModes,
     formatElapsed,
     isAutoCompleteOffered,
+    LeaveConfirmProps,
+    leaveQuestion,
     LeaveRequestModel,
+    ModeButtonProps,
+    ModeSwitchProps,
     needsConfirmationToLeave,
     openLeaveRequest,
 } from './hud.utils.ts';
@@ -105,8 +109,7 @@ export const Hud = (): JSX.Element => {
             </Row>
             {pending !== undefined && (
                 <LeaveConfirm
-                    drawMode={pending.drawMode}
-                    isModeChange={pending.drawMode !== game.drawMode}
+                    question={leaveQuestion({ requestedMode: pending.drawMode, currentMode: game.drawMode })}
                     onLeave={handleConfirmLeave}
                     onStay={handleKeepPlaying}
                 />
@@ -115,13 +118,7 @@ export const Hud = (): JSX.Element => {
     );
 };
 
-const ModeSwitch = ({
-    selected,
-    onSelect,
-}: {
-    selected: DrawMode;
-    onSelect: (drawMode: DrawMode) => void;
-}): JSX.Element => (
+const ModeSwitch = ({ selected, onSelect }: ModeSwitchProps): JSX.Element => (
     <div role="group" aria-label="Cards turned per draw" className={styles.modeSwitch}>
         {drawModes.map((mode) => (
             <ModeButton key={mode} mode={mode} isSelected={mode === selected} onSelect={onSelect} />
@@ -129,15 +126,7 @@ const ModeSwitch = ({
     </div>
 );
 
-const ModeButton = ({
-    mode,
-    isSelected,
-    onSelect,
-}: {
-    mode: DrawMode;
-    isSelected: boolean;
-    onSelect: (drawMode: DrawMode) => void;
-}): JSX.Element => {
+const ModeButton = ({ mode, isSelected, onSelect }: ModeButtonProps): JSX.Element => {
     const handleClick = (): void => {
         onSelect(mode);
     };
@@ -155,31 +144,49 @@ const ModeButton = ({
     );
 };
 
-type LeaveConfirmProps = { drawMode: DrawMode; isModeChange: boolean; onLeave: () => void; onStay: () => void };
+const LeaveConfirm = ({ question, onLeave, onStay }: LeaveConfirmProps): JSX.Element => {
+    // Whatever had focus when the question appeared (the button that asked) gets it back when it goes.
+    const opener = useRef(document.activeElement);
+    const leaveButton = useRef<HTMLButtonElement | undefined>(undefined);
+    const latestOnStay = useRef(onStay);
 
-const LeaveConfirm = ({ drawMode, isModeChange, onLeave, onStay }: LeaveConfirmProps): JSX.Element => {
-    // The question takes focus when it appears, so a keyboard user can answer it straight away.
+    useEffect(() => {
+        latestOnStay.current = onStay;
+    }, [onStay]);
+
+    // React hands refs null on unmount; undefined means "not mounted".
     const handleLeaveButtonRef: React.RefCallback<HTMLButtonElement> = useCallback((element) => {
-        if (element instanceof HTMLButtonElement) element.focus();
+        leaveButton.current = element ?? undefined;
     }, []);
 
-    const handleKeyDown = (event: React.KeyboardEvent): void => {
-        if (event.key === 'Escape') onStay();
-    };
+    // The question takes focus when it appears, so a keyboard user can answer it straight away.
+    useEffect(() => {
+        const returnTo = opener.current;
+        const leave = leaveButton.current;
+
+        if (leave !== undefined) leave.focus();
+
+        return () => {
+            if (returnTo instanceof HTMLElement && returnTo.isConnected) returnTo.focus();
+        };
+    }, []);
+
+    // Escape answers "keep playing" wherever focus is on the page.
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent): void => {
+            if (event.key === 'Escape') latestOnStay.current();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []);
 
     return (
-        <div
-            role="group"
-            aria-label="Leave this game?"
-            className={styles.confirm}
-            data-testid={HudTestIds.Confirm}
-            onKeyDown={handleKeyDown}
-        >
-            <p className={styles.confirmText}>
-                {isModeChange
-                    ? `Switch to ${drawModeLabelMap[drawMode]}? This game will be lost.`
-                    : `Deal a new game? This one will be lost.`}
-            </p>
+        <div role="group" aria-label="Leave this game?" className={styles.confirm} data-testid={HudTestIds.Confirm}>
+            <p className={styles.confirmText}>{question}</p>
             <Row className={styles.confirmActions}>
                 <button
                     type="button"
