@@ -165,10 +165,12 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     position: absolute;
     top: calc(var(--card-w) * 0.05);
     left: calc(var(--card-w) * 0.07);
+    // Rank and suit side by side, so both stay visible in the strip a covering card leaves showing.
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    line-height: 0.95;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 1px;
+    line-height: 1;
 }
 
 .indexFlipped {
@@ -180,13 +182,14 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .rank {
-    font-size: calc(var(--card-w) * 0.27);
+    // Floors keep phone-size indices legible; 13px still fits the visible strip of a covered card (--up-y).
+    font-size: max(calc(var(--card-w) * 0.27), 13px);
     font-weight: 700;
     letter-spacing: -0.04em;
 }
 
 .suit {
-    font-size: calc(var(--card-w) * 0.2);
+    font-size: max(calc(var(--card-w) * 0.2), 11px);
 }
 
 .center {

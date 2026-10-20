@@ -104,7 +104,7 @@ type GameContextValue = {
   - pre-mortem: a move naming a card no longer where it says (double-fired click) is rejected
   - review: a double-fired draw draws once; only the column a move uncovered is revealed and scored
 
-### Story `board` — the table renders, cards animate, click/double-click play
+### Story `board` — the table renders, cards animate, click/double-click play ✅
 - Owns: `src/app/board/`, `src/app/session/`, `src/app/game-provider.tsx`
 - Depends on: engine
 - Parallel: serial (fixes the `useGame` contract)
@@ -201,6 +201,22 @@ type GameContextValue = {
 - Dismissed — `listLegalMoves` includes legal no-op moves: precondition recorded on the function —
   a hint / "no moves left" feature must filter them first.
 - Dismissed — `at(items, index)` positional: it mirrors `Array.prototype.at`, a universal ordered pair.
+
+### `board` (code-review high, 10 findings; visual pass A+B)
+- Fixed — correctness (3): mid-deal cards caught stock clicks/double-clicks (could send an Ace up
+  unasked) → cards are inert and click-through until the deal settles; dealt cards slid under the
+  stock → lifted while dealing; deal keyed on seed (a replayed seed never re-dealt) → `dealNumber`.
+- Fixed — robustness (5): table height used max-down + max-up from different columns → `tallestColumn`;
+  auto-complete could stall if a step were rejected → falls back to Playing; `100vw` card sizing
+  → container units on `main`; a card flipped in place stayed lifted → lift ignores faces; 52 cards
+  re-rendered every clock tick → stable actions + memoised `Card`.
+- Fixed — style (1): column map duplicated → `STOCK_COLUMN`/`WASTE_COLUMN`/`FOUNDATION_FIRST_COLUMN` in layout.utils.
+- Dismissed (1): "announce stacked cards as face-down mid-deal" — the accessible name follows the
+  real card (the deal is cosmetic, ~1.5s); face-down cards never expose rank or suit.
+- Visual pass A+B: measurements clean at 390/768/1280, Lighthouse a11y 100. Fixed: title not
+  aligned with the centred board (→ shared `table-metrics.module.scss`); stacked-stock shadow halo
+  (→ `isBuried`). Not reproduced: a faint background artifact (reviewer saw it mid-HMR).
+- Observation kept: lots of empty felt below the tableau on phones — expected; the HUD story adds controls.
 
 ## RF-backlog
 - Prettier coverage for JSON/SCSS/HTML (from `scaffold` review).
