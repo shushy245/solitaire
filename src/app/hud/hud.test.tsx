@@ -172,6 +172,28 @@ describe('Hud', () => {
             driver.assert.focusOn(HudTestIds.NewGame);
         });
 
+        it('forgets the question once everything is undone, so a later move does not bring it back', async () => {
+            driver.given.session((s) => s.asPlayed(1));
+            await driver.when.created();
+
+            driver.click.newGame();
+            driver.click.undo();
+            driver.when.cardDrawnElsewhere();
+
+            driver.assert.confirmShown(false);
+        });
+
+        it('leaves focus where the player put it when the question lapses on its own', async () => {
+            driver.given.session((s) => s.asPlayed(5));
+            await driver.when.created();
+
+            driver.click.newGame();
+            driver.when.focused(HudTestIds.Undo);
+            driver.when.newGameStartedElsewhere();
+
+            driver.assert.focusOn(HudTestIds.Undo);
+        });
+
         it('drops the question if the game it was about is replaced elsewhere', async () => {
             driver.given.session((s) => s.asPlayed(5));
             await driver.when.created();

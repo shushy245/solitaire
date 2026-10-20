@@ -1,6 +1,6 @@
-import { DrawMode, isAutoCompletable, isWon } from '~/engine/index.ts';
+import { DrawMode, isAutoCompletable } from '~/engine/index.ts';
 
-import { SessionModel, SessionPhase } from '../session/session.utils.ts';
+import { isAutoCompleting, isGameUnderWay, SessionModel } from '../session/session.utils.ts';
 
 const MS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
@@ -19,13 +19,8 @@ export const formatElapsed = (elapsedMs: number): string => {
     return hours === 0 ? `${minutes}:${twoDigits(seconds)}` : `${hours}:${twoDigits(minutes)}:${twoDigits(seconds)}`;
 };
 
-const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
-
 // Leaving a game the player has started (and not finished) throws their progress away — ask first.
-export const needsConfirmationToLeave = (session: SessionModel): boolean =>
-    session.game.moves > 0 && !isWon(session.game);
-
-export const canUndo = (session: SessionModel): boolean => session.history.length > 0 && !isAutoCompleting(session);
+export const needsConfirmationToLeave = isGameUnderWay;
 
 export const isAutoCompleteOffered = (session: SessionModel): boolean =>
     isAutoCompletable(session.game) && !isAutoCompleting(session);
@@ -59,6 +54,14 @@ export type LeaveConfirmProps = { question: string; onLeave: () => void; onStay:
 // once that deal is replaced, the question no longer applies.
 export type LeaveRequestModel = { drawMode: DrawMode; dealNumber: number };
 
+const isRequestForCurrentDeal = ({
+    request,
+    session,
+}: {
+    request: LeaveRequestModel;
+    session: SessionModel;
+}): boolean => request.dealNumber === session.dealNumber;
+
 // The question also lapses once leaving stops needing confirmation (everything undone, or the game won).
 export const openLeaveRequest = ({
     request,
@@ -66,10 +69,11 @@ export const openLeaveRequest = ({
 }: {
     request: LeaveRequestModel | undefined;
     session: SessionModel;
-}): LeaveRequestModel | undefined =>
-    request !== undefined && request.dealNumber === session.dealNumber && needsConfirmationToLeave(session)
-        ? request
-        : undefined;
+}): LeaveRequestModel | undefined => {
+    if (request === undefined) return undefined;
+
+    return isRequestForCurrentDeal({ request, session }) && needsConfirmationToLeave(session) ? request : undefined;
+};
 
 const LATIN_LETTER = /^[a-z]$/i;
 

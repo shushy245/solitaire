@@ -5,7 +5,6 @@ import { aGameState } from '~/testkit/builders/index.ts';
 
 import { makeSession, SessionPhase } from '../session/session.utils.ts';
 import {
-    canUndo,
     countLabel,
     formatElapsed,
     isAutoCompleteOffered,
@@ -38,17 +37,6 @@ describe('needsConfirmationToLeave', () => {
         expect(needsConfirmationToLeave(fresh)).toBe(false);
         expect(needsConfirmationToLeave(played)).toBe(true);
         expect(needsConfirmationToLeave(won)).toBe(false);
-    });
-});
-
-describe('canUndo', () => {
-    it('needs something to undo and no auto-complete running', () => {
-        const fresh = session();
-        const withHistory = { ...fresh, history: [fresh.game] };
-
-        expect(canUndo(fresh)).toBe(false);
-        expect(canUndo(withHistory)).toBe(true);
-        expect(canUndo({ ...withHistory, phase: SessionPhase.AutoCompleting })).toBe(false);
     });
 });
 

@@ -4,7 +4,7 @@ import { at } from '~/testkit/at.ts';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
 import { dealGame, DrawMode, isWon, makeDrawMove, MoveKind, Rank, Suit } from '~/engine/index.ts';
 
-import { makeSession, reduceSession, SessionActionKind, SessionPhase } from './session.utils.ts';
+import { canUndo, makeSession, reduceSession, SessionActionKind, SessionPhase } from './session.utils.ts';
 
 const freshSession = () => makeSession({ seed: 77, drawMode: DrawMode.One });
 const drawIn = (session: ReturnType<typeof freshSession>) => {
@@ -239,5 +239,16 @@ describe('reduceSession — auto-complete', () => {
                 action: { kind: SessionActionKind.NewGame, seed: 1, drawMode: DrawMode.One },
             }).phase,
         ).toBe(SessionPhase.Playing);
+    });
+});
+
+describe('canUndo', () => {
+    it('needs something to undo and no auto-complete running', () => {
+        const fresh = freshSession();
+        const withHistory = { ...fresh, history: [fresh.game] };
+
+        expect(canUndo(fresh)).toBe(false);
+        expect(canUndo(withHistory)).toBe(true);
+        expect(canUndo({ ...withHistory, phase: SessionPhase.AutoCompleting })).toBe(false);
     });
 });

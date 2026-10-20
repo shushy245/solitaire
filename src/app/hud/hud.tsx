@@ -5,10 +5,10 @@ import { DrawMode } from '~/engine/index.ts';
 import { Row } from '../../ui/box.tsx';
 import { useGame } from '../game-provider.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
+import { canUndo } from '../session/session.utils.ts';
 import { useUndoShortcut } from './use-undo-shortcut.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
 import {
-    canUndo,
     countLabel,
     drawModeLabelMap,
     drawModes,
@@ -30,6 +30,9 @@ export const Hud = (): JSX.Element => {
     const { game } = session;
     const [leaveRequest, setLeaveRequest] = useState<LeaveRequestModel | undefined>(undefined);
     const pending = openLeaveRequest({ request: leaveRequest, session });
+
+    // A lapsed question is forgotten, not just hidden — otherwise the next move on this deal would revive it.
+    if (leaveRequest !== undefined && pending === undefined) setLeaveRequest(undefined);
 
     useUndoShortcut(undo);
 
@@ -144,8 +147,12 @@ const ModeButton = ({ mode, isSelected, onSelect }: ModeButtonProps): JSX.Elemen
     );
 };
 
+// Removing the focused element hands focus back to the page itself.
+const isFocusLost = (): boolean => document.activeElement === document.body;
+
 const LeaveConfirm = ({ question, onLeave, onStay }: LeaveConfirmProps): JSX.Element => {
-    // Whatever had focus when the question appeared (the button that asked) gets it back when it goes.
+    // Whatever had focus when the question appeared (the button that asked) gets it back when the question
+    // goes — but only if focus went with it; a player who has moved focus elsewhere keeps it there.
     const opener = useRef(document.activeElement);
     const leaveButton = useRef<HTMLButtonElement | undefined>(undefined);
     const latestOnStay = useRef(onStay);
@@ -167,7 +174,7 @@ const LeaveConfirm = ({ question, onLeave, onStay }: LeaveConfirmProps): JSX.Ele
         if (leave !== undefined) leave.focus();
 
         return () => {
-            if (returnTo instanceof HTMLElement && returnTo.isConnected) returnTo.focus();
+            if (returnTo instanceof HTMLElement && returnTo.isConnected && isFocusLost()) returnTo.focus();
         };
     }, []);
 

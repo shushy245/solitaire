@@ -62,9 +62,12 @@ export const makeSession = ({ seed, drawMode }: { seed: number; drawMode: DrawMo
     dealNumber: 0,
 });
 
-const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
+export const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
 
-const isClockRunning = (session: SessionModel): boolean => session.game.moves > 0 && !isWon(session.game);
+// Started and not yet finished: the clock runs, and leaving would throw the player's progress away.
+export const isGameUnderWay = (session: SessionModel): boolean => session.game.moves > 0 && !isWon(session.game);
+
+export const canUndo = (session: SessionModel): boolean => session.history.length > 0 && !isAutoCompleting(session);
 
 // Records a new game state on top of history; an unchanged game (illegal move) leaves the session as is.
 const advance = ({ session, game }: { session: SessionModel; game: GameStateModel }): SessionModel =>
@@ -106,7 +109,7 @@ const reducerMap: ReducerMap = {
     [SessionActionKind.Undo]: ({ session }) => {
         const previous = session.history[session.history.length - 1];
 
-        if (previous === undefined || isAutoCompleting(session)) return session;
+        if (previous === undefined || !canUndo(session)) return session;
 
         return { ...session, game: previous, history: session.history.slice(0, -1) };
     },
@@ -115,7 +118,7 @@ const reducerMap: ReducerMap = {
         dealNumber: session.dealNumber + 1,
     }),
     [SessionActionKind.Tick]: ({ session, action }) =>
-        isClockRunning(session) ? { ...session, elapsedMs: session.elapsedMs + action.elapsedMs } : session,
+        isGameUnderWay(session) ? { ...session, elapsedMs: session.elapsedMs + action.elapsedMs } : session,
     [SessionActionKind.StartAutoComplete]: ({ session }) =>
         isAutoCompletable(session.game) && !isAutoCompleting(session)
             ? { ...session, phase: SessionPhase.AutoCompleting }

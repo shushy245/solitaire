@@ -20,6 +20,7 @@ export type HudDriver = {
         unmounted: () => void;
         newGameStartedElsewhere: () => void;
         cardDrawnElsewhere: () => void;
+        focused: (testId: string) => void;
     };
     click: {
         undo: () => void;
@@ -104,6 +105,9 @@ export const makeHudDriver = (): HudDriver => {
                 act(() => {
                     game.newGame({ drawMode: DrawMode.One });
                 });
+            },
+            focused: (testId) => {
+                screen.getByTestId(testId).focus();
             },
             cardDrawnElsewhere: () => {
                 const game = outside.game;
