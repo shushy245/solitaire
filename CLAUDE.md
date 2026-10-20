@@ -27,8 +27,9 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 ## Landmines — read before touching the named areas
 
 ## What's done
-Full history: `git log`.
+Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `engine` — every Klondike rule as pure, seed-deterministic logic, proven against hundreds of random games; a double-fired click can never move the wrong card. `src/engine/` (barrel `index.ts`), property tests in `invariants.test.ts`.
 - `scaffold` — new contributors get the house rules enforced automatically: lint, typecheck (app, configs, e2e), unit + browser tests and a commit gate all run on an empty app that boots.
 
 ## What's next
-Story `engine` (`docs/plan.md`).
+Story `board` (`docs/plan.md`).

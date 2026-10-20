@@ -61,7 +61,7 @@ type GameContextValue = {
 
 ## Epic: Klondike v1
 
-### Story `scaffold` — repo, tooling, empty app boots
+### Story `scaffold` — repo, tooling, empty app boots ✅
 - Owns: repo root config, `src/main.tsx`, `src/app.tsx`, `src/ui/`, `src/testkit/`, `cypress/`
 - Depends on: —
 - Parallel: serial first (everything builds on it)
@@ -71,7 +71,7 @@ type GameContextValue = {
   - given the dev server, when the app loads, then the title "Solitaire" is visible (Cypress boot)
   - given the vitest suite, when it runs, then the setup file loads jest-dom matchers
 
-### Story `engine` — the rules of Klondike as pure functions
+### Story `engine` — the rules of Klondike as pure functions ✅
 - Owns: `src/engine/`
 - Depends on: scaffold
 - Parallel: serial (every later story consumes it)
@@ -98,7 +98,8 @@ type GameContextValue = {
   - property: across random seeds × random legal-move sequences — always 52 unique cards; no face-down card above a face-up one; foundations ascend in one suit; tableau face-up runs alternate colour and descend
   - property: every move from `listLegalMoves` is accepted by `applyMove`; no illegal move ever changes state
   - property: `applyMove` never mutates its input state
-- Pre-mortem cases (added at story-start)
+  - pre-mortem: a move naming a card no longer where it says (double-fired click) is rejected
+  - review: a double-fired draw draws once; only the column a move uncovered is revealed and scored
 
 ### Story `board` — the table renders, cards animate, click/double-click play
 - Owns: `src/app/board/`, `src/app/session/`, `src/app/game-provider.tsx`
@@ -182,6 +183,16 @@ type GameContextValue = {
 - Fixed: no `main` landmark (Lighthouse a11y 94) → app root is `<main>`; favicon 404 → `public/favicon.svg`;
   added meta description.
 - Carry-forward: from `board` on, the visual reviewer is told to bring its tab to the front before capturing.
+
+### `engine` (code-review high, 10 findings)
+- Fixed — correctness (1): a double-fired Draw drew twice → Draw names the stock top (`makeDrawMove`).
+- Fixed — robustness (3): reveal/score scoped to the move's source column; purity guard widened
+  (`~/`, `../`, navigator/globalThis/timers…); `shuffle` constrained to non-undefined items.
+- Fixed — style (4): named predicates (`canRecycle`, `hasStock`, `isAllFaceUp`, `isLowerRank`, `isSamePile`),
+  `CARDS_PER_SUIT`, test-only `randomSequence` moved to testkit, `isEmptyPile` reused.
+- Dismissed — `listLegalMoves` includes legal no-op moves: precondition recorded on the function —
+  a hint / "no moves left" feature must filter them first.
+- Dismissed — `at(items, index)` positional: it mirrors `Array.prototype.at`, a universal ordered pair.
 
 ## RF-backlog
 - Prettier coverage for JSON/SCSS/HTML (from `scaffold` review).

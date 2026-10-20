@@ -1,5 +1,11 @@
 # Changelog
 
+## engine — 2026-10-20
+- **Pain:** a solitaire game is only as trustworthy as its rules, and rule bugs (a wrong move allowed, a card lost, a score miscounted) are exactly what players notice.
+- **Fix:** wrote every Klondike rule — dealing, drawing one or three, recycling, building, scoring, winning, auto-finishing — as plain logic that never touches the screen, and tested it against hundreds of random games.
+- **Trade-off:** moves name the exact card they move, so the screen must always say which card; the payoff is that a double-click can never move the wrong card.
+- **Result:** 72 engine tests (`vitest`, incl. 5 property suites over random games); the review raised 10 issues — 8 fixed, including a double-click that drew twice.
+
 ## scaffold — 2026-10-20
 - **Pain:** there was no project, and every later story needed tooling that enforces the house rules without anyone remembering them.
 - **Fix:** set up an empty app with automatic style checks, type checks, fast tests, real-browser tests and a gate that refuses bad commits.
