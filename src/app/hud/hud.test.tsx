@@ -29,6 +29,27 @@ describe('Hud', () => {
             driver.assert.time('0:13');
         });
 
+        it('starts the clock at the moment of the first move, not at the tick before it', async () => {
+            await driver.when.created();
+
+            driver.time.pass(900);
+            driver.when.cardDrawnElsewhere();
+            driver.time.pass(600);
+
+            driver.assert.time('0:00');
+        });
+
+        it('counts right up to the winning card, then stops', async () => {
+            driver.given.session((s) => s.asReadyToAutoComplete().withElapsedMs(500));
+            await driver.when.created();
+
+            driver.click.autoComplete();
+            driver.time.autoCompleteSteps(52);
+            driver.time.pass(3_000);
+
+            driver.assert.time('0:05');
+        });
+
         it('leaves the clock at zero until the first move', async () => {
             await driver.when.created();
 

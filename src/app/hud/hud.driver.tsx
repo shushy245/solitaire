@@ -1,8 +1,8 @@
 import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
-import { DrawMode } from '~/engine/index.ts';
 import { aSession } from '~/testkit/builders/index.ts';
+import { DrawMode, makeDrawMove } from '~/engine/index.ts';
 import { fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Hud } from './hud.tsx';
@@ -19,6 +19,7 @@ export type HudDriver = {
         created: () => Promise<void>;
         unmounted: () => void;
         newGameStartedElsewhere: () => void;
+        cardDrawnElsewhere: () => void;
     };
     click: {
         undo: () => void;
@@ -98,6 +99,17 @@ export const makeHudDriver = (): HudDriver => {
 
                 act(() => {
                     game.newGame({ drawMode: DrawMode.One });
+                });
+            },
+            cardDrawnElsewhere: () => {
+                const game = outside.game;
+                const draw = game === undefined ? undefined : makeDrawMove(game.session.game);
+
+                if (game === undefined || draw === undefined)
+                    throw new Error('hud driver: cardDrawnElsewhere needs when.created and a non-empty stock');
+
+                act(() => {
+                    game.dispatchMove(draw);
                 });
             },
         },

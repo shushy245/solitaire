@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 
 import { AUTO_COMPLETE_STEP_MS, CLOCK_TICK_MS, GameContextValue, GameProviderProps } from './game-provider.utils.ts';
 import {
@@ -18,54 +18,62 @@ export const GameProvider = ({ createInitialSession, seedSource, now, children }
 
     const lastTick = useRef(now());
 
-    // The reducer only advances the clock while a game is in progress, so an always-on tick is safe.
-    // Each tick carries the real time since the previous one, however late the browser ran it.
+    // Adds the real time since the clock was last read. It runs on an always-on interval (the reducer only
+    // advances the clock while a game is in progress) and right before every action that changes the game,
+    // so the first move starts the clock and the winning move stops it at that exact moment.
+    const flushClock = useCallback((): void => {
+        const current = now();
+        dispatch({ kind: SessionActionKind.Tick, elapsedMs: current - lastTick.current });
+        lastTick.current = current;
+    }, [now]);
+
     useEffect(() => {
         lastTick.current = now();
-        const interval = setInterval(() => {
-            const current = now();
-            dispatch({ kind: SessionActionKind.Tick, elapsedMs: current - lastTick.current });
-            lastTick.current = current;
-        }, CLOCK_TICK_MS);
+        const interval = setInterval(flushClock, CLOCK_TICK_MS);
 
         return () => {
             clearInterval(interval);
         };
-    }, [now]);
+    }, [now, flushClock]);
 
     // One card per step; each new game state schedules the next, and leaving the phase cancels it.
     useEffect(() => {
         if (session.phase !== SessionPhase.AutoCompleting) return undefined;
 
         const timer = setTimeout(() => {
+            flushClock();
             dispatch({ kind: SessionActionKind.AutoCompleteStep });
         }, AUTO_COMPLETE_STEP_MS);
 
         return () => {
             clearTimeout(timer);
         };
-    }, [session.phase, session.game]);
+    }, [session.phase, session.game, flushClock]);
 
-    // Actions close over dispatch and seedSource only, so they stay stable across clock ticks.
+    // Actions close over dispatch, flushClock and seedSource only, so they stay stable across clock ticks.
     const actions = useMemo<Omit<GameContextValue, 'session'>>(
         () => ({
             dispatchMove: (move) => {
+                flushClock();
                 dispatch({ kind: SessionActionKind.Move, move });
             },
             sendToFoundation: (cardId) => {
+                flushClock();
                 dispatch({ kind: SessionActionKind.SendToFoundation, cardId });
             },
             undo: () => {
+                flushClock();
                 dispatch({ kind: SessionActionKind.Undo });
             },
             newGame: ({ drawMode }) => {
+                flushClock();
                 dispatch({ kind: SessionActionKind.NewGame, seed: seedSource(), drawMode });
             },
             startAutoComplete: () => {
                 dispatch({ kind: SessionActionKind.StartAutoComplete });
             },
         }),
-        [seedSource],
+        [seedSource, flushClock],
     );
     const value = useMemo<GameContextValue>(() => ({ session, ...actions }), [session, actions]);
 
