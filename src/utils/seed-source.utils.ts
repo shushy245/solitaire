@@ -1,15 +1,19 @@
 import { z } from 'zod';
 
-// ?seed= is external input: a whole number in the 32-bit range, or it is ignored.
-const SeedParamSchema = z.coerce
-    .number()
-    .int()
-    .min(0)
-    .max(2 ** 32 - 1);
+// ?seed= is external input: plain decimal digits in the 32-bit range, or it is ignored.
+const SeedParamSchema = z
+    .string()
+    .regex(/^\d+$/)
+    .transform(Number)
+    .pipe(
+        z
+            .number()
+            .int()
+            .max(2 ** 32 - 1),
+    );
 
 export const seedFromSearch = (search: string): number | undefined => {
-    const raw = new URLSearchParams(search).get('seed') ?? '';
-    const parsed = SeedParamSchema.safeParse(raw);
+    const parsed = SeedParamSchema.safeParse(new URLSearchParams(search).get('seed') ?? undefined);
 
-    return raw === '' || !parsed.success ? undefined : parsed.data;
+    return parsed.success ? parsed.data : undefined;
 };

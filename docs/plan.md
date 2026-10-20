@@ -175,6 +175,27 @@ type GameContextValue = {
   - concurrency: starting a new game mid-cascade stops the animation loop (no leaked rAF)
   - Cypress: auto-complete a near-won game to the win overlay
 
+### Story `felt-and-sound` — a brighter table and sounds for card actions (requested 2026-10-20)
+- Owns: `src/styles/global.scss` (palette tokens), `src/app/sound/`
+- Depends on: celebration (runs last; touches the tokens every earlier story uses)
+- Parallel: serial — palette tokens are a shared seam
+- Task: brighten the felt so it is more lively yet easy on the eye — keep cards, text and slot
+  outlines at their contrast targets (text ≥ 4.5:1, outlines/controls ≥ 3:1), re-checked by
+  measurement at 390/768/1280. Add short sounds for card actions, synthesized with the Web Audio
+  API (no audio files to ship or license): deal, draw, flip, place, invalid drop / snap-back,
+  recycle, send to foundation, win. A visible mute toggle, remembered across reloads; sound is
+  never played before the player's first interaction (browser autoplay rules) and never throws
+  if audio is unavailable.
+- Cases:
+  - the felt tokens meet the contrast targets against card faces, text and slot outlines (measured)
+  - each card action maps to exactly one sound (data table), and an unchanged/illegal action plays the snap-back sound only for a drop
+  - a draw of three plays one draw sound, not three; a deal plays a quick cascade, not 52 overlapping sounds
+  - muted: no sound is scheduled; the mute choice survives a reload
+  - no audio context is created before the first pointer/key interaction; a blocked or missing AudioContext degrades to silence without errors
+  - reduced motion does not mute sound (they are independent preferences)
+  - Cypress: actions in a real browser schedule the expected sounds (audio port faked in-page), and mute silences them
+  - manual: listen in Chrome and Safari — every action audible, nothing clipped or too loud
+
 ---
 
 ## Review triage

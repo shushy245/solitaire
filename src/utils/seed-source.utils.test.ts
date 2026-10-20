@@ -8,13 +8,18 @@ describe('seedFromSearch', () => {
     });
 
     it('ignores a missing, negative, fractional, oversized or non-numeric seed', () => {
-        expect(['', '?seed=', '?seed=-1', '?seed=1.5', '?seed=4294967296', '?seed=abc'].map(seedFromSearch)).toEqual([
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-            undefined,
-        ]);
+        const rejected = [
+            '',
+            '?seed=',
+            '?seed=-1',
+            '?seed=1.5',
+            '?seed=4294967296',
+            '?seed=abc',
+            '?seed=%20',
+            '?seed=0x10',
+            '?seed=1e3',
+        ];
+
+        expect(rejected.map(seedFromSearch).filter((seed) => seed !== undefined)).toEqual([]);
     });
 });

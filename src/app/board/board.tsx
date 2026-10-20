@@ -36,14 +36,15 @@ export const Board = (): JSX.Element => {
     const slots = useMemo(() => layoutCards(game), [game]);
     const order = useMemo(() => dealOrder(slots), [slots]);
     const dealPhase = useDealAnimation(session.dealNumber);
-    const { lifted, handleLanded } = useLiftedCards(slots);
+    const { lifted, liftUntilLanded, handleLanded } = useLiftedCards(slots);
     const cards = shownCardsFor({ phase: dealPhase, slots });
     const boardElement = useRef<HTMLElement | undefined>(undefined);
-    const { draggingIds, releasedIds, handleCardPointerDown, handleReleasedLanded } = useCardDrag({
+    const { draggingIds, handleCardPointerDown } = useCardDrag({
         game,
         dealNumber: session.dealNumber,
         isEnabled: isSettled(dealPhase),
         dispatchMove,
+        onRelease: liftUntilLanded,
         boardRef: boardElement,
     });
 
@@ -51,14 +52,6 @@ export const Board = (): JSX.Element => {
     const handleBoardRef: React.RefCallback<HTMLElement> = useCallback((element) => {
         boardElement.current = element ?? undefined;
     }, []);
-
-    const handleCardLanded = useCallback(
-        (cardId: string) => {
-            handleLanded(cardId);
-            handleReleasedLanded(cardId);
-        },
-        [handleLanded, handleReleasedLanded],
-    );
 
     // A draw names the stock's top card, so a stale second click is rejected by the engine.
     const handleStockClick = (): void => {
@@ -106,11 +99,7 @@ export const Board = (): JSX.Element => {
                     key={slot.card.id}
                     slot={slot}
                     shownSlot={shown}
-                    isLifted={
-                        lifted.has(slot.card.id) ||
-                        releasedIds.has(slot.card.id) ||
-                        (isDealing(dealPhase) && order.has(slot.card.id))
-                    }
+                    isLifted={lifted.has(slot.card.id) || (isDealing(dealPhase) && order.has(slot.card.id))}
                     isDragging={draggingIds.has(slot.card.id)}
                     isInteractive={isSettled(dealPhase)}
                     delayClassName={
@@ -119,7 +108,7 @@ export const Board = (): JSX.Element => {
                             : undefined
                     }
                     onSendToFoundation={sendToFoundation}
-                    onLanded={handleCardLanded}
+                    onLanded={handleLanded}
                     onPointerDown={handleCardPointerDown}
                 />
             ))}

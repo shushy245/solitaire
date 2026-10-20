@@ -117,6 +117,11 @@ describe('findDropTarget', () => {
         expect(findDropTarget({ dragged: rect(5, 105), piles, source })).toBeUndefined();
     });
 
+    it('treats a drop mostly back over the source pile as no drop, even if it grazes a neighbour', () => {
+        // overlaps column 0 by 43px and column 1 by only 3px
+        expect(findDropTarget({ dragged: rect(13, 100), piles, source })).toBeUndefined();
+    });
+
     it('finds nothing when the card is dropped on bare felt', () => {
         expect(findDropTarget({ dragged: rect(400, 400), piles, source })).toBeUndefined();
     });

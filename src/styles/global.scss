@@ -20,6 +20,8 @@
     --back-line: rgb(201 162 76 / 0.45);
 
     --slot-line: rgb(239 230 210 / 0.28);
+    // Controls (the empty stock) need >= 3:1 against the felt; decorative outlines stay quieter.
+    --control-line: rgb(239 230 210 / 0.62);
     --slot-fill: rgb(0 0 0 / 0.12);
 
     color-scheme: dark;

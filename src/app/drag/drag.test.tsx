@@ -9,6 +9,7 @@ const redTen = { rank: Rank.Ten, suit: Suit.Hearts };
 const blackNine = { rank: Rank.Nine, suit: Suit.Spades };
 const hidden = { rank: Rank.Two, suit: Suit.Clubs, faceUp: false };
 const aceOfHearts = { rank: Rank.Ace, suit: Suit.Hearts };
+const blackJack = { rank: Rank.Jack, suit: Suit.Clubs };
 
 describe('dragging cards', () => {
     let driver: BoardDriver;
@@ -89,6 +90,37 @@ describe('dragging cards', () => {
 
         driver.assert.dragging({ card: redTen, isDragging: false });
         driver.assert.pointerListenersDetached();
+    });
+
+    it('drops a drag whose pointerup was lost (e.g. released outside the window), so cards stop following the mouse', async () => {
+        driver.given.column({ index: 0, cards: [redTen] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.pointer.press(redTen);
+        driver.pointer.moveBy({ dx: 30, dy: 40 });
+        driver.pointer.hoverBy({ dx: 20, dy: 0 });
+
+        driver.assert.dragging({ card: redTen, isDragging: false });
+        driver.assert.cardIn({ card: redTen, pile: PileKind.Tableau, pileIndex: 0 });
+        driver.assert.pointerListenersDetached();
+    });
+
+    it('keeps snapping-back cards lifted until they land, even if another card is clicked meanwhile', async () => {
+        driver.given.column({ index: 0, cards: [redTen] });
+        driver.given.column({ index: 3, cards: [blackJack] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.pointer.press(redTen);
+        driver.pointer.moveBy({ dx: 300, dy: 400 });
+        driver.pointer.release();
+        driver.pointer.press(blackJack);
+        driver.pointer.release();
+
+        driver.assert.lifted({ card: redTen, isLifted: true });
+        driver.fire.landed(redTen);
+        driver.assert.lifted({ card: redTen, isLifted: false });
     });
 
     it('lets go of the window listeners if the table unmounts mid-drag', async () => {

@@ -25,6 +25,7 @@ export type BoardDriver = {
     pointer: {
         press: (card: CardName) => void;
         moveBy: (args: { dx: number; dy: number }) => void;
+        hoverBy: (args: { dx: number; dy: number }) => void;
         release: () => void;
         cancel: () => void;
     };
@@ -150,7 +151,23 @@ export const makeBoardDriver = (): BoardDriver => {
             moveBy: ({ dx, dy }) => {
                 pointer.x += dx;
                 pointer.y += dy;
-                fireEvent.pointerMove(window, { pointerId: POINTER_ID, clientX: pointer.x, clientY: pointer.y });
+                fireEvent.pointerMove(window, {
+                    pointerId: POINTER_ID,
+                    buttons: 1,
+                    clientX: pointer.x,
+                    clientY: pointer.y,
+                });
+            },
+            // The mouse moves with no button held — what follows a pointerup the page never received.
+            hoverBy: ({ dx, dy }) => {
+                pointer.x += dx;
+                pointer.y += dy;
+                fireEvent.pointerMove(window, {
+                    pointerId: POINTER_ID,
+                    buttons: 0,
+                    clientX: pointer.x,
+                    clientY: pointer.y,
+                });
             },
             release: () => {
                 fireEvent.pointerUp(window, { pointerId: POINTER_ID, clientX: pointer.x, clientY: pointer.y });

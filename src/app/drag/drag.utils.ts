@@ -81,7 +81,8 @@ const overlapArea = ({ a, b }: { a: RectModel; b: RectModel }): number =>
 const isSamePile = ({ a, b }: { a: PileRefModel; b: PileRefModel }): boolean =>
     a.pile === b.pile && a.pileIndex === b.pileIndex;
 
-// The pile the dragged card overlaps most, other than the one it came from; none on bare felt.
+// The pile the dragged card overlaps most; none on bare felt, and none when that pile is the one the
+// cards came from — a drop mostly back home is a change of mind, even if it grazes a neighbour.
 export const findDropTarget = ({
     dragged,
     piles,
@@ -92,14 +93,15 @@ export const findDropTarget = ({
     source: PileRefModel;
 }): PileRefModel | undefined => {
     const best = piles
-        .filter((pile) => !isSamePile({ a: pile, b: source }))
         .map((pile) => ({ pile, area: overlapArea({ a: dragged, b: pile.rect }) }))
         .reduce<{ pile: PileRectModel; area: number } | undefined>(
             (top, candidate) => (candidate.area > (top === undefined ? 0 : top.area) ? candidate : top),
             undefined,
         );
 
-    return best === undefined ? undefined : { pile: best.pile.pile, pileIndex: best.pile.pileIndex };
+    if (best === undefined || isSamePile({ a: best.pile, b: source })) return undefined;
+
+    return { pile: best.pile.pile, pileIndex: best.pile.pileIndex };
 };
 
 export const unionRects = (rects: readonly RectModel[]): RectModel => ({

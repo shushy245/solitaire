@@ -94,9 +94,9 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     display: grid;
     place-items: center;
     padding: 0;
-    border: 1px solid var(--slot-line);
+    border: 1px solid var(--control-line);
     background: var(--slot-fill);
-    color: var(--slot-line);
+    color: var(--control-line);
     font: inherit;
     cursor: pointer;
 

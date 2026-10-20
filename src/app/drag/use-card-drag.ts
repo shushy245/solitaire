@@ -16,23 +16,21 @@ import {
 } from './drag.utils.ts';
 
 // startRect is the lead card's box at pick-up: the drop box is computed from it plus the pointer travel,
-// never measured at release, when the card may still be easing toward the pointer.
+// never measured at release, when the card may still be easing toward the pointer. `elements` is
+// resolved once, when the press turns into a drag.
 type ActiveDrag = {
     pickup: DragPickupModel;
     pointerId: number;
     startX: number;
     startY: number;
     startRect: RectModel;
-    isDragging: boolean;
+    elements: readonly HTMLElement[] | undefined;
 };
 
 type CardDragResult = {
     // Cards following the pointer right now.
     draggingIds: ReadonlySet<string>;
-    // Cards released and flying to their target (or back) — kept lifted until they land.
-    releasedIds: ReadonlySet<string>;
     handleCardPointerDown: (args: { cardId: string; event: React.PointerEvent }) => void;
-    handleReleasedLanded: (cardId: string) => void;
 };
 
 const NONE: ReadonlySet<string> = new Set();
@@ -42,6 +40,16 @@ const toRect = (element: Element): RectModel => {
 
     return { left, top, right, bottom };
 };
+
+const isDragging = (drag: ActiveDrag): boolean => drag.elements !== undefined;
+
+const isSamePointer = ({ drag, event }: { drag: ActiveDrag; event: PointerEvent }): boolean =>
+    event.pointerId === drag.pointerId;
+
+const isPrimaryButton = (event: React.PointerEvent): boolean => event.button === 0;
+
+// A move with no button held means the release happened where the page could not see it.
+const isReleaseLost = (event: PointerEvent): boolean => event.buttons === 0;
 
 const cardElements = ({ board, cardIds }: { board: HTMLElement; cardIds: readonly string[] }): HTMLElement[] =>
     cardIds.flatMap((id) => {
@@ -56,25 +64,24 @@ const measurePiles = ({
     draggedIds,
 }: {
     board: HTMLElement;
-    draggedIds: readonly string[];
+    draggedIds: ReadonlySet<string>;
 }): PileRectModel[] => {
-    const groups = [...board.querySelectorAll('[data-pile]')]
-        .filter((element) => !draggedIds.includes(element.getAttribute('data-card-id') ?? ''))
-        .reduce<Map<string, { ref: NonNullable<ReturnType<typeof pileRefFromElement>>; rects: RectModel[] }>>(
-            (acc, element) => {
-                const ref = pileRefFromElement(element);
+    const groups = new Map<string, PileRectModel>();
 
-                if (ref === undefined) return acc;
+    board.querySelectorAll('[data-pile]').forEach((element) => {
+        const ref = pileRefFromElement(element);
 
-                const key = `${ref.pile}:${ref.pileIndex}`;
-                const group = acc.get(key) ?? { ref, rects: [] };
+        if (ref === undefined || draggedIds.has(element.getAttribute('data-card-id') ?? '')) return;
 
-                return new Map(acc).set(key, { ref, rects: [...group.rects, toRect(element)] });
-            },
-            new Map(),
-        );
+        const key = `${ref.pile}:${ref.pileIndex}`;
+        const known = groups.get(key);
+        groups.set(key, {
+            ...ref,
+            rect: known === undefined ? toRect(element) : unionRects([known.rect, toRect(element)]),
+        });
+    });
 
-    return [...groups.values()].map(({ ref, rects }) => ({ ...ref, rect: unionRects(rects) }));
+    return [...groups.values()];
 };
 
 const setDragOffset = ({ elements, dx, dy }: { elements: readonly HTMLElement[]; dx: number; dy: number }): void => {
@@ -94,21 +101,23 @@ const clearDragOffset = (elements: readonly HTMLElement[]): void => {
 // Pointer-driven drag of a card or run. The offset is written straight to the cards' CSS variables on
 // every pointermove (no React render per frame); on release the offset is cleared in the same task as
 // the move is dispatched, so the CSS transition flies the cards from where they were dropped.
+// Released cards are handed to onRelease so the board keeps them lifted until they land.
 export const useCardDrag = ({
     game,
     dealNumber,
     isEnabled,
     dispatchMove,
+    onRelease,
     boardRef,
 }: {
     game: GameStateModel;
     dealNumber: number;
     isEnabled: boolean;
     dispatchMove: (move: Move) => void;
+    onRelease: (cardIds: readonly string[]) => void;
     boardRef: MutableRefObject<HTMLElement | undefined>;
 }): CardDragResult => {
     const [draggingIds, setDraggingIds] = useState<ReadonlySet<string>>(NONE);
-    const [releasedIds, setReleasedIds] = useState<ReadonlySet<string>>(NONE);
     const active = useRef<ActiveDrag | undefined>(undefined);
     const latestGame = useRef(game);
     const detach = useRef<() => void>(() => undefined);
@@ -118,41 +127,47 @@ export const useCardDrag = ({
         latestGame.current = game;
     }, [game]);
 
-    const draggedElements = useCallback((): HTMLElement[] => {
-        const board = boardRef.current;
-        const drag = active.current;
-
-        return board === undefined || drag === undefined ? [] : cardElements({ board, cardIds: drag.pickup.cardIds });
-    }, [boardRef]);
-
+    // Ends the press or drag: listeners off, offsets cleared, released cards handed back for landing.
     const endDrag = useCallback((): void => {
         const drag = active.current;
 
         detach.current();
-        clearDragOffset(draggedElements());
         active.current = undefined;
         setDraggingIds(NONE);
-        setReleasedIds(drag !== undefined && drag.isDragging ? new Set(drag.pickup.cardIds) : NONE);
-    }, [draggedElements]);
+
+        if (drag === undefined || drag.elements === undefined) return;
+
+        clearDragOffset(drag.elements);
+        onRelease(drag.pickup.cardIds);
+    }, [onRelease]);
 
     const handleMove = useCallback(
         (event: PointerEvent): void => {
             const drag = active.current;
+            const board = boardRef.current;
 
-            if (drag === undefined || event.pointerId !== drag.pointerId) return;
+            if (drag === undefined || board === undefined || !isSamePointer({ drag, event })) return;
+            if (isReleaseLost(event)) {
+                endDrag();
+
+                return;
+            }
 
             const dx = event.clientX - drag.startX;
             const dy = event.clientY - drag.startY;
 
-            if (!drag.isDragging && !hasMovedBeyondClick({ dx, dy })) return;
-            if (!drag.isDragging) {
-                active.current = { ...drag, isDragging: true };
+            if (!isDragging(drag) && !hasMovedBeyondClick({ dx, dy })) return;
+
+            const elements = drag.elements ?? cardElements({ board, cardIds: drag.pickup.cardIds });
+
+            if (!isDragging(drag)) {
+                active.current = { ...drag, elements };
                 setDraggingIds(new Set(drag.pickup.cardIds));
             }
 
-            setDragOffset({ elements: draggedElements(), dx, dy });
+            setDragOffset({ elements, dx, dy });
         },
-        [draggedElements],
+        [boardRef, endDrag],
     );
 
     const handleUp = useCallback(
@@ -160,8 +175,8 @@ export const useCardDrag = ({
             const drag = active.current;
             const board = boardRef.current;
 
-            if (drag === undefined || event.pointerId !== drag.pointerId) return;
-            if (!drag.isDragging || board === undefined) {
+            if (drag === undefined || !isSamePointer({ drag, event })) return;
+            if (!isDragging(drag) || board === undefined) {
                 endDrag();
 
                 return;
@@ -173,7 +188,7 @@ export const useCardDrag = ({
                     dx: event.clientX - drag.startX,
                     dy: event.clientY - drag.startY,
                 }),
-                piles: measurePiles({ board, draggedIds: drag.pickup.cardIds }),
+                piles: measurePiles({ board, draggedIds: new Set(drag.pickup.cardIds) }),
                 source: drag.pickup.source,
             });
             const move =
@@ -184,19 +199,22 @@ export const useCardDrag = ({
             endDrag();
             if (move !== undefined) dispatchMove(move);
         },
-        [boardRef, dispatchMove, draggedElements, endDrag],
+        [boardRef, dispatchMove, endDrag],
     );
 
     const handleCancel = useCallback(
         (event: PointerEvent): void => {
-            if (active.current !== undefined && event.pointerId === active.current.pointerId) endDrag();
+            const drag = active.current;
+
+            if (drag !== undefined && isSamePointer({ drag, event })) endDrag();
         },
         [endDrag],
     );
 
     const handleCardPointerDown = useCallback(
         ({ cardId, event }: { cardId: string; event: React.PointerEvent }): void => {
-            const pickup = isEnabled && event.button === 0 ? pickUp({ game: latestGame.current, cardId }) : undefined;
+            const pickup =
+                isEnabled && isPrimaryButton(event) ? pickUp({ game: latestGame.current, cardId }) : undefined;
 
             if (pickup === undefined || active.current !== undefined) return;
 
@@ -206,7 +224,7 @@ export const useCardDrag = ({
                 startX: event.clientX,
                 startY: event.clientY,
                 startRect: toRect(event.currentTarget),
-                isDragging: false,
+                elements: undefined,
             };
             window.addEventListener('pointermove', handleMove);
             window.addEventListener('pointerup', handleUp);
@@ -220,17 +238,20 @@ export const useCardDrag = ({
         [isEnabled, handleMove, handleUp, handleCancel],
     );
 
-    // A new deal or unmount mid-drag ends the drag and drops the window listeners.
+    // A new deal or unmount mid-drag ends the drag and drops the window listeners. Read through a ref so
+    // a new endDrag identity never cancels a live drag on its own.
+    const latestEndDrag = useRef(endDrag);
+
+    useLayoutEffect(() => {
+        latestEndDrag.current = endDrag;
+    }, [endDrag]);
+
     useEffect(
         () => () => {
-            if (active.current !== undefined) endDrag();
+            if (active.current !== undefined) latestEndDrag.current();
         },
-        [dealNumber, endDrag],
+        [dealNumber],
     );
 
-    const handleReleasedLanded = useCallback((cardId: string) => {
-        setReleasedIds((latest) => (latest.has(cardId) ? new Set([...latest].filter((id) => id !== cardId)) : latest));
-    }, []);
-
-    return { draggingIds, releasedIds, handleCardPointerDown, handleReleasedLanded };
+    return { draggingIds, handleCardPointerDown };
 };

@@ -1,6 +1,7 @@
 import { BoardTestIds } from '../../../src/app/board/board.test-ids.ts';
 
-const POINTER = { pointerId: 1, button: 0, eventConstructor: 'PointerEvent' };
+// buttons: 1 while pressed, as a real browser reports — a move with no button held ends the drag.
+const POINTER = { pointerId: 1, button: 0, buttons: 1, eventConstructor: 'PointerEvent' };
 
 const centerOf = (element: JQuery) => {
     const rect = element[0]?.getBoundingClientRect();
@@ -29,7 +30,7 @@ export const boardDriver = {
                     cy.wrap(source).trigger('pointerdown', { ...POINTER, clientX: from.x, clientY: from.y });
                     cy.document().trigger('pointermove', { ...POINTER, clientX: from.x + 10, clientY: from.y + 10 });
                     cy.document().trigger('pointermove', { ...POINTER, clientX: to.x, clientY: to.y + 20 });
-                    cy.document().trigger('pointerup', { ...POINTER, clientX: to.x, clientY: to.y + 20 });
+                    cy.document().trigger('pointerup', { ...POINTER, buttons: 0, clientX: to.x, clientY: to.y + 20 });
                 });
             });
         },
