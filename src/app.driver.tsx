@@ -8,6 +8,7 @@ import { fakeNow } from './testkit/provider-fakes.ts';
 import { HudTestIds } from './app/hud/hud.test-ids.ts';
 import { FakeLogger } from './testkit/fakes/fake-logger.ts';
 import { BoardTestIds } from './app/board/board.test-ids.ts';
+import { MotionProvider } from './app/motion/motion-provider.tsx';
 import { MemoryStorage } from './testkit/fakes/memory-storage.ts';
 import { makeSessionStore } from './app/persistence/session-store.ts';
 import { DEAL_TOTAL_MS, STACK_HOLD_MS } from './app/board/board.utils.ts';
@@ -67,13 +68,9 @@ export const makeAppDriver = (): AppDriver => {
         const initialSession = store.load({ seedParam: scenario.seedParam, freshSeed: seedSource });
 
         return (
-            <App
-                initialSession={initialSession}
-                saveSession={store.save}
-                seedSource={seedSource}
-                now={fakeNow}
-                prefersReducedMotion={motionIsFine}
-            />
+            <MotionProvider prefersReducedMotion={motionIsFine}>
+                <App initialSession={initialSession} saveSession={store.save} seedSource={seedSource} now={fakeNow} />
+            </MotionProvider>
         );
     };
 

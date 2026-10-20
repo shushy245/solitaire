@@ -10,6 +10,7 @@ import { Celebration } from './celebration.tsx';
 import { SessionModel } from '../session/session.utils.ts';
 import { GameContextValue } from '../game-provider.utils.ts';
 import { GameProvider, useGame } from '../game-provider.tsx';
+import { MotionProvider } from '../motion/motion-provider.tsx';
 import { CelebrationTestIds } from './celebration.test-ids.ts';
 
 const FRAME_WINDOW_MS = 100;
@@ -85,9 +86,11 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
                         now={fakeNow}
                         saveSession={discardSave}
                     >
-                        <Board />
-                        <Celebration prefersReducedMotion={prefersReducedMotion} />
-                        <ElsewhereInTheApp />
+                        <MotionProvider prefersReducedMotion={prefersReducedMotion}>
+                            <Board />
+                            <Celebration />
+                            <ElsewhereInTheApp />
+                        </MotionProvider>
                     </GameProvider>,
                 ).unmount;
             },

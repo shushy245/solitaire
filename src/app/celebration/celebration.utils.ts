@@ -3,8 +3,6 @@ import { CardModel, GameStateModel } from '~/engine/index.ts';
 import { formatElapsed } from '../hud/hud.utils.ts';
 import { BoundsModel, LaunchModel, launchOrder } from './cascade.utils.ts';
 
-export type CelebrationProps = { prefersReducedMotion: () => boolean };
-
 export type WinOverlayProps = { elapsedMs: number; score: number; onNewGame: () => void };
 
 export type WinCascadeProps = { game: GameStateModel };

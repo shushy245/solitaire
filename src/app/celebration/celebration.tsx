@@ -4,11 +4,11 @@ import { GameStateModel, isWon } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
 import { CelebrationTestIds } from './celebration.test-ids.ts';
+import { usePrefersReducedMotion } from '../motion/motion-provider.tsx';
 import { CascadeModel, isCascadeOver, makeCascade, stepCascade } from './cascade.utils.ts';
 import { measureCardRect, paintCard, prepareCanvas, readCardPaint } from './cascade-canvas.ts';
 import {
     cardsById,
-    CelebrationProps,
     planLaunches,
     viewportBounds,
     WinCascadeProps,
@@ -20,8 +20,9 @@ import styles from './celebration.module.scss';
 
 // Shown for as long as the game is won. The cascade plays for a win made on this visit — not for a game that
 // was already won when the page opened — and never for a player who prefers reduced motion.
-export const Celebration = ({ prefersReducedMotion }: CelebrationProps): JSX.Element | undefined => {
+export const Celebration = (): JSX.Element | undefined => {
     const { session, newGame } = useGame();
+    const prefersReducedMotion = usePrefersReducedMotion();
     const { game } = session;
     const wonOnArrival = useRef<GameStateModel | undefined>(isWon(game) ? game : undefined);
 

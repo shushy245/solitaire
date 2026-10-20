@@ -17,13 +17,11 @@ export const App = ({
     saveSession,
     seedSource,
     now,
-    prefersReducedMotion,
 }: {
     initialSession: SessionModel;
     saveSession: (session: SessionModel) => void;
     seedSource: () => number;
     now: () => number;
-    prefersReducedMotion: () => boolean;
 }): JSX.Element => {
     const createInitialSession = (): SessionModel => initialSession;
 
@@ -43,7 +41,7 @@ export const App = ({
                         <Hud />
                     </header>
                     <Board />
-                    <Celebration prefersReducedMotion={prefersReducedMotion} />
+                    <Celebration />
                 </FullColumn>
             </main>
         </GameProvider>
