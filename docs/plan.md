@@ -191,6 +191,10 @@ type GameContextValue = {
   - reduced motion: no cascade, the overlay appears directly
   - concurrency: starting a new game mid-cascade stops the animation loop (no leaked rAF)
   - Cypress: auto-complete a near-won game to the win overlay
+  - pre-mortem: unmount, undo of the win, or a new game stops the frame loop (no frame requested afterwards)
+  - pre-mortem: a long gap between frames (background tab) is clamped, so no card tunnels through the floor
+  - pre-mortem: a game already won when the page loads shows the overlay without replaying the cascade
+  - pre-mortem: the overlay's New game takes focus when it appears and deals in the won game's mode
 
 ### Story `felt-and-sound` — a brighter table and sounds for card actions (requested 2026-10-20)
 - Owns: `src/styles/global.scss` (palette tokens), `src/app/sound/`
