@@ -11,7 +11,7 @@ export default [
 
     // ── Boundary files: null is allowed (normalise at the seam) ───────────────────────────────
     {
-        files: ['**/main.tsx', '**/cypress.config.ts'],
+        files: ['src/utils/get-element-by-id.ts'],
         rules: {
             'no-restricted-syntax': 'off',
         },

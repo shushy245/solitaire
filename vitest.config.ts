@@ -1,18 +1,17 @@
-import path from 'path';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, mergeConfig } from 'vitest/config';
 
-export default defineConfig({
-    resolve: {
-        alias: {
-            '~': path.resolve(import.meta.dirname, 'src'),
+import viteConfig from './vite.config.ts';
+
+export default mergeConfig(
+    viteConfig,
+    defineConfig({
+        test: {
+            reporters: ['verbose'],
+            environment: 'jsdom',
+            include: ['src/**/*.test.{ts,tsx}'],
+            setupFiles: ['./src/testkit/setup.ts'],
+            clearMocks: true,
+            passWithNoTests: true,
         },
-    },
-    test: {
-        reporters: ['verbose'],
-        environment: 'jsdom',
-        include: ['src/**/*.test.{ts,tsx}'],
-        setupFiles: ['./src/testkit/setup.ts'],
-        clearMocks: true,
-        passWithNoTests: true,
-    },
-});
+    }),
+);

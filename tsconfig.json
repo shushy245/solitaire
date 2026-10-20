@@ -14,10 +14,10 @@
     "skipLibCheck": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "types": ["node"],
+    "types": [],
     "paths": {
       "~/*": ["./src/*"]
     }
   },
-  "include": ["src", "vite.config.ts", "vitest.config.ts", "cypress.config.ts"]
+  "include": ["src"]
 }
