@@ -31,6 +31,25 @@ export const recordWin = ({
     best: improveBest({ best: stats.best, timeMs, score }),
 });
 
+const combineBests = ({ a, b }: { a: BestModel | undefined; b: BestModel | undefined }): BestModel | undefined =>
+    a === undefined || b === undefined ? (a ?? b) : improveBest({ best: a, timeMs: b.timeMs, score: b.score });
+
+// Another tab may have saved its own games since this one loaded the record: keep those, and add on top only
+// what this tab played and won since `before` (the record as this tab last loaded or saved it).
+export const mergeStats = ({
+    saved,
+    before,
+    after,
+}: {
+    saved: StatsModel;
+    before: StatsModel;
+    after: StatsModel;
+}): StatsModel => ({
+    played: saved.played + after.played - before.played,
+    won: saved.won + after.won - before.won,
+    best: combineBests({ a: saved.best, b: after.best }),
+});
+
 const PERCENT = 100;
 
 const hasPlayed = (stats: StatsModel): boolean => stats.played > 0;

@@ -89,4 +89,43 @@ describe('session store', () => {
         driver.assert.warnedAbout({ key: SAVED_GAME_KEY, reason: /could not save/ });
         driver.assert.warnedAbout({ key: SAVED_GAME_KEY, reason: /could not read/ });
     });
+
+    it('adds to a record another tab saved meanwhile instead of overwriting it', () => {
+        driver.given.savedStats(serializeStats(record));
+        driver.when.loaded();
+        driver.given.statsSavedByAnotherTab(recordPlayed(record));
+
+        driver.when.saved({ ...played, stats: recordPlayed(record) });
+
+        driver.assert.savedStats(recordPlayed(recordPlayed(record)));
+    });
+
+    it('leaves the saved record alone while this tab has nothing new to add to it', () => {
+        driver.given.savedStats(serializeStats(record));
+        driver.when.loaded();
+        driver.given.statsSavedByAnotherTab(recordPlayed(record));
+
+        driver.when.saved({ ...played, stats: record });
+
+        driver.assert.savedStats(recordPlayed(record));
+    });
+
+    it('does not record a result while the game it belongs to could not be saved', () => {
+        driver.given.storageWithRoomForStatsOnly();
+        driver.when.loaded();
+
+        driver.when.saved({ ...played, stats: recordPlayed(emptyStats) });
+
+        driver.assert.savedStats(undefined);
+    });
+
+    it('says once that storage is refusing, not on every save', () => {
+        driver.given.storageUnavailable();
+
+        driver.when.saved(played);
+        driver.when.saved(played);
+        driver.when.saved(played);
+
+        driver.assert.warningCount(1);
+    });
 });

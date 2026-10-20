@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { emptyStats, recordPlayed, recordWin, winPercent } from './stats.utils.ts';
+import { emptyStats, mergeStats, recordPlayed, recordWin, winPercent } from './stats.utils.ts';
 
 describe('stats', () => {
     it('starts with nothing played, nothing won and no bests', () => {
@@ -35,5 +35,29 @@ describe('stats', () => {
 
         expect(winPercent(emptyStats)).toBe(0);
         expect(winPercent(oneOfThree)).toBe(33);
+    });
+});
+
+describe('mergeStats', () => {
+    it('adds what this tab played and won on top of what another tab saved meanwhile', () => {
+        const loaded = { played: 3, won: 1, best: { timeMs: 300_000, score: 500 } };
+        const savedByAnotherTab = { played: 4, won: 2, best: { timeMs: 200_000, score: 450 } };
+        const now = { played: 4, won: 2, best: { timeMs: 250_000, score: 800 } };
+
+        expect(mergeStats({ saved: savedByAnotherTab, before: loaded, after: now })).toEqual({
+            played: 5,
+            won: 3,
+            best: { timeMs: 200_000, score: 800 },
+        });
+    });
+
+    it('keeps the saved bests when this tab has none', () => {
+        const saved = { played: 2, won: 1, best: { timeMs: 90_000, score: 300 } };
+
+        expect(mergeStats({ saved, before: emptyStats, after: recordPlayed(emptyStats) })).toEqual({
+            played: 3,
+            won: 1,
+            best: { timeMs: 90_000, score: 300 },
+        });
     });
 });
