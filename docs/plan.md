@@ -269,6 +269,18 @@ type GameContextValue = {
 - Visual pass A+B: clean at 390/768/1280, Lighthouse a11y 100. Fixed: empty stock outline ~2:1 →
   `--control-line`, measured 4.17:1. Deferred (out of v1 scope, logged below): keyboard play.
 
+### `hud` — review findings PENDING triage (code-review high arrived after the user stopped the run; visual pass not run)
+1. Ctrl/Cmd+Z mid-drag undoes under the dragged cards — ignore the shortcut while dragging, or end the drag on undo.
+2. Plan contract stale: `elapsedSeconds` → `elapsedMs`, GameProvider now also takes `now` — update Architecture/Contracts.
+3. Leave-question stays open once leaving no longer needs confirming (undo to 0 moves, or a win) — also require `needsConfirmationToLeave`.
+4. Plan conflict: "controls disabled during auto-complete" vs "new game mid-sweep stops it" — decide; add a HUD test for double-clicking auto-complete.
+5. Undo shortcut: non-Latin layouts (`event.code === 'KeyZ'` fallback) and AltGr (`!altKey`).
+6. Clock: reset `lastTick` when play starts/ends (±1s on the first and final tick).
+7. Leave-question: return focus on close; Escape only works inside it; consider dialog semantics.
+8. Driver `undoShortcutListenerRemoved` passes vacuously at 0/0; window spies never restored.
+9. Props types / `isModeChange` boolean prop in hud.tsx → hud.utils.ts, derive the variant.
+10. `fakeNow`/`fixedSeed` duplicated across drivers → one testkit helper.
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
