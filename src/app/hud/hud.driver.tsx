@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
@@ -98,6 +99,18 @@ export const makeHudDriver = (): HudDriver => {
         return undefined;
     };
 
+    // Stands in for the board, which tells the hint provider when each deal's cards have landed.
+    const SettledTable = (): undefined => {
+        const { session } = useGame();
+        const { reportTableReady } = useHint();
+
+        useEffect(() => {
+            reportTableReady({ dealNumber: session.dealNumber, isReady: true });
+        }, [session.dealNumber, reportTableReady]);
+
+        return undefined;
+    };
+
     // A real click focuses the button first; focus return depends on it.
     const tree = (now: () => number): JSX.Element => {
         const session = scenario.session;
@@ -112,6 +125,7 @@ export const makeHudDriver = (): HudDriver => {
                     saveSession={discardSave}
                 >
                     <HintProvider>
+                        <SettledTable />
                         <Hud />
                         <ElsewhereInTheApp />
                     </HintProvider>

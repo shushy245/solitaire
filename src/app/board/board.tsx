@@ -57,8 +57,8 @@ export const Board = (): JSX.Element => {
 
     // Mid-deal the cards are still flying to their places: a hint asked for then is refused, not lit in passing.
     useEffect(() => {
-        reportTableReady(isTableReady);
-    }, [isTableReady, reportTableReady]);
+        reportTableReady({ dealNumber: session.dealNumber, isReady: isTableReady });
+    }, [isTableReady, session.dealNumber, reportTableReady]);
     const cards = inStableOrder(shownCardsFor({ phase: dealPhase, slots }));
     const boardElement = useRef<HTMLElement | undefined>(undefined);
     const { draggingIds, handleCardPointerDown, isDragClick } = useCardDrag({

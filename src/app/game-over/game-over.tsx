@@ -13,12 +13,13 @@ import styles from './game-over.module.scss';
 // Shown while no progress is possible. The game stays open behind it, so Undo lets the player try another line.
 export const GameOver = (): JSX.Element | undefined => {
     const { session, undo, newGame } = useGame();
+    const { game } = session;
     const { isGameOver } = useHint();
 
     if (!isGameOver) return undefined;
 
     const handleNewGame = (): void => {
-        newGame({ drawMode: session.game.drawMode });
+        newGame({ drawMode: game.drawMode });
     };
 
     return <GameOverPanel canUndo={canUndo(session)} onUndo={undo} onNewGame={handleNewGame} />;

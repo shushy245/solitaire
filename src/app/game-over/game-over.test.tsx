@@ -64,7 +64,7 @@ describe('GameOver', () => {
 
         await driver.when.created();
 
-        driver.assert.panelShown(false);
+        driver.assert.panelNeverAppeared();
     });
 
     it('says a fresh deal is stuck once it has landed, with nothing to undo', async () => {

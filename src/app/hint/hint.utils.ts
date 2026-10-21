@@ -18,6 +18,19 @@ export type HintModel =
 // an empty pile — that pile; the stock for a draw or a recycle.
 export type HighlightModel = { cardIds: ReadonlySet<string>; pile: PileRefModel | undefined; isStock: boolean };
 
+// What the board last said about the table: whether the cards of deal `dealNumber` have landed.
+export type TableReportModel = { dealNumber: number; isReady: boolean };
+
+// Ready only once the board has said so for this very deal: until then (first render, a new game) the cards may
+// still be flying, and a hint or the game-over panel would show over a deal still landing.
+export const isTableReadyFor = ({
+    report,
+    dealNumber,
+}: {
+    report: TableReportModel | undefined;
+    dealNumber: number;
+}): boolean => report !== undefined && report.dealNumber === dealNumber && report.isReady;
+
 // How long a hint stays lit.
 export const HINT_SHOWN_MS = 2000;
 
@@ -160,5 +173,5 @@ export type HintContextValue = {
     isGameOver: boolean;
     showHint: () => void;
     // The board tells the provider when the table is laid out, so a request mid-deal is refused, not wasted.
-    reportTableReady: (isReady: boolean) => void;
+    reportTableReady: (report: TableReportModel) => void;
 };

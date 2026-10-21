@@ -4,7 +4,7 @@ import { MoveKind, Rank, Suit } from '~/engine/index.ts';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
 
 import { PileKind } from '../board/layout.utils.ts';
-import { HintKind, highlightOf, isHintShortcut, nextHint, shownHighlight } from './hint.utils.ts';
+import { HintKind, highlightOf, isHintShortcut, isTableReadyFor, nextHint, shownHighlight } from './hint.utils.ts';
 
 const up = ({ rank, suit }: { rank: Rank; suit: Suit }) => aCard().withRank(rank).withSuit(suit).build();
 const down = ({ rank, suit }: { rank: Rank; suit: Suit }) => aCard().withRank(rank).withSuit(suit).asFaceDown().build();
@@ -132,5 +132,14 @@ describe('isHintShortcut', () => {
         expect(isHintShortcut(key({ metaKey: true }))).toBe(false);
         expect(isHintShortcut(key({ altKey: true }))).toBe(false);
         expect(isHintShortcut(key({ key: 'g' }))).toBe(false);
+    });
+});
+
+describe('isTableReadyFor', () => {
+    it('is ready only once the board has said so for this very deal', () => {
+        expect(isTableReadyFor({ report: undefined, dealNumber: 1 })).toBe(false);
+        expect(isTableReadyFor({ report: { dealNumber: 1, isReady: true }, dealNumber: 2 })).toBe(false);
+        expect(isTableReadyFor({ report: { dealNumber: 2, isReady: false }, dealNumber: 2 })).toBe(false);
+        expect(isTableReadyFor({ report: { dealNumber: 2, isReady: true }, dealNumber: 2 })).toBe(true);
     });
 });

@@ -1,7 +1,7 @@
 import { applyMove } from './apply.ts';
 import { listLegalMoves, makeDrawMove } from './rules.ts';
 import { CardModel, GameStateModel, MoveKind, PileModel } from './model.ts';
-import { canRecycle, canStackOnFoundation, canStackOnTableau, isWon, topCard } from './selectors.ts';
+import { canRecycle, canStackOnFoundation, canStackOnTableau, isFaceDown, isWon, topCard } from './selectors.ts';
 
 // The search gives up past this many table positions and answers "not stuck" — a missed announcement, never a false
 // one. Measured over 6,400 positions from random play: 99.9% search at most 128; the rare tables with long face-up
@@ -9,7 +9,7 @@ import { canRecycle, canStackOnFoundation, canStackOnTableau, isWon, topCard } f
 const MAX_POSITIONS = 1000;
 
 const countFaceDown = (state: GameStateModel): number =>
-    state.tableau.reduce((sum, column) => sum + column.filter((card) => !card.faceUp).length, 0);
+    state.tableau.reduce((sum, column) => sum + column.filter(isFaceDown).length, 0);
 
 const countHome = (state: GameStateModel): number => state.foundations.reduce((sum, pile) => sum + pile.length, 0);
 

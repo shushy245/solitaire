@@ -49,6 +49,7 @@ export type GameOverDriver = {
     click: { undo: () => void; newGame: () => void };
     assert: {
         panelShown: (isShown: boolean) => void;
+        panelNeverAppeared: () => void;
         undoFocused: () => void;
         newGameFocused: () => void;
         undoEnabled: (isEnabled: boolean) => void;
@@ -61,6 +62,16 @@ export type GameOverDriver = {
 export const makeGameOverDriver = (): GameOverDriver => {
     vi.useFakeTimers();
     const scenario: { session: SessionModel } = { session: aSession().build() };
+    // Catches a panel that comes and goes between two assertions (one commit is enough to grab focus).
+    const sightings = { panel: 0 };
+    const panelSelector = `[data-testid="${GameOverTestIds.Panel}"]`;
+    const holdsPanel = (node: Node): boolean =>
+        node instanceof HTMLElement && (node.matches(panelSelector) || node.querySelectorAll(panelSelector).length > 0);
+    // Reads what was added, not the page now: React may have removed the panel again before this runs.
+    const observer = new MutationObserver((records) => {
+        sightings.panel += records.flatMap((record) => [...record.addedNodes]).filter(holdsPanel).length;
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
     const outside: { game: GameContextValue | undefined } = { game: undefined };
 
     const ElsewhereInTheApp = (): undefined => {
@@ -142,6 +153,9 @@ export const makeGameOverDriver = (): GameOverDriver => {
                 // A named region, not a dialog: it is not modal — the table stays live behind it.
                 if (isShown) expect(screen.getByRole('region', { name: 'No more moves' })).toBeVisible();
                 else expect(screen.queryByTestId(GameOverTestIds.Panel)).not.toBeInTheDocument();
+            },
+            panelNeverAppeared: () => {
+                expect(sightings.panel).toBe(0);
             },
             undoFocused: () => {
                 expect(screen.getByTestId(GameOverTestIds.Undo)).toHaveFocus();
