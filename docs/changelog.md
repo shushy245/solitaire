@@ -1,5 +1,11 @@
 # Changelog
 
+## easy-drops — 2026-10-21
+- **Pain:** a card had to be dropped almost exactly on a pile to count, so near-misses — just below a column, a little off to the side, or over an illegal pile next to the right one — snapped back.
+- **Fix:** every pile catches drops a little past its edges, each column catches anything dropped below it down to the bottom of the window, and the drop goes to the most-covered pile that accepts the card.
+- **Trade-off:** a pile must still catch a quarter of the card, so a drop squarely on the wrong pile snaps back rather than jumping to a neighbour it barely touched.
+- **Result:** in a real browser a card released near the bottom of the window lands on the column above it; 305 tests pass (`vitest`, 6 more) plus the browser drag test; the review raised 9 issues — 6 fixed (neighbour stealing, grazes, tie order, untested floor rule, two small cleanups), 1 queued, 2 judged not worth changing.
+
 ## draw-animation — 2026-10-21
 - **Pain:** drawing from the deck made the card pop onto the pile with no movement (every draw after the first), so the game felt broken next to the smooth moves elsewhere.
 - **Fix:** the cards keep one fixed place in the page, so the browser no longer cancels a card's flight when it changes piles.

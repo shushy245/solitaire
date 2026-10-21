@@ -266,7 +266,7 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - turn-3: the three drawn cards fly out together and fan
   - undoing a draw flies the card back to the stock
 
-### Story `easy-drops` — sloppy drops still land
+### Story `easy-drops` — sloppy drops still land ✅
 - Owns: `src/app/drag/`
 - Depends on: draw-animation
 - Parallel: serial
@@ -276,7 +276,9 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - among overlapped piles the legal one wins even when an illegal pile overlaps more
   - among several legal piles the one with the most overlap wins
   - no legal overlapped pile → snap back (unchanged); dropping on the source pile is still a no-op
-  - padded areas never make a pile the dragged card does not touch win over one it does
+  - padded areas never make a pile the dragged card does not touch win over one it does (review: a pile must catch ≥ a quarter of the card)
+  - review: a drop dead centre on an illegal pile snaps back even when a legal neighbour's padding grazes it
+  - review: an exact tie between the source and a neighbour snaps back, whatever the page order
 
 ### Story `click-to-play` — one click plays the obvious move
 - Owns: `src/app/board/`, `src/engine/` (new `findClickMove` selector)
@@ -491,6 +493,17 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   Lighthouse a11y 100, drawn card measured mid-transition. Noted only: cards are not keyboard-reachable (already
   Deferred: keyboard play). The reviewer read the commit message (it disclosed this) — its measurements stand.
 
+### `easy-drops` (code-review medium, 9 findings; no visual pass — no rendering file changed)
+- Fixed (6): padding overlaps neighbours so a dead-centre drop on an illegal pile jumped to a grazed legal one,
+  and 1px grazes landed → `MIN_DROP_SHARE` (precondition recorded on `DROP_PADDING_RATIO`); ties fell to page
+  order → source first; the floor rule lived untested in the hook → `widenDropAreas` (pure, tested); inline
+  `area > 0` → `hasOverlap`; rules checked for every touched pile → one `find`.
+- Accepted (1): the foundation row's and the tableau's padded areas overlap vertically — with `MIN_DROP_SHARE`
+  a slightly-low drop needs a quarter of the card on the column to fall to it, which is a real drop there.
+- Not changed (1): the floor needs a browser to test end to end — checked by hand in Chrome (a drop near the
+  window foot lands on the column above).
+- RF (1): `isTableauPile` (drag) repeats `isTableauSlot` (layout) over a different shape.
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
@@ -508,4 +521,5 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   counts are copied as local constants (MAX_WASTE_FAN, DECK_SIZE, TABLEAU_CARDS) → one engine selector + exports.
 - (epic review) `CardProps` lives in `board.tsx` → `board.utils.ts`.
 - (epic review) the stock gives no visual or aria cue that it is inert during the deal.
+- (`easy-drops`) `isTableauPile` in drag.utils repeats `isTableauSlot` in layout.utils → one pile-kind predicate.
 - (`celebration`) one focus-on-appear hook for `LeaveConfirm` and `WinOverlay` (the latter returns no focus).

@@ -38,9 +38,9 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `easy-drops` — sloppy drops land: `widenDropAreas` pads piles and stretches columns to the window foot, `findDropMove` takes the most-overlapped legal pile catching ≥ `MIN_DROP_SHARE` of the card (`src/app/drag/drag.utils.ts`).
 - `draw-animation` — a drawn card flies to the waste instead of popping in. Cards render in a fixed id order (`inStableOrder`, `board.utils.ts`): React moving an element between piles in the DOM killed its transition.
 - `felt-and-sound` — brighter felt held to measured contrast (`src/styles/contrast.utils.test.ts` reads `global.scss`), and a synthesized sound per card action with a remembered Sound toggle. `src/app/sound/` (rules `sound.utils.ts`, `SoundEffects` watches the session, `SoundProvider` holds mute, `unlocking-player.ts` waits for a gesture, `web-audio-voice.ts` synthesizes). Manual Chrome/Safari listen pending.
-- `celebration` — a win sets off the bouncing-card cascade and a panel with time, score and New game (reduced motion: panel only). `src/app/celebration/` (pure physics `cascade.utils.ts`, launch plan `celebration.utils.ts`, canvas shell `cascade-canvas.ts`); motion preference via `src/app/motion/motion-provider.tsx` from `main.tsx`.
 
 ## What's next
 Epic "Play polish" in `docs/plan.md` (draw-animation → easy-drops → click-to-play → hint → card-design), running autonomously. Also open: the manual Chrome/Safari listen, BF-1/BF-2 and the RF-backlog in `docs/plan.md` — the user picks what is next.
