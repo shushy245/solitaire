@@ -319,6 +319,17 @@ describe('Hud', () => {
             driver.assert.hintLit(true);
         });
 
+        it('costs nothing: no points, no moves', async () => {
+            driver.given.session((s) => s.withScore(40));
+            await driver.when.created();
+
+            driver.click.hint();
+            driver.click.hint();
+
+            driver.assert.score('40');
+            driver.assert.moves('0');
+        });
+
         it('ignores H held down or pressed with Ctrl', async () => {
             await driver.when.created();
 
