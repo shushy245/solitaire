@@ -111,6 +111,17 @@ describe('Board', () => {
         driver.assert.shaking({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isShaking: false });
     });
 
+    it('ignores clicks on cards while auto-complete is sending them home', async () => {
+        driver.given.readyToAutoCompleteAfterMoves(96);
+        await driver.when.created();
+        driver.when.autoCompleteStartedElsewhere();
+
+        await driver.click.card({ rank: Rank.Ten, suit: Suit.Hearts });
+
+        driver.assert.shaking({ card: { rank: Rank.Ten, suit: Suit.Hearts }, isShaking: false });
+        driver.assert.snapBackSounds(0);
+    });
+
     it('names face-up cards and hides face-down ones from assistive tech', async () => {
         driver.given.column({
             index: 0,
