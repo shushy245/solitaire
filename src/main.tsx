@@ -5,10 +5,14 @@ import { App } from './app.tsx';
 import { Logger } from './utils/logger.port.ts';
 import { generateSeed } from './utils/generate-seed.ts';
 import { getElementById } from './utils/get-element-by-id.ts';
+import { SoundProvider } from './app/sound/sound-provider.tsx';
 import { MotionProvider } from './app/motion/motion-provider.tsx';
+import { makeWebAudioVoice } from './app/sound/web-audio-voice.ts';
+import { makeUnlockingPlayer } from './app/sound/unlocking-player.ts';
 import { makeSessionStore } from './app/persistence/session-store.ts';
 import { prefersReducedMotion } from './utils/prefers-reduced-motion.ts';
 import { makeBrowserKeyValueStore } from './utils/browser-key-value-store.ts';
+import { makeSoundPreferenceStore } from './app/sound/sound-preference-store.ts';
 import { searchWithoutSeed, seedFromSearch } from './utils/seed-source.utils.ts';
 
 import './styles/global.scss';
@@ -27,8 +31,14 @@ const logger: Logger = {
 
 const monotonicNow = (): number => performance.now();
 
-const sessionStore = makeSessionStore({
-    store: makeBrowserKeyValueStore({ storage: () => window.localStorage, logger }),
+const browserStore = makeBrowserKeyValueStore({ storage: () => window.localStorage, logger });
+const sessionStore = makeSessionStore({ store: browserStore, logger });
+const soundPreference = makeSoundPreferenceStore({ store: browserStore, logger });
+
+// Silent until the player first presses a pointer or key, as browsers require.
+const soundPlayer = makeUnlockingPlayer({
+    createVoice: () => makeWebAudioVoice(new AudioContext()),
+    gestures: window,
     logger,
 });
 
@@ -47,13 +57,19 @@ window.history.replaceState(
 
 createRoot(root).render(
     <StrictMode>
-        <MotionProvider prefersReducedMotion={prefersReducedMotion}>
-            <App
-                initialSession={initialSession}
-                saveSession={sessionStore.save}
-                seedSource={generateSeed}
-                now={monotonicNow}
-            />
-        </MotionProvider>
+        <SoundProvider
+            player={soundPlayer}
+            initiallyMuted={soundPreference.loadMuted()}
+            saveMuted={soundPreference.saveMuted}
+        >
+            <MotionProvider prefersReducedMotion={prefersReducedMotion}>
+                <App
+                    initialSession={initialSession}
+                    saveSession={sessionStore.save}
+                    seedSource={generateSeed}
+                    now={monotonicNow}
+                />
+            </MotionProvider>
+        </SoundProvider>
     </StrictMode>,
 );
