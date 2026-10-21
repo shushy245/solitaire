@@ -256,7 +256,7 @@ cards restyled in CSS (no art assets): rounder, warm, soft shadow, large indices
 Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `card-design` (serial — one session;
 2–4 share `board.tsx`, 5 touches every card's look).
 
-### Story `draw-animation` — a drawn card flies from the stock to the waste
+### Story `draw-animation` — a drawn card flies from the stock to the waste ✅
 - Owns: `src/app/board/`
 - Depends on: —
 - Parallel: serial (first)
@@ -483,6 +483,13 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 - Visual pass A+B (`?seed=1&draw=3`, mid-deal click and settled click; 390/768/1280): no overflow, taps ≥44,
   Lighthouse a11y 100; a mid-deal stock click leaves 0 moves and 0:00. Noted → RF: the stock shows no inert cue
   while the deal runs.
+
+### `draw-animation` (code-review low, 0 findings; visual pass A+B)
+- Root cause: React moved the drawn card's element from the stock's run of siblings to the waste's; a moved element
+  loses its CSS transition. Fixed by a fixed (id) render order.
+- Review: no findings. Visual A+B (`?seed=7`, settled + two draws; 390/768/1280): no overflow, no small targets,
+  Lighthouse a11y 100, drawn card measured mid-transition. Noted only: cards are not keyboard-reachable (already
+  Deferred: keyboard play). The reviewer read the commit message (it disclosed this) — its measurements stand.
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a

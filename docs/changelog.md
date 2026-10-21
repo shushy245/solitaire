@@ -1,5 +1,11 @@
 # Changelog
 
+## draw-animation — 2026-10-21
+- **Pain:** drawing from the deck made the card pop onto the pile with no movement (every draw after the first), so the game felt broken next to the smooth moves elsewhere.
+- **Fix:** the cards keep one fixed place in the page, so the browser no longer cancels a card's flight when it changes piles.
+- **Trade-off:** none recorded — the order cards sit in the page never mattered for what you see, since stacking is set separately.
+- **Result:** draws (turn 1 and turn 3) and undoing a draw now fly in a real browser (sampled mid-flight); 299 tests pass (`vitest`, 1 more); review found nothing; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## epic-review — 2026-10-21
 - **Pain:** a review of the whole game found a few ways it could break that no single story's review could see — a damaged save that would crash the page on every visit, sound that never came back after a phone was locked, and a replay link that could not ask for turn-3.
 - **Fix:** saved games are now checked against every rule of where cards can lie, sound restarts at the next tap, `?seed=N&draw=3` replays a turn-3 deal, and the deck ignores clicks while cards are still being dealt.
