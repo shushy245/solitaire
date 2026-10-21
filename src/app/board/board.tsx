@@ -5,12 +5,14 @@ import { makeDrawMove, MoveKind } from '~/engine/index.ts';
 import { useGame } from '../game-provider.tsx';
 import { BoardTestIds } from './board.test-ids.ts';
 import { SoundKind } from '../sound/sound.utils.ts';
+import { useHint } from '../hint/hint-provider.tsx';
 import { useSound } from '../sound/sound-provider.tsx';
 import { useCardDrag } from '../drag/use-card-drag.ts';
 import { useLiftedCards } from './use-lifted-cards.ts';
 import { useDealAnimation } from './use-deal-animation.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
 import { isAutoCompleting, isDealUnstarted } from '../session/session.utils.ts';
+import { isHintedCard, isHintedPile, isHintedStock } from '../hint/hint.utils.ts';
 import { CardSlotModel, dealOrder, layoutCards, PileKind } from './layout.utils.ts';
 import {
     boardHeightClassNames,
@@ -50,6 +52,9 @@ export const Board = (): JSX.Element => {
         play(SoundKind.SnapBack);
     }, [play]);
     const canPlayCards = isSettled(dealPhase) && !isAutoCompleting(session);
+    const { highlight: requestedHighlight } = useHint();
+    // Mid-deal the cards are still flying to their places, so a hint would light them in passing.
+    const highlight = isSettled(dealPhase) ? requestedHighlight : undefined;
     const cards = inStableOrder(shownCardsFor({ phase: dealPhase, slots }));
     const boardElement = useRef<HTMLElement | undefined>(undefined);
     const { draggingIds, handleCardPointerDown, isDragClick } = useCardDrag({
@@ -117,9 +122,11 @@ export const Board = (): JSX.Element => {
                 className={joinClassNames(
                     styles.slot,
                     styles.stockButton,
+                    isHintedStock(highlight) && styles.hinted,
                     ...slotClassNames({ slot: placeholderSlot(stockSlot), styles }),
                 )}
                 data-testid={BoardTestIds.Stock}
+                data-hinted={isHintedStock(highlight)}
                 onClick={handleStockClick}
             >
                 <span aria-hidden className={styles.recycleMark}>
@@ -133,8 +140,11 @@ export const Board = (): JSX.Element => {
                     className={joinClassNames(
                         styles.slot,
                         styles.placeholder,
+                        isHintedPile({ highlight, pile: placeholder }) && styles.hinted,
                         ...slotClassNames({ slot: placeholderSlot(placeholder), styles }),
                     )}
+                    data-testid={BoardTestIds.Placeholder(placeholder)}
+                    data-hinted={isHintedPile({ highlight, pile: placeholder })}
                     data-pile={placeholder.pile}
                     data-pile-index={placeholder.pileIndex}
                 />
@@ -153,6 +163,7 @@ export const Board = (): JSX.Element => {
                             : undefined
                     }
                     isShaking={isShakingCard({ shake, cardId: slot.card.id, game })}
+                    isHinted={isHintedCard({ highlight, cardId: slot.card.id })}
                     onClick={handleCardClick}
                     onShakeEnd={handleShakeEnd}
                     onLanded={handleLanded}
@@ -173,6 +184,7 @@ type CardProps = {
     isInteractive: boolean;
     delayClassName: string | undefined;
     isShaking: boolean;
+    isHinted: boolean;
     onClick: (args: { cardId: string; detail: number }) => void;
     onShakeEnd: () => void;
     onLanded: (cardId: string) => void;
@@ -188,6 +200,7 @@ const Card = memo(function Card({
     isInteractive,
     delayClassName,
     isShaking,
+    isHinted,
     onClick,
     onShakeEnd,
     onLanded,
@@ -221,6 +234,7 @@ const Card = memo(function Card({
                 isLifted && styles.lifted,
                 isDragging && styles.dragging,
                 isShaking && styles.shaking,
+                isHinted && styles.hinted,
                 shownSlot.isBuried && styles.buried,
                 delayClassName,
             )}
@@ -232,6 +246,7 @@ const Card = memo(function Card({
             data-dragging={isDragging}
             data-card-id={card.id}
             data-shaking={isShaking}
+            data-hinted={isHinted}
             onClick={handleClick}
             onPointerDown={handlePointerDown}
             onTransitionEnd={handleTransitionEnd}

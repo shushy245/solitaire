@@ -10,9 +10,11 @@ import { Board } from './board.tsx';
 import { PileKind } from './layout.utils.ts';
 import { BoardTestIds } from './board.test-ids.ts';
 import { SoundKind } from '../sound/sound.utils.ts';
+import { HintContextValue } from '../hint/hint.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameProvider, useGame } from '../game-provider.tsx';
 import { GameContextValue } from '../game-provider.utils.ts';
+import { HintProvider, useHint } from '../hint/hint-provider.tsx';
 import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 import { DealProgress, makeSession, SessionModel } from '../session/session.utils.ts';
 
@@ -34,6 +36,7 @@ export type BoardDriver = {
         unmounted: () => void;
         undoneElsewhere: () => void;
         autoCompleteStartedElsewhere: () => void;
+        hintRequestedElsewhere: () => void;
     };
     pointer: {
         press: (card: CardName) => void;
@@ -69,6 +72,9 @@ export type BoardDriver = {
         pointerListenersDetached: () => void;
         snapBackSounds: (count: number) => void;
         cardOrderUnchanged: () => void;
+        hinted: (args: { card: CardName; isHinted: boolean }) => void;
+        pileHinted: (args: { pile: PileKind; pileIndex: number; isHinted: boolean }) => void;
+        stockHinted: (isHinted: boolean) => void;
     };
 };
 
@@ -100,7 +106,10 @@ export const makeBoardDriver = (): BoardDriver => {
 
     const rendered: { unmount: () => void } = { unmount: () => undefined };
     const sound = new FakeSoundPlayer();
-    const outside: { game: GameContextValue | undefined } = { game: undefined };
+    const outside: { game: GameContextValue | undefined; hint: HintContextValue | undefined } = {
+        game: undefined,
+        hint: undefined,
+    };
     const pointer = { x: 100, y: 100 };
     const listenerSpies = {
         add: vi.spyOn(window, 'addEventListener'),
@@ -112,6 +121,7 @@ export const makeBoardDriver = (): BoardDriver => {
     // Stands in for another part of the app (e.g. the HUD's undo shortcut) acting on the game.
     const ElsewhereInTheApp = (): undefined => {
         outside.game = useGame();
+        outside.hint = useHint();
 
         return undefined;
     };
@@ -179,8 +189,10 @@ export const makeBoardDriver = (): BoardDriver => {
                             now={fakeNow}
                             saveSession={discardSave}
                         >
-                            <Board />
-                            <ElsewhereInTheApp />
+                            <HintProvider>
+                                <Board />
+                                <ElsewhereInTheApp />
+                            </HintProvider>
                         </GameProvider>
                     </SoundProvider>,
                 ).unmount;
@@ -200,6 +212,16 @@ export const makeBoardDriver = (): BoardDriver => {
 
                 act(() => {
                     game.startAutoComplete();
+                });
+            },
+            hintRequestedElsewhere: () => {
+                const hint = outside.hint;
+
+                if (hint === undefined)
+                    throw new Error('board driver: hintRequestedElsewhere needs when.created first');
+
+                act(() => {
+                    hint.showHint();
                 });
             },
             undoneElsewhere: () => {
@@ -330,6 +352,18 @@ export const makeBoardDriver = (): BoardDriver => {
                 expect(cardElement(card)).toHaveAttribute('data-dragging', String(isDragging));
             },
             // A card element moved within the DOM loses its transform transition, so it would jump, not fly.
+            hinted: ({ card, isHinted }) => {
+                expect(cardElement(card)).toHaveAttribute('data-hinted', String(isHinted));
+            },
+            pileHinted: ({ pile, pileIndex, isHinted }) => {
+                expect(screen.getByTestId(BoardTestIds.Placeholder({ pile, pileIndex }))).toHaveAttribute(
+                    'data-hinted',
+                    String(isHinted),
+                );
+            },
+            stockHinted: (isHinted) => {
+                expect(screen.getByTestId(BoardTestIds.Stock)).toHaveAttribute('data-hinted', String(isHinted));
+            },
             cardOrderUnchanged: () => {
                 expect(renderedCardOrder()).toEqual(remembered.cardOrder);
             },

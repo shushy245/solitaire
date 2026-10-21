@@ -3,6 +3,7 @@ import { FullColumn } from './ui/box.tsx';
 import { AppTestIds } from './app.utils.ts';
 import { Board } from './app/board/board.tsx';
 import { GameProvider } from './app/game-provider.tsx';
+import { HintProvider } from './app/hint/hint-provider.tsx';
 import { joinClassNames } from './utils/join-class-names.ts';
 import { SoundEffects } from './app/sound/sound-effects.tsx';
 import { SessionModel } from './app/session/session.utils.ts';
@@ -33,19 +34,21 @@ export const App = ({
             now={now}
             saveSession={saveSession}
         >
-            <main className={styles.app}>
-                <FullColumn className={tableStyles.metrics}>
-                    <header className={joinClassNames(tableStyles.tableWidth, styles.header)}>
-                        <h1 className={styles.title} data-testid={AppTestIds.Title}>
-                            {`Solitaire`}
-                        </h1>
-                        <Hud />
-                    </header>
-                    <Board />
-                    <Celebration />
-                    <SoundEffects />
-                </FullColumn>
-            </main>
+            <HintProvider>
+                <main className={styles.app}>
+                    <FullColumn className={tableStyles.metrics}>
+                        <header className={joinClassNames(tableStyles.tableWidth, styles.header)}>
+                            <h1 className={styles.title} data-testid={AppTestIds.Title}>
+                                {`Solitaire`}
+                            </h1>
+                            <Hud />
+                        </header>
+                        <Board />
+                        <Celebration />
+                        <SoundEffects />
+                    </FullColumn>
+                </main>
+            </HintProvider>
         </GameProvider>
     );
 };

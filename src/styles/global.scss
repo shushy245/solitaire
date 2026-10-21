@@ -28,6 +28,10 @@
     // A hovered button's fill; button text stays at 4.5:1 on it.
     --control-hover: rgb(255 255 255 / 0.08);
 
+    // A hint's glow: a ring that holds 3:1 against the felt, with a soft halo around it.
+    --hint: #ffd84d;
+    --hint-glow: rgb(255 216 77 / 0.55);
+
     color-scheme: dark;
 }
 

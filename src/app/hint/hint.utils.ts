@@ -95,8 +95,39 @@ export const shownHighlight = ({
     return move === undefined ? undefined : highlightOf({ game, move });
 };
 
+export const isHintedCard = ({
+    highlight,
+    cardId,
+}: {
+    highlight: HighlightModel | undefined;
+    cardId: string;
+}): boolean => highlight !== undefined && highlight.cardIds.has(cardId);
+
+export const isHintedPile = ({
+    highlight,
+    pile,
+}: {
+    highlight: HighlightModel | undefined;
+    pile: PileRefModel;
+}): boolean =>
+    highlight !== undefined &&
+    highlight.pile !== undefined &&
+    highlight.pile.pile === pile.pile &&
+    highlight.pile.pileIndex === pile.pileIndex;
+
+export const isHintedStock = (highlight: HighlightModel | undefined): boolean =>
+    highlight !== undefined && highlight.isStock;
+
 const hasModifier = (event: KeyboardEvent): boolean => event.ctrlKey || event.metaKey || event.altKey;
 
 const isHKey = (event: KeyboardEvent): boolean => event.key.toLowerCase() === 'h';
 
 export const isHintShortcut = (event: KeyboardEvent): boolean => isHKey(event) && !event.repeat && !hasModifier(event);
+
+export type HintContextValue = {
+    // What to light up right now; undefined when no hint is showing.
+    highlight: HighlightModel | undefined;
+    // True while the latest hint request found nothing to suggest (shown for as long as a hint would be).
+    isNoMoves: boolean;
+    showHint: () => void;
+};

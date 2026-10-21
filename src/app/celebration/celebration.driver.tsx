@@ -8,6 +8,7 @@ import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Board } from '../board/board.tsx';
 import { Celebration } from './celebration.tsx';
+import { HintProvider } from '../hint/hint-provider.tsx';
 import { SessionModel } from '../session/session.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameContextValue } from '../game-provider.utils.ts';
@@ -92,9 +93,11 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
                     >
                         <SoundProvider player={new FakeSoundPlayer()} initiallyMuted={false} saveMuted={discardSave}>
                             <MotionProvider prefersReducedMotion={prefersReducedMotion}>
-                                <Board />
-                                <Celebration />
-                                <ElsewhereInTheApp />
+                                <HintProvider>
+                                    <Board />
+                                    <Celebration />
+                                    <ElsewhereInTheApp />
+                                </HintProvider>
                             </MotionProvider>
                         </SoundProvider>
                     </GameProvider>,

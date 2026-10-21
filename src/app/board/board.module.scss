@@ -90,6 +90,13 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     background: var(--slot-fill);
 }
 
+// A hint: the pile or stock it points at glows.
+.placeholder.hinted,
+.stockButton.hinted {
+    border-color: var(--hint);
+    box-shadow: 0 0 0 2px var(--hint), 0 0 16px var(--hint-glow);
+}
+
 .stockButton {
     display: grid;
     place-items: center;
@@ -166,6 +173,10 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 
 .shaking .inner {
     animation: shake 320ms $ease-out;
+}
+
+.hinted .front {
+    box-shadow: 0 0 0 3px var(--hint), 0 0 16px var(--hint-glow);
 }
 
 .inner {

@@ -3,6 +3,7 @@ import { beforeEach, describe, it } from 'vitest';
 import { DrawMode, Rank, Suit } from '~/engine/index.ts';
 
 import { PileKind } from './layout.utils.ts';
+import { HINT_SHOWN_MS } from '../hint/hint.utils.ts';
 import { BoardDriver, makeBoardDriver } from './board.driver.tsx';
 import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 
@@ -165,6 +166,66 @@ describe('Board', () => {
 
         driver.assert.shaking({ card: { rank: Rank.Ten, suit: Suit.Hearts }, isShaking: false });
         driver.assert.snapBackSounds(0);
+    });
+
+    it('a hint lights the cards that would move and the card they land on, and goes out after a while', async () => {
+        driver.given.column({
+            index: 0,
+            cards: [
+                { rank: Rank.Four, suit: Suit.Clubs, faceUp: false },
+                { rank: Rank.Nine, suit: Suit.Spades },
+            ],
+        });
+        driver.given.column({ index: 1, cards: [{ rank: Rank.Ten, suit: Suit.Hearts }] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.when.hintRequestedElsewhere();
+
+        driver.assert.hinted({ card: { rank: Rank.Nine, suit: Suit.Spades }, isHinted: true });
+        driver.assert.hinted({ card: { rank: Rank.Ten, suit: Suit.Hearts }, isHinted: true });
+        driver.time.pass(HINT_SHOWN_MS);
+        driver.assert.hinted({ card: { rank: Rank.Nine, suit: Suit.Spades }, isHinted: false });
+    });
+
+    it('a hint onto an empty pile lights that pile, and a draw hint lights the stock', async () => {
+        driver.given.column({ index: 2, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
+        driver.given.stock([{ rank: Rank.Five, suit: Suit.Clubs }]);
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.when.hintRequestedElsewhere();
+        driver.assert.pileHinted({ pile: PileKind.Foundation, pileIndex: 0, isHinted: true });
+        driver.assert.stockHinted(false);
+
+        driver.when.hintRequestedElsewhere();
+        driver.assert.stockHinted(true);
+        driver.assert.pileHinted({ pile: PileKind.Foundation, pileIndex: 0, isHinted: false });
+    });
+
+    it('a move puts the hint out at once, and a later hint restarts its own timer', async () => {
+        driver.given.column({ index: 2, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
+        driver.given.stock([{ rank: Rank.Five, suit: Suit.Clubs }]);
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.when.hintRequestedElsewhere();
+        await driver.click.stock();
+        driver.assert.hinted({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isHinted: false });
+
+        driver.time.pass(HINT_SHOWN_MS - 500);
+        driver.when.hintRequestedElsewhere();
+        driver.time.pass(1000);
+        driver.assert.hinted({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isHinted: true });
+    });
+
+    it('lights no hint while the cards are still being dealt', async () => {
+        driver.given.column({ index: 2, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
+        await driver.when.created();
+
+        driver.when.hintRequestedElsewhere();
+
+        driver.assert.hinted({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isHinted: false });
     });
 
     it('names face-up cards and hides face-down ones from assistive tech', async () => {

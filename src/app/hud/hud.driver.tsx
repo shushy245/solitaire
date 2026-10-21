@@ -8,6 +8,7 @@ import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Hud } from './hud.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
+import { HintProvider } from '../hint/hint-provider.tsx';
 import { SessionModel } from '../session/session.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameProvider, useGame } from '../game-provider.tsx';
@@ -97,8 +98,10 @@ export const makeHudDriver = (): HudDriver => {
                     now={now}
                     saveSession={discardSave}
                 >
-                    <Hud />
-                    <ElsewhereInTheApp />
+                    <HintProvider>
+                        <Hud />
+                        <ElsewhereInTheApp />
+                    </HintProvider>
                 </GameProvider>
             </SoundProvider>
         );

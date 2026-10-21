@@ -55,6 +55,10 @@ describe('the felt palette', () => {
         expect(contrastRatio({ a: token('--text'), b: hovered })).toBeGreaterThanOrEqual(4.5);
     });
 
+    it('keeps a hint ring at 3:1 or better on the felt, where it shows around a card or pile', () => {
+        expect(contrastRatio({ a: token('--hint'), b: felt })).toBeGreaterThanOrEqual(3);
+    });
+
     it('keeps card faces and their ink readable', () => {
         expect(contrastRatio({ a: token('--card-ivory'), b: felt })).toBeGreaterThanOrEqual(3);
         expect(contrastRatio({ a: token('--ink'), b: token('--card-ivory') })).toBeGreaterThanOrEqual(4.5);
