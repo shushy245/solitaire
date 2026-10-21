@@ -32,13 +32,15 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 - **Node 25 shadows jsdom's `localStorage`** with its own empty global — tests use `src/testkit/fakes/memory-storage.ts`, never `window.localStorage`.
 - **`?seed=N` is consumed on load** (stripped from the address), so a reload resumes; Cypress specs that need a deal visit `?seed=` each time.
 - **jsdom cannot draw on a canvas** — `src/testkit/setup.ts` makes `getContext` return nothing; drawing is checked by `cypress/e2e/celebration.cy.ts` reading the canvas.
+- **Sound needs a gesture:** nothing plays until a press/release/key (`unlocking-player.ts`); Cypress fakes `AudioContext` in-page (`cypress/support/fake-audio-context.ts`).
+- **Vitest blanks stylesheet imports** except `global.scss` (`css.include` in `vitest.config.ts`) — the contrast test reads it with `?raw`.
 - **Table sizes live in `src/styles/table-metrics.module.scss`** (`.metrics` on the column inside the `container-type` `main`); `board.module.scss` only consumes the vars. Spacing ratios are mirrored in `layout.utils.ts`.
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `felt-and-sound` — brighter felt held to measured contrast (`src/styles/contrast.utils.test.ts` reads `global.scss`), and a synthesized sound per card action with a remembered Sound toggle. `src/app/sound/` (rules `sound.utils.ts`, `SoundEffects` watches the session, `SoundProvider` holds mute, `unlocking-player.ts` waits for a gesture, `web-audio-voice.ts` synthesizes). Manual Chrome/Safari listen pending.
 - `celebration` — a win sets off the bouncing-card cascade and a panel with time, score and New game (reduced motion: panel only). `src/app/celebration/` (pure physics `cascade.utils.ts`, launch plan `celebration.utils.ts`, canvas shell `cascade-canvas.ts`); motion preference via `src/app/motion/motion-provider.tsx` from `main.tsx`.
 - `persistence` — the game in progress (undo history, time, mode) survives a reload; a Stats panel shows played/won/win rate/bests. `src/app/persistence/` (Zod save format `persistence.utils.ts`, shell `session-store.ts` over the never-throwing `src/utils/browser-key-value-store.ts`); stats rules `src/app/stats/stats.utils.ts`, counted inside `reduceSession` via `progress`; `main.tsx` loads, the provider saves every change; Cypress seeds saves from `cypress/fixtures/`.
-- `hud` — new game (asks first mid-game), turn-1/turn-3, Undo + Ctrl/Cmd+Z, live score/moves/time, auto-complete. `src/app/hud/` (pure rules in `hud.utils.ts`; session-level rules `isGameUnderWay`/`canUndo` in `session.utils.ts`); the provider reads the clock before every game action, so time is exact to the move.
 
 ## What's next
-Story `felt-and-sound` (`docs/plan.md`) — last of the epic; run the epic-level review at its close.
+Epic Klondike v1 complete — epic-level review (`epic/klondike-v1`) and the manual Chrome/Safari listen, then the RF-backlog in `docs/plan.md`.

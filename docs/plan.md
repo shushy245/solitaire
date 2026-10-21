@@ -197,7 +197,7 @@ type GameContextValue = {
   - pre-mortem: the overlay's New game takes focus when it appears and deals in the won game's mode
   - review: a resize mid-cascade re-fits the canvas; the cascade really paints, and never above the foundation row (Cypress)
 
-### Story `felt-and-sound` — a brighter table and sounds for card actions (requested 2026-10-20)
+### Story `felt-and-sound` — a brighter table and sounds for card actions (requested 2026-10-20) ✅ (manual listen pending)
 - Owns: `src/styles/global.scss` (palette tokens), `src/app/sound/`
 - Depends on: celebration (runs last; touches the tokens every earlier story uses)
 - Parallel: serial — palette tokens are a shared seam
@@ -222,6 +222,9 @@ type GameContextValue = {
   - pre-mortem: the winning move plays the win sound only, not a foundation sound on top
   - pre-mortem: a restored game on load plays nothing; an undo plays the place sound
   - pre-mortem: a rejected AudioContext resume() never surfaces as an unhandled rejection
+  - review: a touch press does not unlock audio, its release does — every gesture retries until audio runs
+  - review: empty-pile outlines (drop targets) hold 3:1; hovered button text holds 4.5:1 (measured by test)
+  - review: no pick-up while auto-complete runs; a mute applies even to a play handle taken earlier
 
 ---
 
@@ -356,6 +359,26 @@ type GameContextValue = {
   open. Fixed: cascade trails covered the Stats button and time readout → paint clipped below the foundation row;
   card faces showed through the panel → opaque. Not rendered: the reduced-motion path (source-checked; emulate
   has no reduced-motion option). Noted, kept: two buttons share the name "New game" (HUD and panel) — same action.
+
+### `felt-and-sound` (code-review high, 10 findings; visual pass A+B)
+- Fixed — correctness (2): phones could stay silent all visit (a touch press is not a user gesture for audio,
+  and the player gave up after one try while playing into a frozen context) → every press, release, touchend and
+  key retries until audio runs; nothing plays before. Dragging during auto-complete dropped silently (the
+  reducer ignores player moves mid-sweep) → no pick-up while the sweep runs.
+- Fixed — robustness (3): empty-pile outlines measured 1.78:1 → `--slot-line` 3.1:1, in the contrast test; the
+  muted Sound label fell to 4.09:1 on hover → full text colour, hover fill a tested token; a mute toggled mid-drag
+  was ignored by that drop → play reads the mute from a ref.
+- Fixed — style (5): the sound preference re-implemented save parsing → reuses `parseSaved` (logs the reason);
+  `SoundContextValue` moved to `sound-provider.utils.ts`; `saveMuted({ muted })`; fake outcomes are an enum;
+  a card sent home that uncovers another plays the foundation chime (rule order), unused driver assert removed.
+- Environment (noted): under heavy machine load (load average 20–40 from outside this session) the commit gate's
+  Vitest workers failed to start and the property suite timed out at 5s; retried once load fell, never loosened.
+- Visual pass A+B (load, Sound off, Stats open; 390/768/1280): no overflow, taps ≥44, text ≥16px, Lighthouse a11y
+  100, focus order Turn 1 → Turn 3 → New game → Sound → Stats → stock, focus ring brass 2px. The page does not
+  scroll at any width, so no gradient edge is reachable; none seen.
+- Visual re-check (pass A, after the fixes): clean at 390/768/1280 — muted label full colour on hover, slot
+  outlines visible.
+- Awaiting the human: listen in Chrome and Safari — every action audible, nothing clipped or too loud.
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a

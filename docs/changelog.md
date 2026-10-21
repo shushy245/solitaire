@@ -1,5 +1,11 @@
 # Changelog
 
+## felt-and-sound — 2026-10-21
+- **Pain:** the table looked dark and flat, and the game made no sound at all, so moves felt weightless.
+- **Fix:** a brighter green felt with every text, outline and focus ring re-tuned to stay readable, and a short synthesized sound for each card action (deal, draw, flip, place, rejected drop, recycle, card home, win) with a Sound on/off button that is remembered.
+- **Trade-off:** no sound plays until the player first taps, clicks or presses a key, because browsers forbid it — so the opening deal of a visit is always silent.
+- **Result:** 290 tests pass (`vitest`, 35 more than before this story) plus 2 new browser tests (silent before the first interaction, silent once muted and still muted after a reload); readability is measured by a test against the colours themselves; the review raised 10 issues, all fixed (including phones that would never have played sound); visual passes clean on phone, tablet and laptop widths, accessibility 100. Still to do by a person: listen in Chrome and Safari.
+
 ## celebration — 2026-10-20
 - **Pain:** winning a game simply stopped — no payoff, and no obvious way on to the next deal.
 - **Fix:** the classic bouncing-card cascade pours off the foundations, and a panel shows the time and score with a ready New game button.
