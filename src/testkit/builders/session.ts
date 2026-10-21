@@ -87,6 +87,13 @@ class SessionBuilder {
         return this;
     }
 
+    // The deal already counted as played — a game as it is restored after a reload, shown without the deal.
+    asStarted(): this {
+        this.state = { ...this.state, progress: DealProgress.Started };
+
+        return this;
+    }
+
     // A game under way: `moves` moves made, every earlier position on the undo stack.
     asPlayed(moves: number): this {
         const history = Array.from({ length: moves }, (_, made) => ({ ...this.state.game, moves: made }));

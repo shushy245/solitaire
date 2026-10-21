@@ -3,6 +3,7 @@ import { FullColumn } from './ui/box.tsx';
 import { AppTestIds } from './app.utils.ts';
 import { Board } from './app/board/board.tsx';
 import { GameProvider } from './app/game-provider.tsx';
+import { GameOver } from './app/game-over/game-over.tsx';
 import { HintProvider } from './app/hint/hint-provider.tsx';
 import { joinClassNames } from './utils/join-class-names.ts';
 import { SoundEffects } from './app/sound/sound-effects.tsx';
@@ -45,6 +46,7 @@ export const App = ({
                         </header>
                         <Board />
                         <Celebration />
+                        <GameOver />
                         <SoundEffects />
                     </FullColumn>
                 </main>

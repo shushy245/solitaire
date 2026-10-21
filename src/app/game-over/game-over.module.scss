@@ -1,0 +1,76 @@
+// Anchored to the foot of the window, clear of the scoreboard and foundations, so the table stays readable and
+// playable behind it — it is a notice, not a dialog.
+.panel {
+    position: fixed;
+    left: 50%;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: min(calc(100vw - 32px), 400px);
+    padding: 16px 20px;
+    border: 1px solid var(--brass);
+    border-radius: 16px;
+    background: var(--baize-shadow);
+    box-shadow: 0 18px 48px rgb(0 0 0 / 0.45);
+    color: var(--text);
+    text-align: center;
+    transform: translateX(-50%);
+}
+
+.title {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.note {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.actions {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.undo,
+.newGame {
+    min-height: 44px;
+    padding: 0 22px;
+    border: 1px solid var(--brass);
+    border-radius: 999px;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        opacity: 0.45;
+        cursor: default;
+    }
+}
+
+.undo {
+    background: var(--brass);
+    color: var(--ink);
+}
+
+.newGame {
+    background: rgb(0 0 0 / 0.18);
+    color: var(--text);
+
+    &:hover {
+        background: var(--control-hover);
+    }
+}
