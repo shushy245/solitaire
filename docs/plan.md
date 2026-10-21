@@ -271,7 +271,7 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 - Depends on: draw-animation
 - Parallel: serial
 - Cases:
-  - a tableau column's drop area reaches the bottom of the table, so a drop well below its last card lands there
+  - a tableau column's drop area reaches the bottom of the window (the table itself ends below its longest column), so a drop well below its last card lands there
   - each pile's drop area is padded sideways, so a drop slightly off a pile's edge still lands
   - among overlapped piles the legal one wins even when an illegal pile overlaps more
   - among several legal piles the one with the most overlap wins

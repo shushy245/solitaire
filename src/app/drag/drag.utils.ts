@@ -81,27 +81,62 @@ const overlapArea = ({ a, b }: { a: RectModel; b: RectModel }): number =>
 const isSamePile = ({ a, b }: { a: PileRefModel; b: PileRefModel }): boolean =>
     a.pile === b.pile && a.pileIndex === b.pileIndex;
 
-// The pile the dragged card overlaps most; none on bare felt, and none when that pile is the one the
-// cards came from — a drop mostly back home is a change of mind, even if it grazes a neighbour.
-export const findDropTarget = ({
+// How far past its edges a pile still catches a drop, as a share of the card width — a little more than the
+// gap between columns, so a drop that misses a column narrowly still lands.
+export const DROP_PADDING_RATIO = 0.25;
+
+const isTableauPile = (pile: PileRefModel): boolean => pile.pile === PileKind.Tableau;
+
+// A pile's drop area is wider than what it shows, so a sloppy drop still lands: padded on every side, and a
+// tableau column reaches down to the table's floor (a drop well below its last card is still "on" it).
+export const widenDropArea = ({
+    pile,
+    padding,
+    floor,
+}: {
+    pile: PileRectModel;
+    padding: number;
+    floor: number;
+}): PileRectModel => {
+    const bottom = pile.rect.bottom + padding;
+
+    return {
+        ...pile,
+        rect: {
+            left: pile.rect.left - padding,
+            top: pile.rect.top - padding,
+            right: pile.rect.right + padding,
+            bottom: isTableauPile(pile) ? Math.max(bottom, floor) : bottom,
+        },
+    };
+};
+
+// The move a drop makes: onto the most-overlapped pile that takes the cards, so a legal pile wins over an
+// illegal one it overlaps less. None on bare felt, and none when the source pile is overlapped most — a drop
+// mostly back home is a change of mind, even if it grazes a neighbour.
+export const findDropMove = ({
+    game,
+    pickup,
     dragged,
     piles,
-    source,
 }: {
+    game: GameStateModel;
+    pickup: DragPickupModel;
     dragged: RectModel;
     piles: readonly PileRectModel[];
-    source: PileRefModel;
-}): PileRefModel | undefined => {
-    const best = piles
+}): Move | undefined => {
+    const touched = piles
         .map((pile) => ({ pile, area: overlapArea({ a: dragged, b: pile.rect }) }))
-        .reduce<{ pile: PileRectModel; area: number } | undefined>(
-            (top, candidate) => (candidate.area > (top === undefined ? 0 : top.area) ? candidate : top),
-            undefined,
-        );
+        .filter(({ area }) => area > 0)
+        .sort((a, b) => b.area - a.area)
+        .map(({ pile }) => ({ pile: pile.pile, pileIndex: pile.pileIndex }));
+    const closest = touched[0];
 
-    if (best === undefined || isSamePile({ a: best.pile, b: source })) return undefined;
+    if (closest === undefined || isSamePile({ a: closest, b: pickup.source })) return undefined;
 
-    return { pile: best.pile.pile, pileIndex: best.pile.pileIndex };
+    return touched
+        .map((target) => legalDropMove({ game, pickup, target }))
+        .find((move): move is Move => move !== undefined);
 };
 
 export const unionRects = (rects: readonly RectModel[]): RectModel => ({

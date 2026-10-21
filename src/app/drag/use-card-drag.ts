@@ -4,15 +4,16 @@ import { GameStateModel, Move } from '~/engine/index.ts';
 
 import { pileRefFromElement } from './drag-dom.utils.ts';
 import {
+    DROP_PADDING_RATIO,
     DragPickupModel,
-    findDropTarget,
+    findDropMove,
     hasMovedBeyondClick,
-    legalDropMove,
     offsetRect,
     PileRectModel,
     pickUp,
     RectModel,
     unionRects,
+    widenDropArea,
 } from './drag.utils.ts';
 
 // startRect is the lead card's box at pick-up: the drop box is computed from it plus the pointer travel,
@@ -183,19 +184,21 @@ export const useCardDrag = ({
                 return;
             }
 
-            const target = findDropTarget({
+            const padding = (drag.startRect.right - drag.startRect.left) * DROP_PADDING_RATIO;
+            // The table is only as tall as its longest column; the felt below it, to the window's foot, counts too.
+            const floor = Math.max(toRect(board).bottom, window.innerHeight);
+            const move = findDropMove({
+                game: latestGame.current,
+                pickup: drag.pickup,
                 dragged: offsetRect({
                     rect: drag.startRect,
                     dx: event.clientX - drag.startX,
                     dy: event.clientY - drag.startY,
                 }),
-                piles: measurePiles({ board, draggedIds: new Set(drag.pickup.cardIds) }),
-                source: drag.pickup.source,
+                piles: measurePiles({ board, draggedIds: new Set(drag.pickup.cardIds) }).map((pile) =>
+                    widenDropArea({ pile, padding, floor }),
+                ),
             });
-            const move =
-                target === undefined
-                    ? undefined
-                    : legalDropMove({ game: latestGame.current, pickup: drag.pickup, target });
 
             endDrag();
             if (move === undefined) onSnapBack();
