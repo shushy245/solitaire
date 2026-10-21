@@ -20,10 +20,13 @@
     --back-glow: #7b1a2e;
     --back-line: rgb(227 191 106 / 0.45);
 
-    --slot-line: rgb(243 236 219 / 0.3);
+    // Empty piles are drop targets, so their outlines hold 3:1 against the felt too.
+    --slot-line: rgb(243 236 219 / 0.62);
     // Controls (the empty stock) need >= 3:1 against the felt; decorative outlines stay quieter.
     --control-line: rgb(243 236 219 / 0.8);
     --slot-fill: rgb(0 0 0 / 0.12);
+    // A hovered button's fill; button text stays at 4.5:1 on it.
+    --control-hover: rgb(255 255 255 / 0.08);
 
     color-scheme: dark;
 }

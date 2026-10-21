@@ -57,7 +57,7 @@
         opacity 150ms ease;
 
     &:hover:not(:disabled) {
-        background: rgb(255 255 255 / 0.08);
+        background: var(--control-hover);
     }
 
     &:focus-visible {
@@ -133,9 +133,9 @@
     gap: 8px;
 }
 
-// Sound on reads plainly; off is struck through, so the state shows without relying on colour.
+// Sound on reads plainly; off is struck through, so the state shows without relying on colour (the text keeps
+// full contrast, hovered or not).
 .soundToggle[aria-pressed='false'] {
-    color: var(--text-muted);
     text-decoration: line-through;
 }
 
