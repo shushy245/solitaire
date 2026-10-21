@@ -22,6 +22,7 @@ export type SoundEffectsDriver = {
         clockTicked: () => void;
         newGameDealt: () => void;
         muteToggled: () => void;
+        soundPlayedThroughAnEarlierHandle: () => void;
     };
     assert: { played: (sounds: readonly SoundKind[]) => void; savedMuted: (muted: readonly boolean[]) => void };
 };
@@ -35,14 +36,18 @@ export const makeSoundEffectsDriver = (): SoundEffectsDriver => {
         session: aSession().withDeal({ seed: 1, drawMode: DrawMode.One }).build(),
         isMuted: false,
     };
-    const outside: { game: GameContextValue | undefined; toggleMute: () => void } = {
-        game: undefined,
-        toggleMute: () => undefined,
-    };
+    const outside: {
+        game: GameContextValue | undefined;
+        toggleMute: () => void;
+        firstPlay: ((sound: SoundKind) => void) | undefined;
+    } = { game: undefined, toggleMute: () => undefined, firstPlay: undefined };
 
     const ElsewhereInTheApp = (): undefined => {
         outside.game = useGame();
-        outside.toggleMute = useSound().toggleMute;
+        const sound = useSound();
+        outside.toggleMute = sound.toggleMute;
+        // Kept from the first render, like a handler a drag captured when the pointer went down.
+        outside.firstPlay ??= sound.play;
 
         return undefined;
     };
@@ -53,7 +58,7 @@ export const makeSoundEffectsDriver = (): SoundEffectsDriver => {
         return outside.game;
     };
 
-    const handleSaveMuted = (muted: boolean): void => {
+    const handleSaveMuted = ({ muted }: { muted: boolean }): void => {
         saved.push(muted);
     };
 
@@ -104,6 +109,13 @@ export const makeSoundEffectsDriver = (): SoundEffectsDriver => {
                 act(() => {
                     game().newGame({ drawMode: DrawMode.One });
                 });
+            },
+            soundPlayedThroughAnEarlierHandle: () => {
+                const play = outside.firstPlay;
+
+                if (play === undefined) throw new Error('sound effects driver: call when.created() first');
+
+                play(SoundKind.SnapBack);
             },
             muteToggled: () => {
                 act(() => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { aSession } from '~/testkit/builders/index.ts';
-import { DrawMode, Move, MoveKind } from '~/engine/index.ts';
+import { DrawMode, Move, MoveKind, Rank, Suit } from '~/engine/index.ts';
+import { aCard, aGameState, aSession } from '~/testkit/builders/index.ts';
 
 import { soundForChange, SoundKind } from './sound.utils.ts';
 import { reduceSession, SessionAction, SessionActionKind, SessionModel } from '../session/session.utils.ts';
@@ -73,6 +73,22 @@ describe('soundForChange', () => {
         expect(
             soundOf({ before: lastBefore, after: act(lastBefore, { kind: SessionActionKind.Move, move: winning }) }),
         ).toBe(SoundKind.Win);
+    });
+
+    it('plays the foundation sound for a card sent home even when it uncovers a hidden card', () => {
+        const game = aGameState()
+            .withColumn({
+                index: 0,
+                cards: [
+                    aCard().withRank(Rank.Five).withSuit(Suit.Clubs).asFaceDown().build(),
+                    aCard().withRank(Rank.Ace).withSuit(Suit.Hearts).build(),
+                ],
+            })
+            .build();
+        const before = aSession().withGame(game).build();
+        const after = aSession().withGame(game).afterLegalMove(MoveKind.TableauToFoundation).build();
+
+        expect(soundOf({ before, after })).toBe(SoundKind.Foundation);
     });
 
     it('plays the place sound for an undo and for a card laid on the table without a flip', () => {

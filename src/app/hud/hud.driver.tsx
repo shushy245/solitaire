@@ -67,7 +67,7 @@ export const makeHudDriver = (): HudDriver => {
     vi.useFakeTimers();
     const scenario: { session: SessionModel; isMuted: boolean } = { session: aSession().build(), isMuted: false };
     const savedMuted: boolean[] = [];
-    const handleSaveMuted = (muted: boolean): void => {
+    const handleSaveMuted = ({ muted }: { muted: boolean }): void => {
         savedMuted.push(muted);
     };
     const outside: { game: GameContextValue | undefined } = { game: undefined };

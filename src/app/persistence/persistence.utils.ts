@@ -162,7 +162,8 @@ const parseJson = (raw: string): SavedResult<unknown> => {
     }
 };
 
-const parseSaved = <T>({ raw, schema }: { raw: string | undefined; schema: z.ZodType<T> }): SavedResult<T> => {
+// Missing, corrupt (with the reason) or found — the one way every saved value is read back.
+export const parseSaved = <T>({ raw, schema }: { raw: string | undefined; schema: z.ZodType<T> }): SavedResult<T> => {
     if (raw === undefined) return { kind: SavedKind.Missing };
 
     const json = parseJson(raw);

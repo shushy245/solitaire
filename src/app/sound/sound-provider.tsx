@@ -1,14 +1,8 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 
 import { SoundKind } from './sound.utils.ts';
 import { SoundPlayer } from './sound-player.port.ts';
-
-export type SoundContextValue = {
-    // Plays unless the player has muted sound.
-    play: (sound: SoundKind) => void;
-    isMuted: boolean;
-    toggleMute: () => void;
-};
+import { SoundContextValue } from './sound-provider.utils.ts';
 
 const SoundContext = createContext<SoundContextValue | undefined>(undefined);
 
@@ -21,23 +15,26 @@ export const SoundProvider = ({
 }: {
     player: SoundPlayer;
     initiallyMuted: boolean;
-    saveMuted: (muted: boolean) => void;
+    saveMuted: (preference: { muted: boolean }) => void;
     children: React.ReactNode;
 }): JSX.Element => {
     const [isMuted, setMuted] = useState(initiallyMuted);
+    // Read when a sound plays, so a play handle captured earlier (a drag in progress) still honours a later mute.
+    const latestMuted = useRef(initiallyMuted);
 
     const play = useCallback(
         (sound: SoundKind): void => {
-            if (!isMuted) player.play(sound);
+            if (!latestMuted.current) player.play(sound);
         },
-        [isMuted, player],
+        [player],
     );
 
     const toggleMute = useCallback((): void => {
-        const next = !isMuted;
-        setMuted(next);
-        saveMuted(next);
-    }, [isMuted, saveMuted]);
+        const muted = !latestMuted.current;
+        latestMuted.current = muted;
+        setMuted(muted);
+        saveMuted({ muted });
+    }, [saveMuted]);
 
     const value = useMemo(() => ({ play, isMuted, toggleMute }), [play, isMuted, toggleMute]);
 

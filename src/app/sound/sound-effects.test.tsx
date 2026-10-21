@@ -48,4 +48,13 @@ describe('SoundEffects', () => {
         driver.assert.played([SoundKind.Draw]);
         driver.assert.savedMuted([false]);
     });
+
+    it('honours a mute even through a play handle taken before it (a drag in progress)', async () => {
+        await driver.when.created();
+
+        driver.when.muteToggled();
+        driver.when.soundPlayedThroughAnEarlierHandle();
+
+        driver.assert.played([]);
+    });
 });

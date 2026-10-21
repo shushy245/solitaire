@@ -38,14 +38,15 @@ const isSentHome = ({ before, after }: ChangeModel): boolean =>
 const isDraw = ({ before, after }: ChangeModel): boolean => after.game.stock.length < before.game.stock.length;
 
 // The first rule that matches names the change's one sound — so a winning card plays the win, not the
-// foundation sound as well, and a move that uncovers a card plays the flip.
+// foundation sound as well, a card sent home plays the chime even if it uncovers one, and any other move that
+// uncovers a card plays the flip.
 const soundRules: readonly (readonly [(change: ChangeModel) => boolean, SoundKind])[] = [
     [isNewDeal, SoundKind.Deal],
     [isJustWon, SoundKind.Win],
     [isUndo, SoundKind.Place],
+    [isSentHome, SoundKind.Foundation],
     [isReveal, SoundKind.Flip],
     [isRecycle, SoundKind.Recycle],
-    [isSentHome, SoundKind.Foundation],
     [isDraw, SoundKind.Draw],
 ];
 
