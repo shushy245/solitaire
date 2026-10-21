@@ -24,7 +24,7 @@ const game = aGameState()
 
 describe('nextHint', () => {
     it('starts at the most useful hint', () => {
-        expect(nextHint({ previous: undefined, game })).toMatchObject({
+        expect(nextHint({ previous: undefined, game, isGameStuck: false })).toMatchObject({
             kind: HintKind.Showing,
             game,
             index: 0,
@@ -33,20 +33,30 @@ describe('nextHint', () => {
     });
 
     it('moves on to the next hint for the same game, wrapping round to the first', () => {
-        const first = nextHint({ previous: undefined, game });
-        const second = nextHint({ previous: first, game });
+        const first = nextHint({ previous: undefined, game, isGameStuck: false });
+        const second = nextHint({ previous: first, game, isGameStuck: false });
 
         expect(second).toMatchObject({ kind: HintKind.Showing, game, index: 1 });
-        expect(nextHint({ previous: second, game })).toMatchObject({ kind: HintKind.Showing, game, index: 0 });
+        expect(nextHint({ previous: second, game, isGameStuck: false })).toMatchObject({
+            kind: HintKind.Showing,
+            game,
+            index: 0,
+        });
     });
 
     it('starts over at the first hint once the game has changed', () => {
-        const first = nextHint({ previous: undefined, game });
+        const first = nextHint({ previous: undefined, game, isGameStuck: false });
         const changed = aGameState()
             .withColumn({ index: 0, cards: [aceOfHearts] })
             .build();
 
-        expect(nextHint({ previous: nextHint({ previous: first, game }), game: changed })).toMatchObject({
+        expect(
+            nextHint({
+                previous: nextHint({ previous: first, game, isGameStuck: false }),
+                game: changed,
+                isGameStuck: false,
+            }),
+        ).toMatchObject({
             kind: HintKind.Showing,
             game: changed,
             index: 0,
@@ -56,7 +66,22 @@ describe('nextHint', () => {
     it('says there is no move when nothing plays and nothing is left to draw', () => {
         const stuck = aGameState().build();
 
-        expect(nextHint({ previous: undefined, game: stuck })).toEqual({ kind: HintKind.NoMoves, game: stuck });
+        expect(nextHint({ previous: undefined, game: stuck, isGameStuck: true })).toEqual({
+            kind: HintKind.NoMoves,
+            game: stuck,
+        });
+    });
+
+    it('says there is no move in a stuck game, rather than pointing at the deck forever', () => {
+        const stuckWithDeck = aGameState()
+            .withStock([down({ rank: Rank.Nine, suit: Suit.Diamonds })])
+            .withColumn({ index: 0, cards: [down({ rank: Rank.Two, suit: Suit.Hearts }), blackNine] })
+            .build();
+
+        expect(nextHint({ previous: undefined, game: stuckWithDeck, isGameStuck: true })).toEqual({
+            kind: HintKind.NoMoves,
+            game: stuckWithDeck,
+        });
     });
 });
 
@@ -88,7 +113,7 @@ describe('highlightOf', () => {
 
 describe('shownHighlight', () => {
     it('shows the hint only for the game it was given for, and only while it is visible', () => {
-        const hint = nextHint({ previous: undefined, game });
+        const hint = nextHint({ previous: undefined, game, isGameStuck: false });
 
         expect(shownHighlight({ hint, isVisible: true, game })?.cardIds).toEqual(new Set([aceOfHearts.id]));
         expect(shownHighlight({ hint, isVisible: false, game })).toBeUndefined();

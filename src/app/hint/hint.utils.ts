@@ -37,9 +37,18 @@ export const isCurrentHint = ({
     game: GameStateModel;
 }): boolean => isVisible && hint !== undefined && isSameGame({ hint, game });
 
-// The hint after `previous`: the next one for the same game (wrapping round), the first for a changed game.
-export const nextHint = ({ previous, game }: { previous: HintModel | undefined; game: GameStateModel }): HintModel => {
-    const hints = listHints(game);
+// The hint after `previous`: the next one for the same game (wrapping round), the first for a changed game. A stuck
+// game has none — its deck can still be drawn, but nothing it turns up will ever play.
+export const nextHint = ({
+    previous,
+    game,
+    isGameStuck,
+}: {
+    previous: HintModel | undefined;
+    game: GameStateModel;
+    isGameStuck: boolean;
+}): HintModel => {
+    const hints = isGameStuck ? [] : listHints(game);
     const index =
         isShowingHint(previous) && isSameGame({ hint: previous, game }) ? (previous.index + 1) % hints.length : 0;
     const move = hints[index];
@@ -147,6 +156,8 @@ export type HintContextValue = {
     isNoMoves: boolean;
     // Hints are off while the cards are dealt or sent home, and once the game is won.
     canHint: boolean;
+    // True while hints are on and the game can make no more progress (`isStuck`).
+    isGameOver: boolean;
     showHint: () => void;
     // The board tells the provider when the table is laid out, so a request mid-deal is refused, not wasted.
     reportTableReady: (isReady: boolean) => void;

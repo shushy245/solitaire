@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { isWon } from '~/engine/index.ts';
+import { isStuck, isWon } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
 import { isAutoCompleting } from '../session/session.utils.ts';
@@ -18,15 +18,18 @@ export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.E
     const [shown, setShown] = useState({ isVisible: false });
     const [isTableReady, setTableReady] = useState(true);
     const canHint = isTableReady && !isAutoCompleting(session) && !isWon(game);
+    // Worked out once per game, never per clock tick: the search may cycle the whole deck.
+    const isGameStuck = useMemo(() => isStuck(game), [game]);
+    const isGameOver = canHint && isGameStuck;
 
     if (hint !== undefined && hint.game !== game) setHint(undefined);
 
     const showHint = useCallback((): void => {
         if (!canHint) return;
 
-        setHint((previous) => nextHint({ previous, game }));
+        setHint((previous) => nextHint({ previous, game, isGameStuck }));
         setShown({ isVisible: true });
-    }, [canHint, game]);
+    }, [canHint, game, isGameStuck]);
 
     useEffect(() => {
         if (!shown.isVisible) return undefined;
@@ -46,8 +49,8 @@ export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.E
     );
     const isNoMoves = isNoMovesShown({ hint, isVisible: shown.isVisible, game });
     const value = useMemo(
-        () => ({ highlight, isNoMoves, canHint, showHint, reportTableReady: setTableReady }),
-        [highlight, isNoMoves, canHint, showHint],
+        () => ({ highlight, isNoMoves, canHint, isGameOver, showHint, reportTableReady: setTableReady }),
+        [highlight, isNoMoves, canHint, isGameOver, showHint],
     );
 
     return <HintContext.Provider value={value}>{children}</HintContext.Provider>;
