@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useRef } from 'react';
 import { GameStateModel, isWon } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
+import { useFocusOnAppear } from '../use-focus-on-appear.ts';
 import { CelebrationTestIds } from './celebration.test-ids.ts';
 import { usePrefersReducedMotion } from '../motion/motion-provider.tsx';
 import { CascadeModel, isCascadeOver, makeCascade, stepCascade } from './cascade.utils.ts';
@@ -121,18 +122,8 @@ const WinCascade = ({ game }: WinCascadeProps): JSX.Element => {
 
 const WinOverlay = ({ elapsedMs, score, onNewGame }: WinOverlayProps): JSX.Element => {
     const titleId = useId();
-    const newGameButton = useRef<HTMLButtonElement | undefined>(undefined);
-
-    const handleNewGameRef: React.RefCallback<HTMLButtonElement> = useCallback((element) => {
-        newGameButton.current = element ?? undefined;
-    }, []);
-
     // The win takes focus, so a keyboard player can deal again straight away.
-    useEffect(() => {
-        const button = newGameButton.current;
-
-        if (button !== undefined) button.focus();
-    }, []);
+    const handleNewGameRef = useFocusOnAppear<HTMLButtonElement>();
 
     return (
         <section aria-labelledby={titleId} className={styles.overlay} data-testid={CelebrationTestIds.Overlay}>

@@ -606,4 +606,3 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 - (epic review) the stock gives no visual or aria cue that it is inert during the deal.
 - (`easy-drops`) `isTableauPile` in drag.utils repeats `isTableauSlot` in layout.utils → one pile-kind predicate.
 - (`card-design`) `--radius` and `CORNER_RATIO` (cascade-canvas.ts) duplicate one value → read the card's computed radius.
-- (`celebration`) one focus-on-appear hook for `LeaveConfirm` and `WinOverlay` (the latter returns no focus).

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { DrawMode } from '~/engine/index.ts';
 
@@ -10,6 +10,7 @@ import { canUndo } from '../session/session.utils.ts';
 import { useSound } from '../sound/sound-provider.tsx';
 import { useUndoShortcut } from './use-undo-shortcut.ts';
 import { useHintShortcut } from './use-hint-shortcut.ts';
+import { useFocusOnAppear } from '../use-focus-on-appear.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
 import {
     countLabel,
@@ -224,24 +225,17 @@ const LeaveConfirm = ({ question, onLeave, onStay }: LeaveConfirmProps): JSX.Ele
     // Whatever had focus when the question appeared (the button that asked) gets it back when the question
     // goes — but only if focus went with it; a player who has moved focus elsewhere keeps it there.
     const opener = useRef(document.activeElement);
-    const leaveButton = useRef<HTMLButtonElement | undefined>(undefined);
     const latestOnStay = useRef(onStay);
 
     useEffect(() => {
         latestOnStay.current = onStay;
     }, [onStay]);
 
-    // React hands refs null on unmount; undefined means "not mounted".
-    const handleLeaveButtonRef: React.RefCallback<HTMLButtonElement> = useCallback((element) => {
-        leaveButton.current = element ?? undefined;
-    }, []);
-
     // The question takes focus when it appears, so a keyboard user can answer it straight away.
+    const handleLeaveButtonRef = useFocusOnAppear<HTMLButtonElement>();
+
     useEffect(() => {
         const returnTo = opener.current;
-        const leave = leaveButton.current;
-
-        if (leave !== undefined) leave.focus();
 
         return () => {
             if (returnTo instanceof HTMLElement && returnTo.isConnected && isFocusLost()) returnTo.focus();

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef } from 'react';
+import { useId } from 'react';
 
 import { Row } from '../../ui/box.tsx';
 import { useGame } from '../game-provider.tsx';
@@ -6,6 +6,7 @@ import { useHint } from '../hint/hint-provider.tsx';
 import { canUndo } from '../session/session.utils.ts';
 import { GameOverPanelProps } from './game-over.utils.ts';
 import { GameOverTestIds } from './game-over.test-ids.ts';
+import { useFocusOnAppear } from '../use-focus-on-appear.ts';
 
 import styles from './game-over.module.scss';
 
@@ -25,19 +26,8 @@ export const GameOver = (): JSX.Element | undefined => {
 
 const GameOverPanel = ({ canUndo: isUndoable, onUndo, onNewGame }: GameOverPanelProps): JSX.Element => {
     const titleId = useId();
-    const firstAction = useRef<HTMLButtonElement | undefined>(undefined);
-
-    // React hands refs null on unmount; undefined means "not mounted".
-    const handleFirstActionRef: React.RefCallback<HTMLButtonElement> = useCallback((element) => {
-        firstAction.current = element ?? undefined;
-    }, []);
-
     // The panel takes focus, so a keyboard player can step back (or, with nothing to undo, deal) straight away.
-    useEffect(() => {
-        const button = firstAction.current;
-
-        if (button !== undefined) button.focus();
-    }, []);
+    const handleFirstActionRef = useFocusOnAppear<HTMLButtonElement>();
 
     return (
         <section aria-labelledby={titleId} className={styles.panel} data-testid={GameOverTestIds.Panel}>
