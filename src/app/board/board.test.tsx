@@ -87,6 +87,16 @@ describe('Board', () => {
         driver.assert.cardFaceDownAndUnlabelled({ rank: Rank.Two, suit: Suit.Clubs });
     });
 
+    it('ignores clicks on the stock while the cards are still being dealt', async () => {
+        driver.given.dealtGame({ seed: 12, drawMode: DrawMode.One });
+        await driver.when.created();
+
+        await driver.click.stock();
+        driver.when.dealt();
+
+        driver.assert.dealtStockTopStillOnStock();
+    });
+
     it('lifts a card above the table while it flies, and settles it when it lands', async () => {
         driver.given.dealtGame({ seed: 12, drawMode: DrawMode.One });
         await driver.when.created();

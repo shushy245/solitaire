@@ -61,8 +61,11 @@ export const Board = (): JSX.Element => {
         boardElement.current = element ?? undefined;
     }, []);
 
-    // A draw names the stock's top card, so a stale second click is rejected by the engine.
+    // A draw names the stock's top card, so a stale second click is rejected by the engine. Like the cards, the
+    // stock waits for the deal to settle: a draw mid-deal would start the clock before the table is even laid out.
     const handleStockClick = (): void => {
+        if (!isSettled(dealPhase)) return;
+
         dispatchMove(makeDrawMove(game) ?? { kind: MoveKind.Recycle });
     };
 

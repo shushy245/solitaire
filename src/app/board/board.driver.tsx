@@ -50,6 +50,7 @@ export type BoardDriver = {
         cardCount: (count: number) => void;
         cardIn: (args: { card: CardName; pile: PileKind; pileIndex: number }) => void;
         dealtStockTopNowOnWaste: () => void;
+        dealtStockTopStillOnStock: () => void;
         cardLabel: (args: { card: CardName; label: string }) => void;
         cardFaceDownAndUnlabelled: (card: CardName) => void;
         stockLabel: (label: string) => void;
@@ -265,6 +266,12 @@ export const makeBoardDriver = (): BoardDriver => {
                 const element = screen.getByTestId(BoardTestIds.Card(dealtStockTop().id));
                 expect(element).toHaveAttribute('data-pile', PileKind.Waste);
                 expect(element).toHaveAttribute('data-face', 'up');
+            },
+            dealtStockTopStillOnStock: () => {
+                expect(screen.getByTestId(BoardTestIds.Card(dealtStockTop().id))).toHaveAttribute(
+                    'data-pile',
+                    PileKind.Stock,
+                );
             },
             cardLabel: ({ card, label }) => {
                 expect(cardElement(card)).toHaveAccessibleName(label);
