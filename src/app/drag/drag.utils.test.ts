@@ -11,7 +11,7 @@ import {
     offsetRect,
     pickUp,
     unionRects,
-    widenDropArea,
+    widenDropAreas,
 } from './drag.utils.ts';
 
 const up = ({ rank, suit }: { rank: Rank; suit: Suit }) => aCard().withRank(rank).withSuit(suit).build();
@@ -138,36 +138,64 @@ describe('findDropMove', () => {
         expect(findDropMove({ game, pickup, dragged: rect(13, 100), piles })).toBeUndefined();
     });
 
+    it('snaps back from a drop dead centre on an illegal pile, though a legal neighbour is grazed', () => {
+        // centred on column 2 (black ten), column 1 (red ten) widened to reach 5px under the card's left edge
+        const widened = piles.map((pile) =>
+            pile.pileIndex === 1 ? { ...pile, rect: { ...pile.rect, right: pile.rect.right + 15 } } : pile,
+        );
+
+        expect(findDropMove({ game, pickup, dragged: rect(120, 100), piles: widened })).toBeUndefined();
+    });
+
+    it('treats a drop exactly between the source pile and a legal neighbour as no drop', () => {
+        // overlaps column 0 and column 1 by 25px each
+        const touching = piles.map((pile) =>
+            pile.pileIndex === 1 ? { ...pile, rect: { ...pile.rect, left: 50, right: 100 } } : pile,
+        );
+
+        expect(findDropMove({ game, pickup, dragged: rect(25, 100), piles: touching })).toBeUndefined();
+        expect(findDropMove({ game, pickup, dragged: rect(25, 100), piles: [...touching].reverse() })).toBeUndefined();
+    });
+
     it('snaps back when no overlapped pile takes the card', () => {
         expect(findDropMove({ game, pickup, dragged: rect(125, 110), piles })).toBeUndefined();
         expect(findDropMove({ game, pickup, dragged: rect(400, 400), piles })).toBeUndefined();
     });
 });
 
-describe('widenDropArea', () => {
+describe('widenDropAreas', () => {
     const cardRect = { left: 100, top: 200, right: 150, bottom: 270 };
+    // a quarter of a 40px card: 10px of padding
+    const widen = ({
+        pile,
+        boardBottom = 500,
+        viewportHeight = 900,
+    }: {
+        pile: PileKind;
+        boardBottom?: number;
+        viewportHeight?: number;
+    }) =>
+        widenDropAreas({
+            piles: [{ pile, pileIndex: 0, rect: cardRect }],
+            cardWidth: 40,
+            boardBottom,
+            viewportHeight,
+        })[0]?.rect;
 
     it('pads every pile sideways and vertically, so a drop slightly off its edge still lands', () => {
-        expect(
-            widenDropArea({
-                pile: { pile: PileKind.Foundation, pileIndex: 0, rect: cardRect },
-                padding: 10,
-                floor: 900,
-            }),
-        ).toEqual({ pile: PileKind.Foundation, pileIndex: 0, rect: { left: 90, top: 190, right: 160, bottom: 280 } });
+        expect(widen({ pile: PileKind.Foundation })).toEqual({ left: 90, top: 190, right: 160, bottom: 280 });
     });
 
-    it('stretches a tableau column down to the bottom of the table, so a drop well below its last card lands', () => {
-        expect(
-            widenDropArea({ pile: { pile: PileKind.Tableau, pileIndex: 4, rect: cardRect }, padding: 10, floor: 900 }),
-        ).toEqual({ pile: PileKind.Tableau, pileIndex: 4, rect: { left: 90, top: 190, right: 160, bottom: 900 } });
+    it('stretches a tableau column down to the foot of the window, below the table itself', () => {
+        expect(widen({ pile: PileKind.Tableau })).toEqual({ left: 90, top: 190, right: 160, bottom: 900 });
+    });
+
+    it('stretches a column to the table bottom when the table runs past the window', () => {
+        expect(widen({ pile: PileKind.Tableau, boardBottom: 1400 })?.bottom).toBe(1400);
     });
 
     it('never shortens a column that already reaches past the floor', () => {
-        expect(
-            widenDropArea({ pile: { pile: PileKind.Tableau, pileIndex: 4, rect: cardRect }, padding: 10, floor: 250 })
-                .rect.bottom,
-        ).toBe(280);
+        expect(widen({ pile: PileKind.Tableau, boardBottom: 100, viewportHeight: 250 })?.bottom).toBe(280);
     });
 });
 
