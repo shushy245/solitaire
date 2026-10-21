@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { RequestedDealModel } from '~/utils/seed-source.utils.ts';
 import {
     CardModel,
     DrawMode,
@@ -34,9 +35,6 @@ export type SavedResult<T> =
 
 // Everything about the current deal that survives a reload. The phase does not: a sweep cut short by the
 // reload resumes as normal play, with Auto-complete offered again.
-// A deal the page address asks for by seed and draw mode.
-export type RequestedDealModel = { readonly seed: number; readonly drawMode: DrawMode };
-
 export type SavedGameModel = Pick<SessionModel, 'game' | 'history' | 'elapsedMs' | 'dealNumber' | 'progress'>;
 
 // A card is saved as one short string — "hearts-11:up" — so a long undo history stays small.
@@ -95,12 +93,7 @@ const isPossibleColumn = (column: readonly CardModel[], index: number): boolean 
     const hiddenCount = firstShown === -1 ? column.length : firstShown;
     const shown = column.slice(hiddenCount);
 
-    return (
-        hiddenCount <= index &&
-        (column.length === 0 || shown.length > 0) &&
-        shown.every((card) => card.faceUp) &&
-        isMovableRun(shown)
-    );
+    return hiddenCount <= index && (column.length === 0 || shown.length > 0) && isMovableRun(shown);
 };
 
 const isSameDeal = ({ a, b }: { a: GameStateModel; b: GameStateModel }): boolean =>
@@ -125,6 +118,9 @@ const GameSchema = z
     })
     .refine((game) => game.tableau.every(isPossibleColumn), {
         message: 'every tableau column must hide no more cards than it was dealt, under one shown descending run',
+    })
+    .refine((game) => game.stock.every((card) => !card.faceUp) && game.waste.every((card) => card.faceUp), {
+        message: 'stock cards must lie face-down and waste cards face-up',
     })
     .refine(hasPossibleWasteFan, {
         message: 'the waste fan cannot show more cards than the waste holds or a draw turns',

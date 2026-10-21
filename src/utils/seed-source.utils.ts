@@ -20,11 +20,19 @@ export const seedFromSearch = (search: string): number | undefined => {
     return parsed.success ? parsed.data : undefined;
 };
 
-const TURN_THREE_PARAM = '3';
+// A deal the page address asks for by seed and draw mode.
+export type RequestedDealModel = { readonly seed: number; readonly drawMode: DrawMode };
 
-// draw=3 replays a seed as turn 3; anything else, or nothing, is turn 1.
-export const drawModeFromSearch = (search: string): DrawMode =>
-    new URLSearchParams(search).get('draw') === TURN_THREE_PARAM ? DrawMode.Three : DrawMode.One;
+// ?draw= is external input too: 1 or 3, or it is ignored (turn 1).
+const DrawParamSchema = z.enum(['1', '3']);
+
+const drawParamMap: Record<z.infer<typeof DrawParamSchema>, DrawMode> = { '1': DrawMode.One, '3': DrawMode.Three };
+
+export const drawModeFromSearch = (search: string): DrawMode => {
+    const parsed = DrawParamSchema.safeParse(new URLSearchParams(search).get('draw') ?? undefined);
+
+    return parsed.success ? drawParamMap[parsed.data] : DrawMode.One;
+};
 
 // Once its deal is on the table the seed has done its job; left in the address, every reload would deal it
 // again instead of resuming the game in progress.
@@ -38,7 +46,7 @@ export const searchWithoutSeed = (search: string): string => {
 };
 
 // The deal the page address asks for, if it names a seed.
-export const dealFromSearch = (search: string): { seed: number; drawMode: DrawMode } | undefined => {
+export const dealFromSearch = (search: string): RequestedDealModel | undefined => {
     const seed = seedFromSearch(search);
 
     return seed === undefined ? undefined : { seed, drawMode: drawModeFromSearch(search) };

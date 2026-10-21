@@ -3,8 +3,8 @@ import { beforeEach, describe, it } from 'vitest';
 import { DrawMode, Rank, Suit } from '~/engine/index.ts';
 
 import { PileKind } from './layout.utils.ts';
-import { DEAL_TOTAL_MS, DealPhase } from './board.utils.ts';
 import { BoardDriver, makeBoardDriver } from './board.driver.tsx';
+import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 
 describe('Board', () => {
     let driver: BoardDriver;
@@ -90,7 +90,9 @@ describe('Board', () => {
     it('ignores clicks on the stock while the cards are still being dealt', async () => {
         driver.given.dealtGame({ seed: 12, drawMode: DrawMode.One });
         await driver.when.created();
+        driver.time.pass(STACK_HOLD_MS);
 
+        driver.assert.dealPhase(DealPhase.Dealing);
         await driver.click.stock();
         driver.when.dealt();
 

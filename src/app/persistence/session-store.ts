@@ -1,4 +1,5 @@
 import { Logger } from '~/utils/logger.port.ts';
+import { RequestedDealModel } from '~/utils/seed-source.utils.ts';
 import { KeyValueStore, WriteOutcome } from '~/utils/key-value-store.port.ts';
 
 import { SessionModel } from '../session/session.utils.ts';
@@ -7,7 +8,6 @@ import {
     chooseInitialSession,
     parseSavedGame,
     parseSavedStats,
-    RequestedDealModel,
     SAVED_GAME_KEY,
     SAVED_STATS_KEY,
     SavedKind,
@@ -15,6 +15,12 @@ import {
     serializeGame,
     serializeStats,
 } from './persistence.utils.ts';
+
+// Who is reading a save — named in the log so grep finds the source.
+enum StoreOperation {
+    Load = 'sessionStore.load',
+    Save = 'sessionStore.save',
+}
 
 export type SessionStore = {
     // The session to start with: the page's requested deal, else the saved game, else a fresh deal — with the saved record.
@@ -30,7 +36,7 @@ export const makeSessionStore = ({ store, logger }: { store: KeyValueStore; logg
         key,
         parse,
     }: {
-        operation: string;
+        operation: StoreOperation;
         key: string;
         parse: (raw: string | undefined) => SavedResult<T>;
     }) => {
@@ -43,7 +49,7 @@ export const makeSessionStore = ({ store, logger }: { store: KeyValueStore; logg
         return result.kind === SavedKind.Found ? result.value : undefined;
     };
 
-    const readSavedStats = (operation: string): StatsModel =>
+    const readSavedStats = (operation: StoreOperation): StatsModel =>
         readSaved({ operation, key: SAVED_STATS_KEY, parse: parseSavedStats }) ?? emptyStats;
 
     // The record as this tab last loaded or saved it — what it has added since is the difference.
@@ -54,7 +60,7 @@ export const makeSessionStore = ({ store, logger }: { store: KeyValueStore; logg
     const saveStats = (stats: StatsModel): void => {
         if (stats === synced.stats) return;
 
-        const merged = mergeStats({ saved: readSavedStats('sessionStore.save'), before: synced.stats, after: stats });
+        const merged = mergeStats({ saved: readSavedStats(StoreOperation.Save), before: synced.stats, after: stats });
 
         if (store.write({ key: SAVED_STATS_KEY, value: serializeStats(merged) }) === WriteOutcome.Saved) {
             synced.stats = stats;
@@ -63,11 +69,11 @@ export const makeSessionStore = ({ store, logger }: { store: KeyValueStore; logg
 
     return {
         load: ({ requestedDeal, freshSeed }) => {
-            const stats = readSavedStats('sessionStore.load');
+            const stats = readSavedStats(StoreOperation.Load);
             synced.stats = stats;
 
             return chooseInitialSession({
-                savedGame: readSaved({ operation: 'sessionStore.load', key: SAVED_GAME_KEY, parse: parseSavedGame }),
+                savedGame: readSaved({ operation: StoreOperation.Load, key: SAVED_GAME_KEY, parse: parseSavedGame }),
                 stats,
                 requestedDeal,
                 freshSeed,

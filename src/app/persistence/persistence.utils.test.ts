@@ -2,9 +2,9 @@ import { z } from 'zod';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
-import { dealGame, DrawMode } from '~/engine/index.ts';
 import { playRandomly } from '~/testkit/play-randomly.ts';
 import { aGameState, aSession } from '~/testkit/builders/index.ts';
+import { dealGame, DrawMode, isMovableRun } from '~/engine/index.ts';
 
 import { emptyStats, recordPlayed, recordWin } from '../stats/stats.utils.ts';
 import { DealProgress, makeSession, SessionModel } from '../session/session.utils.ts';
@@ -122,11 +122,33 @@ describe('saved game', () => {
         const hiddenOnTop = secondHidden === undefined || secondShown === undefined ? [] : [secondShown, secondHidden];
         // the first column is dealt one face-up card and never holds a hidden one
         const tooManyHidden = [...second.map((card) => ({ ...card, faceUp: false })), ...first];
-        const notARun = [...first, ...second.filter((card) => card.faceUp)];
+        // two stock cards shown in an order that cannot be a run (if one order is a run, the other is not)
+        const [a, b, ...stockRest] = deal.stock.map((card) => ({ ...card, faceUp: true }));
+        const pair = a === undefined || b === undefined ? [] : isMovableRun([a, b]) ? [b, a] : [a, b];
+        const notARun = serializeGame({
+            ...makeSession({ seed: 1, drawMode: DrawMode.One }),
+            game: {
+                ...deal,
+                stock: stockRest.map((card) => ({ ...card, faceUp: false })),
+                tableau: [[...first, ...pair], second, ...rest],
+            },
+        });
 
         expect(reasonOf(withColumns([first, hiddenOnTop, ...rest]))).toMatch(/tableau/);
         expect(reasonOf(withColumns([tooManyHidden, [], ...rest]))).toMatch(/tableau/);
-        expect(reasonOf(withColumns([notARun, second.filter((card) => !card.faceUp), ...rest]))).toMatch(/tableau/);
+        expect(reasonOf(notARun)).toMatch(/tableau/);
+    });
+
+    it('is corrupt when a stock card lies face-up or a waste card face-down', () => {
+        const deal = dealGame({ seed: 1, drawMode: DrawMode.One });
+        const [top, ...under] = deal.stock;
+        const withGame = (game: typeof deal) =>
+            serializeGame({ ...makeSession({ seed: 1, drawMode: DrawMode.One }), game });
+        const shownOnStock = top === undefined ? deal : { ...deal, stock: [{ ...top, faceUp: true }, ...under] };
+        const hiddenOnWaste = top === undefined ? deal : { ...deal, stock: under, waste: [top], wasteFan: 1 };
+
+        expect(reasonOf(withGame(shownOnStock))).toMatch(/stock/);
+        expect(reasonOf(withGame(hiddenOnWaste))).toMatch(/waste/);
     });
 
     it('accepts every position real play reaches, so a real game is never thrown away', () => {

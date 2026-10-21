@@ -64,12 +64,11 @@ describe('unlocking sound player', () => {
         driver.assert.sounded([SoundKind.Draw]);
     });
 
-    it('starts audio again at the next interaction after the browser suspends it (a locked phone)', async () => {
+    it('starts audio again at the very interaction after the browser suspended it, so that tap still sounds', async () => {
         driver.when.created();
         await driver.when.pointerPressed();
         driver.when.audioSuspendedByTheBrowser();
 
-        driver.when.played(SoundKind.Deal);
         await driver.when.pointerPressed();
         driver.when.played(SoundKind.Draw);
 

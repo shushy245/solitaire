@@ -61,13 +61,13 @@ describe('session store', () => {
         driver.assert.warnedAbout({ key: SAVED_STATS_KEY, reason: /discarded/ });
     });
 
-    it('deals the seed the page asks for instead of resuming', () => {
+    it('deals the deal the page asks for, in its draw mode, instead of resuming', () => {
         driver.given.savedGame(serializeGame(played));
-        driver.given.seedParam(5);
+        driver.given.requestedDeal({ seed: 5, drawMode: DrawMode.Three });
 
         driver.when.loaded();
 
-        driver.assert.dealOf(5);
+        driver.assert.deal({ seed: 5, drawMode: DrawMode.Three });
     });
 
     it('reads back what it saved', () => {

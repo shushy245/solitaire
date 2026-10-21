@@ -4,6 +4,7 @@ import { dealGame, DrawMode } from '~/engine/index.ts';
 import { FakeLogger } from '~/testkit/fakes/fake-logger.ts';
 import { QuotaStorage } from '~/testkit/fakes/quota-storage.ts';
 import { MemoryStorage } from '~/testkit/fakes/memory-storage.ts';
+import { RequestedDealModel } from '~/utils/seed-source.utils.ts';
 import { UnavailableStorage } from '~/testkit/fakes/unavailable-storage.ts';
 import { makeBrowserKeyValueStore } from '~/utils/browser-key-value-store.ts';
 
@@ -20,14 +21,14 @@ export type SessionStoreDriver = {
         savedStats: (raw: string) => void;
         storageUnavailable: () => void;
         storageWithRoomForStatsOnly: () => void;
-        seedParam: (seed: number) => void;
+        requestedDeal: (deal: RequestedDealModel) => void;
         statsSavedByAnotherTab: (stats: StatsModel) => void;
     };
     when: { loaded: () => void; saved: (session: SessionModel) => void };
     assert: {
         resumed: (session: SessionModel) => void;
         freshDeal: () => void;
-        dealOf: (seed: number) => void;
+        deal: (deal: RequestedDealModel) => void;
         stats: (stats: StatsModel) => void;
         warnedAbout: (args: { key: string; reason: RegExp }) => void;
         noWarnings: () => void;
@@ -39,9 +40,9 @@ export type SessionStoreDriver = {
 // Runs the real Web Storage adapter (over in-memory storage, or one that refuses every call) under the session store.
 export const makeSessionStoreDriver = (): SessionStoreDriver => {
     const logger = new FakeLogger();
-    const scenario: { storage: MemoryStorage | UnavailableStorage; requestedSeed: number | undefined } = {
+    const scenario: { storage: MemoryStorage | UnavailableStorage; requestedDeal: RequestedDealModel | undefined } = {
         storage: new MemoryStorage(),
-        requestedSeed: undefined,
+        requestedDeal: undefined,
     };
     const saved = (): Storage => scenario.storage;
     const loaded: { session: SessionModel | undefined } = { session: undefined };
@@ -81,17 +82,13 @@ export const makeSessionStoreDriver = (): SessionStoreDriver => {
             statsSavedByAnotherTab: (stats) => {
                 saved().setItem(SAVED_STATS_KEY, serializeStats(stats));
             },
-            seedParam: (seed) => {
-                scenario.requestedSeed = seed;
+            requestedDeal: (deal) => {
+                scenario.requestedDeal = deal;
             },
         },
         when: {
             loaded: () => {
-                const requestedDeal =
-                    scenario.requestedSeed === undefined
-                        ? undefined
-                        : { seed: scenario.requestedSeed, drawMode: DrawMode.One };
-                loaded.session = store().load({ requestedDeal, freshSeed: () => FRESH_SEED });
+                loaded.session = store().load({ requestedDeal: scenario.requestedDeal, freshSeed: () => FRESH_SEED });
             },
             saved: (session) => {
                 store().save(session);
@@ -107,8 +104,8 @@ export const makeSessionStoreDriver = (): SessionStoreDriver => {
                 expect(loadedSession().game).toEqual(dealGame({ seed: FRESH_SEED, drawMode: DrawMode.One }));
                 expect(loadedSession().history).toEqual([]);
             },
-            dealOf: (seed) => {
-                expect(loadedSession().game.seed).toBe(seed);
+            deal: ({ seed, drawMode }) => {
+                expect(loadedSession().game).toEqual(dealGame({ seed, drawMode }));
             },
             stats: (stats) => {
                 expect(loadedSession().stats).toEqual(stats);
