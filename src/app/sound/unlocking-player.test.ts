@@ -64,6 +64,19 @@ describe('unlocking sound player', () => {
         driver.assert.sounded([SoundKind.Draw]);
     });
 
+    it('starts audio again at the next interaction after the browser suspends it (a locked phone)', async () => {
+        driver.when.created();
+        await driver.when.pointerPressed();
+        driver.when.audioSuspendedByTheBrowser();
+
+        driver.when.played(SoundKind.Deal);
+        await driver.when.pointerPressed();
+        driver.when.played(SoundKind.Draw);
+
+        driver.assert.voicesCreated(1);
+        driver.assert.sounded([SoundKind.Draw]);
+    });
+
     it('stays silent, and says so once, where the browser has no audio', async () => {
         driver.given.audioUnavailable();
         driver.when.created();

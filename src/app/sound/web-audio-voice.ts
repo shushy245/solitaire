@@ -117,5 +117,6 @@ export const makeWebAudioVoice = (context: AudioContext): SoundVoice => {
             recipeMap[sound](context.currentTime);
         },
         resume: () => context.resume(),
+        isRunning: () => context.state === 'running',
     };
 };

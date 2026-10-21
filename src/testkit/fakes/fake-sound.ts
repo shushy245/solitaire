@@ -22,18 +22,30 @@ export enum ResumeOutcome {
 export class FakeSoundVoice implements SoundVoice {
     readonly played: SoundKind[] = [];
     private resumes = 0;
+    private running = false;
 
     constructor(private readonly outcomes: readonly ResumeOutcome[]) {}
 
     play(sound: SoundKind): void {
-        this.played.push(sound);
+        if (this.running) this.played.push(sound);
     }
 
     resume(): Promise<void> {
         const outcome = this.outcomes[Math.min(this.resumes, this.outcomes.length - 1)] ?? ResumeOutcome.Resumes;
         this.resumes += 1;
 
-        return resumeOutcomeMap[outcome]();
+        return resumeOutcomeMap[outcome]().then(() => {
+            this.running = true;
+        });
+    }
+
+    isRunning(): boolean {
+        return this.running;
+    }
+
+    // What the browser does when the phone is locked.
+    suspend(): void {
+        this.running = false;
     }
 }
 

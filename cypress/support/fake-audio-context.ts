@@ -58,6 +58,7 @@ export const installFakeAudioContext = (win: Cypress.AUTWindow, log: AudioLog): 
         readonly sampleRate = 8000;
         readonly currentTime = 0;
         readonly destination = new FakeNode();
+        state = 'suspended';
 
         constructor() {
             log.contexts += 1;
@@ -88,6 +89,8 @@ export const installFakeAudioContext = (win: Cypress.AUTWindow, log: AudioLog): 
         }
 
         resume(): Promise<void> {
+            this.state = 'running';
+
             return Promise.resolve();
         }
     }

@@ -16,6 +16,7 @@ export type UnlockingPlayerDriver = {
         pointerPressed: () => Promise<void>;
         pointerReleased: () => Promise<void>;
         keyPressed: () => Promise<void>;
+        audioSuspendedByTheBrowser: () => void;
     };
     assert: {
         voicesCreated: (count: number) => void;
@@ -72,6 +73,11 @@ export const makeUnlockingPlayerDriver = (): UnlockingPlayerDriver => {
             pointerReleased: async () => {
                 fireEvent.pointerUp(window);
                 await settle();
+            },
+            audioSuspendedByTheBrowser: () => {
+                voices.forEach((voice) => {
+                    voice.suspend();
+                });
             },
             keyPressed: async () => {
                 fireEvent.keyDown(window, { key: 'a' });

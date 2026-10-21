@@ -8,4 +8,6 @@ export type SoundVoice = {
     play: (sound: SoundKind) => void;
     // Browsers start audio suspended until a user gesture; resuming may be refused.
     resume: () => Promise<void>;
+    // False once the browser suspends or interrupts audio (a locked phone, another app taking the speaker).
+    isRunning: () => boolean;
 };

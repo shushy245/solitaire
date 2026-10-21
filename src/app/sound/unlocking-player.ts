@@ -56,13 +56,26 @@ export const makeUnlockingPlayer = ({
         }
     }
 
-    UNLOCKING_EVENTS.forEach((type) => {
-        gestures.addEventListener(type, handleGesture, true);
-    });
+    // Adding the same listener again is a no-op, so re-arming never stacks listeners.
+    const startListening = (): void => {
+        UNLOCKING_EVENTS.forEach((type) => {
+            gestures.addEventListener(type, handleGesture, true);
+        });
+    };
+
+    startListening();
 
     return {
         play: (sound) => {
             if (!audio.isRunning || audio.voice === undefined) return;
+
+            // The browser can suspend audio later (a locked phone): listen for the next gesture to start it again.
+            if (!audio.voice.isRunning()) {
+                audio.isRunning = false;
+                startListening();
+
+                return;
+            }
 
             try {
                 audio.voice.play(sound);
