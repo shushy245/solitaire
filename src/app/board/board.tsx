@@ -9,8 +9,8 @@ import { useSound } from '../sound/sound-provider.tsx';
 import { useCardDrag } from '../drag/use-card-drag.ts';
 import { useLiftedCards } from './use-lifted-cards.ts';
 import { useDealAnimation } from './use-deal-animation.ts';
-import { isDealUnstarted } from '../session/session.utils.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
+import { isAutoCompleting, isDealUnstarted } from '../session/session.utils.ts';
 import { CardSlotModel, dealOrder, layoutCards, PileKind } from './layout.utils.ts';
 import {
     boardHeightClassNames,
@@ -48,7 +48,8 @@ export const Board = (): JSX.Element => {
     const boardElement = useRef<HTMLElement | undefined>(undefined);
     const { draggingIds, handleCardPointerDown } = useCardDrag({
         game,
-        isEnabled: isSettled(dealPhase),
+        // No pick-up while dealing, nor while auto-complete moves the cards itself (a drop would be ignored).
+        isEnabled: isSettled(dealPhase) && !isAutoCompleting(session),
         dispatchMove,
         onRelease: liftUntilLanded,
         onSnapBack: handleSnapBack,

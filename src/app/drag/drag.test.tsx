@@ -55,6 +55,17 @@ describe('dragging cards', () => {
         driver.assert.dragging({ card: hidden, isDragging: false });
     });
 
+    it('cannot pick up cards while auto-complete is sending them home', async () => {
+        driver.given.readyToAutoCompleteAfterMoves(96);
+        await driver.when.created();
+        driver.when.autoCompleteStartedElsewhere();
+
+        driver.pointer.press(redTen);
+        driver.pointer.moveBy({ dx: 30, dy: 40 });
+
+        driver.assert.dragging({ card: redTen, isDragging: false });
+    });
+
     it('cannot pick up cards while they are still being dealt', async () => {
         driver.given.column({ index: 0, cards: [redTen] });
         await driver.when.created();

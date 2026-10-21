@@ -28,7 +28,13 @@ export type BoardDriver = {
         stock: (cards: readonly CardName[]) => void;
         readyToAutoCompleteAfterMoves: (moves: number) => void;
     };
-    when: { created: () => Promise<void>; dealt: () => void; unmounted: () => void; undoneElsewhere: () => void };
+    when: {
+        created: () => Promise<void>;
+        dealt: () => void;
+        unmounted: () => void;
+        undoneElsewhere: () => void;
+        autoCompleteStartedElsewhere: () => void;
+    };
     pointer: {
         press: (card: CardName) => void;
         moveBy: (args: { dx: number; dy: number }) => void;
@@ -171,6 +177,16 @@ export const makeBoardDriver = (): BoardDriver => {
             },
             unmounted: () => {
                 rendered.unmount();
+            },
+            autoCompleteStartedElsewhere: () => {
+                const game = outside.game;
+
+                if (game === undefined)
+                    throw new Error('board driver: autoCompleteStartedElsewhere needs when.created first');
+
+                act(() => {
+                    game.startAutoComplete();
+                });
             },
             undoneElsewhere: () => {
                 const game = outside.game;
