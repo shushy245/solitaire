@@ -44,4 +44,4 @@ Full history: `docs/changelog.md`; commit-level record: `git log`.
 - `click-to-play` — a click plays a card's obvious move (`findClickMove`, `src/engine/click-move.ts`; intent `playCard` resolved in `reduceSession`), a card with none shakes (`ShakeModel`, `board.utils.ts`). The drag hook's `isDragClick` stops a drag's release click from playing; `isRepeatClick` ignores a double-click's second half.
 
 ## What's next
-Epic "Play polish" done (epic-level review not yet run). Also open: the manual Chrome/Safari listen, BF-1/BF-2 and the RF-backlog in `docs/plan.md` — the user picks what is next.
+Epic "Play polish" done (epic-level review not yet run); story `game-over` planned in `docs/plan.md`, not started. Also open: the manual Chrome/Safari listen, BF-1/BF-2 and the RF-backlog in `docs/plan.md` — the user picks what is next.
