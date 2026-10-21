@@ -1,5 +1,11 @@
 # Changelog
 
+## card-design — 2026-10-21
+- **Pain:** the cards looked sharp and old-fashioned — a high-contrast serif and a dark oxblood back — when the user wanted something softer and more pleasing.
+- **Fix:** warm cream faces with a gentle sheen, rounder corners, soft layered shadows, rounded sans corner indices, tinted frames behind the court letters, and a navy dotted back.
+- **Trade-off:** the cards' colours and lettering are drawn in code rather than taken from an illustrated online deck, so there are no picture-card portraits, but nothing to license or download and they stay sharp at every size.
+- **Result:** ink, court letters and the back are held to measured contrast (the back stays apart from the felt for red–green colour-blind players); 357 tests pass plus all 8 browser tests; the review raised 9 issues — 8 fixed, 1 queued; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## hint — 2026-10-21
 - **Pain:** a stuck player had no way to ask "what can I do here?", which most solitaire games offer.
 - **Fix:** a Hint button (or the H key) rings the cards that could move and where they would land for two seconds; pressing again shows the next idea, best first, and the deck last; when nothing at all is left it says "No moves left".

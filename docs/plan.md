@@ -318,8 +318,8 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - review: a column move that only empties its column ranks below the waste; a King fits empty columns once
   - review: no hints once the game is won; a hint costs no points or moves
 
-### Story `card-design` — softer, more pleasing cards
-- Owns: `src/app/board/board.module.scss`, `src/styles/global.scss`
+### Story `card-design` — softer, more pleasing cards ✅
+- Owns: `src/app/board/board.module.scss`, `src/styles/global.scss`, `src/styles/table-metrics.module.scss` (`--radius`, also rounds slots and the hint ring), `src/app/celebration/cascade-canvas.ts`
 - Depends on: hint
 - Parallel: serial (last)
 - Cases:
@@ -542,6 +542,15 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   box-shadow on `.front` inside the preserve-3d layer → moved to `.card.hinted::after`; not reproduced since.
   Not seen by the pass: the "No moves left" line with text (its deal always had a move) — covered by HUD tests.
 
+### `card-design` (code-review medium, 9 findings; visual pass A+B)
+- Fixed (8): indices shrank and sat lower (tight at the 13px floor) → restored; fanned-card edges faded → firmer
+  edge and contact shadow; the back's centre near the felt's lightness → measured, darker; court letters untested
+  on their frame → tokens + test (red ink darkened to pass); back dots in fixed px → scale with the card; Owns
+  list incomplete.
+- RF (1): `--radius` and the cascade's `CORNER_RATIO` hold one value in two places.
+- Visual A+B (`?seed=7`; settled, three draws, a covered card; 390/768/1280): no overflow, Lighthouse a11y 100,
+  covered-card rank ink fully visible at 390 (before the index fixes added more room).
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
@@ -560,4 +569,5 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 - (epic review) `CardProps` lives in `board.tsx` → `board.utils.ts`.
 - (epic review) the stock gives no visual or aria cue that it is inert during the deal.
 - (`easy-drops`) `isTableauPile` in drag.utils repeats `isTableauSlot` in layout.utils → one pile-kind predicate.
+- (`card-design`) `--radius` and `CORNER_RATIO` (cascade-canvas.ts) duplicate one value → read the card's computed radius.
 - (`celebration`) one focus-on-appear hook for `LeaveConfirm` and `WinOverlay` (the latter returns no focus).

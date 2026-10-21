@@ -39,9 +39,9 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `card-design` — soft cream cards, Instrument Sans indices, tinted court frames, navy dotted back; colours in `global.scss`, held by `contrast.utils.test.ts`. `CORNER_RATIO` (cascade) mirrors `--radius`.
 - `hint` — Hint button / H rings one move for 2s, cycling best-first (`listHints`, `src/engine/hints.ts`). `src/app/hint/` (rules `hint.utils.ts`, `HintProvider` holds the hint per game and its timer; the board reports when the table is dealt). The ring is a `::after` outside the 3D flip layer.
 - `click-to-play` — a click plays a card's obvious move (`findClickMove`, `src/engine/click-move.ts`; intent `playCard` resolved in `reduceSession`), a card with none shakes (`ShakeModel`, `board.utils.ts`). The drag hook's `isDragClick` stops a drag's release click from playing; `isRepeatClick` ignores a double-click's second half.
-- `easy-drops` — sloppy drops land: `widenDropAreas` pads piles and stretches columns to the window foot, `findDropMove` takes the most-overlapped legal pile catching ≥ `MIN_DROP_SHARE` of the card (`src/app/drag/drag.utils.ts`).
 
 ## What's next
-Epic "Play polish" in `docs/plan.md` (draw-animation → easy-drops → click-to-play → hint → card-design), running autonomously. Also open: the manual Chrome/Safari listen, BF-1/BF-2 and the RF-backlog in `docs/plan.md` — the user picks what is next.
+Epic "Play polish" done (epic-level review not yet run). Also open: the manual Chrome/Safari listen, BF-1/BF-2 and the RF-backlog in `docs/plan.md` — the user picks what is next.
