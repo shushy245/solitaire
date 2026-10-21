@@ -5,6 +5,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { App } from './app.tsx';
 import { AppTestIds } from './app.utils.ts';
 import { HudTestIds } from './app/hud/hud.test-ids.ts';
+import { SoundKind } from './app/sound/sound.utils.ts';
 import { FakeLogger } from './testkit/fakes/fake-logger.ts';
 import { BoardTestIds } from './app/board/board.test-ids.ts';
 import { SoundProvider } from './app/sound/sound-provider.tsx';
@@ -17,7 +18,11 @@ import { DEAL_TOTAL_MS, STACK_HOLD_MS } from './app/board/board.utils.ts';
 import { makeBrowserKeyValueStore } from './utils/browser-key-value-store.ts';
 
 export type AppDriver = {
-    given: { firstDeal: (seed: number) => void; laterDealsFrom: (seeds: readonly number[]) => void };
+    given: {
+        firstDeal: (seed: number) => void;
+        laterDealsFrom: (seeds: readonly number[]) => void;
+        reducedMotion: () => void;
+    };
     when: {
         created: () => Promise<void>;
         createdInStrictMode: () => Promise<void>;
@@ -29,6 +34,7 @@ export type AppDriver = {
         titleShown: () => void;
         tableauTop: (args: { column: number; cardId: string }) => void;
         tableAsBeforeReload: () => void;
+        soundsPlayed: (sounds: readonly SoundKind[]) => void;
     };
 };
 
@@ -37,8 +43,6 @@ const passTime = (ms: number): void => {
         vi.advanceTimersByTime(ms);
     });
 };
-
-const motionIsFine = (): boolean => false;
 
 // Where every card sits and which way up, plus the move count — what a player would see change.
 const snapshotTable = (): readonly string[] => [
@@ -59,7 +63,12 @@ export const makeAppDriver = (): AppDriver => {
     const storage = new MemoryStorage();
     const sound = new FakeSoundPlayer();
     const logger = new FakeLogger();
-    const scenario: { seedParam: number | undefined; laterSeeds: number[] } = { seedParam: undefined, laterSeeds: [] };
+    const scenario: { seedParam: number | undefined; laterSeeds: number[]; isMotionReduced: boolean } = {
+        seedParam: undefined,
+        laterSeeds: [],
+        isMotionReduced: false,
+    };
+    const prefersReducedMotion = (): boolean => scenario.isMotionReduced;
     const seedSource = (): number => scenario.laterSeeds.shift() ?? 0;
     const rendered: { unmount: () => void; tableBeforeReload: readonly string[] } = {
         unmount: () => undefined,
@@ -72,7 +81,7 @@ export const makeAppDriver = (): AppDriver => {
 
         return (
             <SoundProvider player={sound} initiallyMuted={false} saveMuted={discardSave}>
-                <MotionProvider prefersReducedMotion={motionIsFine}>
+                <MotionProvider prefersReducedMotion={prefersReducedMotion}>
                     <App
                         initialSession={initialSession}
                         saveSession={store.save}
@@ -91,6 +100,9 @@ export const makeAppDriver = (): AppDriver => {
             },
             laterDealsFrom: (seeds) => {
                 scenario.laterSeeds = [...seeds];
+            },
+            reducedMotion: () => {
+                scenario.isMotionReduced = true;
             },
         },
         when: {
@@ -126,6 +138,9 @@ export const makeAppDriver = (): AppDriver => {
                 expect(card).toHaveAttribute('data-pile', 'tableau');
                 expect(card).toHaveAttribute('data-pile-index', String(column));
                 expect(card).toHaveAttribute('data-face', 'up');
+            },
+            soundsPlayed: (sounds) => {
+                expect(sound.played).toEqual(sounds);
             },
             tableAsBeforeReload: () => {
                 expect(rendered.tableBeforeReload).toContain('1 move');

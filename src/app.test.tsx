@@ -1,5 +1,6 @@
 import { beforeEach, describe, it } from 'vitest';
 
+import { SoundKind } from './app/sound/sound.utils.ts';
 import { AppDriver, makeAppDriver } from './app.driver.tsx';
 
 describe('App', () => {
@@ -34,5 +35,15 @@ describe('App', () => {
         await driver.when.reloaded();
 
         driver.assert.tableAsBeforeReload();
+    });
+
+    it('still plays card sounds for a player who prefers reduced motion — the two are separate choices', async () => {
+        driver.given.reducedMotion();
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.click.stock();
+
+        driver.assert.soundsPlayed([SoundKind.Draw]);
     });
 });
