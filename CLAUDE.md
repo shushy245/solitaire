@@ -43,4 +43,4 @@ Full history: `docs/changelog.md`; commit-level record: `git log`.
 - `persistence` — the game in progress (undo history, time, mode) survives a reload; a Stats panel shows played/won/win rate/bests. `src/app/persistence/` (Zod save format `persistence.utils.ts`, shell `session-store.ts` over the never-throwing `src/utils/browser-key-value-store.ts`); stats rules `src/app/stats/stats.utils.ts`, counted inside `reduceSession` via `progress`; `main.tsx` loads, the provider saves every change; Cypress seeds saves from `cypress/fixtures/`.
 
 ## What's next
-Epic Klondike v1 complete and epic-reviewed. Open: the manual Chrome/Safari listen, BF-1/BF-2 and the RF-backlog in `docs/plan.md` — the user picks what is next.
+Epic "Play polish" in `docs/plan.md` (draw-animation → easy-drops → click-to-play → hint → card-design), running autonomously. Also open: the manual Chrome/Safari listen, BF-1/BF-2 and the RF-backlog in `docs/plan.md` — the user picks what is next.

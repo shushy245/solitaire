@@ -247,6 +247,77 @@ type GameContextValue = {
 
 ---
 
+## Epic: Play polish (requested 2026-10-21)
+Interview decisions: one click plays a card (foundation first, else the first legal column; no move → a
+shake), double-click unchanged · Hint highlights one move (source card + target pile, ~2s), pressing again
+cycles to the next, suggests the stock when nothing else plays, no score penalty · drop targets: tableau
+columns reach the table's bottom with side padding, and among overlapped piles the best *legal* one wins ·
+cards restyled in CSS (no art assets): rounder, warm, soft shadow, large indices, gentler colours.
+Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `card-design` (serial — one session;
+2–4 share `board.tsx`, 5 touches every card's look).
+
+### Story `draw-animation` — a drawn card flies from the stock to the waste
+- Owns: `src/app/board/`
+- Depends on: —
+- Parallel: serial (first)
+- Cases:
+  - repro (real browser): drawing a card shows it travelling from the stock to the waste, not appearing in place
+  - a drawn card is lifted above the waste while it flies, then settles at its waste slot
+  - turn-3: the three drawn cards fly out together and fan
+  - undoing a draw flies the card back to the stock
+
+### Story `easy-drops` — sloppy drops still land
+- Owns: `src/app/drag/`
+- Depends on: draw-animation
+- Parallel: serial
+- Cases:
+  - a tableau column's drop area reaches the bottom of the table, so a drop well below its last card lands there
+  - each pile's drop area is padded sideways, so a drop slightly off a pile's edge still lands
+  - among overlapped piles the legal one wins even when an illegal pile overlaps more
+  - among several legal piles the one with the most overlap wins
+  - no legal overlapped pile → snap back (unchanged); dropping on the source pile is still a no-op
+  - padded areas never make a pile the dragged card does not touch win over one it does
+
+### Story `click-to-play` — one click plays the obvious move
+- Owns: `src/app/board/`, `src/engine/` (new `findClickMove` selector)
+- Depends on: easy-drops
+- Parallel: serial
+- Cases:
+  - engine: a top card that fits a foundation goes there (2♥ onto A♥); an Ace goes to an empty foundation
+  - engine: otherwise a face-up card (with its run) goes to the first legal tableau column, preferring a non-empty column over an empty one
+  - engine: a King already heading an otherwise empty column is not moved to another empty column (no pointless move)
+  - engine: no legal move → none; face-down cards and the stock never resolve
+  - board: a single click on a playable card plays it; on an unplayable card it shakes and nothing changes
+  - board: a click that ends a drag is not a click (the drag threshold still separates them)
+  - pre-mortem: a double-click fires two clicks — the second click's card has already moved, so it never plays twice
+  - pre-mortem: clicks are ignored mid-deal and during auto-complete
+
+### Story `hint` — show me a move
+- Owns: `src/app/hud/` (button), `src/engine/` (`listHints`), `src/app/board/` (highlight)
+- Depends on: click-to-play
+- Parallel: serial
+- Cases:
+  - engine: hints rank foundation moves, then moves that reveal a face-down card, then waste→tableau, then other
+    tableau moves; never a move that just shuffles a run between equal positions (King from an empty column to an empty one)
+  - engine: nothing else playable → the stock (draw or recycle); empty stock and waste with no move → no hint
+  - Hint button and the H key highlight the source card(s) and target pile; the highlight clears after ~2s
+  - pressing Hint again shows the next hint, wrapping round
+  - any game change clears the highlight and restarts the cycle at the first hint
+  - "No moves" is announced when there is nothing to suggest; no score penalty either way
+  - pre-mortem: the clear timer is cancelled on unmount and on a new hint (no stale clear wiping a newer highlight)
+  - pre-mortem: H while typing in no field (there are none) — H with a modifier key does nothing
+
+### Story `card-design` — softer, more pleasing cards
+- Owns: `src/app/board/board.module.scss`, `src/styles/global.scss`
+- Depends on: hint
+- Parallel: serial (last)
+- Cases:
+  - card faces: warm cream, rounder corners, soft layered shadow, large corner rank+suit, centre suit art
+  - red and black inks stay ≥ 4.5:1 on the card face (contrast test); the back stays distinct from the felt
+  - visual pass at 390/768/1280: indices readable at the smallest size (measured)
+
+---
+
 ## Review triage
 
 ### `scaffold` (code-review high, 10 findings)
