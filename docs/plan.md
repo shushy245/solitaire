@@ -19,7 +19,8 @@ resume-after-reload.
   −20 (turn-3, from the 3rd recycle on — the first three passes are free), score floored at 0.
 - Tableau cards turn face-up automatically when uncovered.
 - Input: drag-and-drop (Pointer Events — touch works for free) + click stock to draw/recycle +
-  double-click a top card to send it to a foundation. Ctrl/Cmd+Z undoes.
+  one click plays a card's obvious move — up to its foundation, else onto the first column that takes it
+  (`click-to-play`; this replaced double-click-to-send-up). Ctrl/Cmd+Z undoes.
 - Win celebration: the classic bouncing-card cascade on a `<canvas>` overlay + "New game" CTA.
   `prefers-reduced-motion` → no cascade, no transitions.
 

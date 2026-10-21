@@ -142,13 +142,33 @@ export const shownCardsFor = ({
 export const inStableOrder = <T extends { slot: CardSlotModel }>(cards: readonly T[]): T[] =>
     [...cards].sort((a, b) => a.slot.card.id.localeCompare(b.slot.card.id));
 
-// The browser counts the clicks of a double-click in `detail`; only the first is a play.
-export const isSingleClick = ({ detail }: { detail: number }): boolean => detail <= 1;
+// The browser counts quick clicks near one spot in `detail`, even across cards. Only a repeat on the card the
+// previous click just played is the second half of a double-click; a quick click on another card is a play.
+export const isRepeatClick = ({
+    cardId,
+    detail,
+    lastPlayed,
+}: {
+    cardId: string;
+    detail: number;
+    lastPlayed: string | undefined;
+}): boolean => detail > 1 && lastPlayed === cardId;
 
 export const hasClickMove = (args: { state: GameStateModel; cardId: string }): boolean =>
     findClickMove(args) !== undefined;
 
-export const hasShaken = (shakeCount: number): boolean => shakeCount > 0;
+// A card shaking because it was clicked with no move — only in the game it was clicked in.
+export type ShakeModel = { cardId: string; game: GameStateModel };
+
+export const isShakingCard = ({
+    shake,
+    cardId,
+    game,
+}: {
+    shake: ShakeModel | undefined;
+    cardId: string;
+    game: GameStateModel;
+}): boolean => shake !== undefined && shake.cardId === cardId && shake.game === game;
 
 export const isDealing = (phase: DealPhase): boolean => phase === DealPhase.Dealing;
 

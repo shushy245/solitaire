@@ -31,6 +31,10 @@ type CardDragResult = {
     // Cards following the pointer right now.
     draggingIds: ReadonlySet<string>;
     handleCardPointerDown: (args: { cardId: string; event: React.PointerEvent }) => void;
+    // The browser follows a drag's release with a click on the card under the pointer — the dragged card. True
+    // from the moment the latest press became a drag until the next press, so that click is never a play however
+    // late it arrives.
+    isDragClick: () => boolean;
 };
 
 const NONE: ReadonlySet<string> = new Set();
@@ -84,20 +88,6 @@ const measurePiles = ({
     return [...groups.values()];
 };
 
-// The browser follows a drag's pointerup with a click on the card under the pointer — the dragged card itself.
-// That click is not a play: swallow it before it reaches the card, and stop waiting once the release's own
-// task has passed (a release over bare felt fires no click at all).
-const swallowClickAfterDrag = (): void => {
-    const swallow = (event: MouseEvent): void => {
-        event.stopPropagation();
-    };
-
-    window.addEventListener('click', swallow, { capture: true, once: true });
-    setTimeout(() => {
-        window.removeEventListener('click', swallow, { capture: true });
-    }, 0);
-};
-
 const setDragOffset = ({ elements, dx, dy }: { elements: readonly HTMLElement[]; dx: number; dy: number }): void => {
     elements.forEach((element) => {
         element.style.setProperty('--drag-x', `${dx}px`);
@@ -134,6 +124,7 @@ export const useCardDrag = ({
 }): CardDragResult => {
     const [draggingIds, setDraggingIds] = useState<ReadonlySet<string>>(NONE);
     const active = useRef<ActiveDrag | undefined>(undefined);
+    const lastPressDragged = useRef(false);
     const latestGame = useRef(game);
     const detach = useRef<() => void>(() => undefined);
 
@@ -177,6 +168,7 @@ export const useCardDrag = ({
 
             if (!isDragging(drag)) {
                 active.current = { ...drag, elements };
+                lastPressDragged.current = true;
                 setDraggingIds(new Set(drag.pickup.cardIds));
             }
 
@@ -214,7 +206,6 @@ export const useCardDrag = ({
             });
 
             endDrag();
-            swallowClickAfterDrag();
             if (move === undefined) onSnapBack();
             else dispatchMove(move);
         },
@@ -232,6 +223,7 @@ export const useCardDrag = ({
 
     const handleCardPointerDown = useCallback(
         ({ cardId, event }: { cardId: string; event: React.PointerEvent }): void => {
+            lastPressDragged.current = false;
             const pickup =
                 isEnabled && isPrimaryButton(event) ? pickUp({ game: latestGame.current, cardId }) : undefined;
 
@@ -273,5 +265,7 @@ export const useCardDrag = ({
         [game],
     );
 
-    return { draggingIds, handleCardPointerDown };
+    const isDragClick = useCallback((): boolean => lastPressDragged.current, []);
+
+    return { draggingIds, handleCardPointerDown, isDragClick };
 };

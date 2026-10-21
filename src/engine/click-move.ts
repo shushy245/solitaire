@@ -1,5 +1,5 @@
 import { listLegalMoves } from './rules.ts';
-import { isEmptyPile } from './selectors.ts';
+import { isEmptyPile, isFaceDown } from './selectors.ts';
 import { GameStateModel, Move, MoveKind, MoveOf } from './model.ts';
 
 type ToTableauMove = MoveOf<MoveKind.WasteToTableau | MoveKind.TableauToTableau | MoveKind.FoundationToTableau>;
@@ -15,17 +15,23 @@ const isToTableau = (move: Move): move is ToTableauMove => toTableauKinds.has(mo
 const isOntoEmptyColumn = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
     isToTableau(move) && isEmptyPile(state.tableau[move.to] ?? []);
 
-const isColumnBase = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
-    if (move.kind !== MoveKind.TableauToTableau) return false;
+// The card a column-to-column move leaves showing: the one under the moved card, if any.
+const cardUnder = ({ state, move }: { state: GameStateModel; move: MoveOf<MoveKind.TableauToTableau> }) => {
+    const column = state.tableau[move.from] ?? [];
 
-    const base = (state.tableau[move.from] ?? [])[0];
-
-    return base !== undefined && base.id === move.cardId;
+    return column[column.findIndex((card) => card.id === move.cardId) - 1];
 };
 
-// A legal move that changes nothing worth having: a run that already heads its column, moved to another empty one.
-export const isPointlessMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
-    isColumnBase({ state, move }) && isOntoEmptyColumn({ state, move });
+// A legal move that changes nothing worth having. In real play a face-up card always lies on its own run, so
+// moving off a face-up card only shifts the run to an equal place (and a click would ping-pong it); a run that
+// already heads its column, moved to another empty one, is the same shift.
+export const isPointlessMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
+    if (move.kind !== MoveKind.TableauToTableau) return false;
+
+    const under = cardUnder({ state, move });
+
+    return under === undefined ? isOntoEmptyColumn({ state, move }) : !isFaceDown(under);
+};
 
 // How eagerly a click plays each kind of move; a kind missing here is never played by a click. Lower goes first.
 const clickRankMap: Partial<Record<MoveKind, number>> = {

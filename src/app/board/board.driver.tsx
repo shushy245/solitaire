@@ -42,10 +42,15 @@ export type BoardDriver = {
         release: () => void;
         cancel: () => void;
     };
-    click: { stock: () => Promise<void>; card: (card: CardName) => Promise<void> };
+    click: {
+        stock: () => Promise<void>;
+        card: (card: CardName) => Promise<void>;
+        // A click soon after another nearby: the browser counts it as the second of a double-click (detail 2).
+        cardRightAfterAnother: (card: CardName) => Promise<void>;
+    };
     // The browser's sequence for a double-click: two clicks (the second with detail 2), then dblclick.
     doubleClick: { card: (card: CardName) => Promise<void> };
-    fire: { landed: (card: CardName) => void };
+    fire: { landed: (card: CardName) => void; shakeEnded: (card: CardName) => void };
     remember: { cardOrder: () => void };
     time: { pass: (ms: number) => void };
     assert: {
@@ -251,6 +256,9 @@ export const makeBoardDriver = (): BoardDriver => {
             card: async (card) => {
                 fireEvent.click(cardElement(card), { detail: 1 });
             },
+            cardRightAfterAnother: async (card) => {
+                fireEvent.click(cardElement(card), { detail: 2 });
+            },
         },
         doubleClick: {
             card: async (card) => {
@@ -262,6 +270,13 @@ export const makeBoardDriver = (): BoardDriver => {
         fire: {
             landed: (card) => {
                 fireEvent.transitionEnd(cardElement(card), { propertyName: 'transform' });
+            },
+            shakeEnded: (card) => {
+                const inner = cardElement(card).firstElementChild ?? undefined;
+
+                if (inner === undefined)
+                    throw new Error('board driver: shakeEnded found no card face to end the shake on');
+                fireEvent.animationEnd(inner);
             },
         },
         remember: {

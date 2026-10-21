@@ -33,6 +33,7 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 - **`?seed=N` (add `&draw=3` for turn 3) is consumed on load** (stripped from the address), so a reload resumes; Cypress specs that need a deal visit `?seed=` each time.
 - **jsdom cannot draw on a canvas** — `src/testkit/setup.ts` makes `getContext` return nothing; drawing is checked by `cypress/e2e/celebration.cy.ts` reading the canvas.
 - **Sound needs a gesture:** nothing plays until a press/release/key (`unlocking-player.ts`); Cypress fakes `AudioContext` in-page (`cypress/support/fake-audio-context.ts`).
+- **jsdom has no `AnimationEvent`** — `src/testkit/setup.ts` stands one in, or React would listen for `webkitAnimationEnd` and `onAnimationEnd` never fires in tests.
 - **Vitest blanks stylesheet imports** except `global.scss` (`css.include` in `vitest.config.ts`) — the contrast test reads it with `?raw`.
 - **Table sizes live in `src/styles/table-metrics.module.scss`** (`.metrics` on the column inside the `container-type` `main`); `board.module.scss` only consumes the vars. Spacing ratios are mirrored in `layout.utils.ts`.
 

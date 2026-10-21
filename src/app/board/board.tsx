@@ -18,12 +18,13 @@ import {
     dealDelayClassName,
     FACE_DOWN_LABEL,
     hasClickMove,
-    hasShaken,
+    isRepeatClick,
+    isShakingCard,
+    ShakeModel,
     inStableOrder,
     isCourtCard,
     isDealing,
     isSettled,
-    isSingleClick,
     isRedSuit,
     pilePlaceholders,
     placeholderSlot,
@@ -51,7 +52,7 @@ export const Board = (): JSX.Element => {
     const canPlayCards = isSettled(dealPhase) && !isAutoCompleting(session);
     const cards = inStableOrder(shownCardsFor({ phase: dealPhase, slots }));
     const boardElement = useRef<HTMLElement | undefined>(undefined);
-    const { draggingIds, handleCardPointerDown } = useCardDrag({
+    const { draggingIds, handleCardPointerDown, isDragClick } = useCardDrag({
         game,
         // No pick-up while dealing, nor while auto-complete moves the cards itself (a drop would be ignored).
         isEnabled: canPlayCards,
@@ -61,27 +62,33 @@ export const Board = (): JSX.Element => {
         boardRef: boardElement,
     });
 
-    // The card that shook last and how many times, so a repeated click on it shakes it again.
-    const [shake, setShake] = useState<{ cardId: string; count: number } | undefined>(undefined);
+    const [shake, setShake] = useState<ShakeModel | undefined>(undefined);
+    // The card the latest click played, so the second click of a double-click on it does not play it on again.
+    const lastPlayed = useRef<string | undefined>(undefined);
+
     // A click plays the card's obvious move (resolved again by the reducer against the latest game); a card with
-    // nothing to do shakes instead.
+    // nothing to do shakes instead. The click a drag's release fires is not a play.
     const handleCardClick = useCallback(
-        (cardId: string): void => {
-            if (!canPlayCards) return;
+        ({ cardId, detail }: { cardId: string; detail: number }): void => {
+            if (!canPlayCards || isDragClick()) return;
+            if (isRepeatClick({ cardId, detail, lastPlayed: lastPlayed.current })) return;
             if (hasClickMove({ state: game, cardId })) {
+                lastPlayed.current = cardId;
                 playCard(cardId);
 
                 return;
             }
 
+            lastPlayed.current = undefined;
             play(SoundKind.SnapBack);
-            setShake((previous) => ({
-                cardId,
-                count: previous !== undefined && previous.cardId === cardId ? previous.count + 1 : 1,
-            }));
+            setShake({ cardId, game });
         },
-        [canPlayCards, game, playCard, play],
+        [canPlayCards, isDragClick, game, playCard, play],
     );
+
+    const handleShakeEnd = useCallback((): void => {
+        setShake(undefined);
+    }, []);
 
     // React hands refs null on unmount; the board keeps undefined for "not mounted".
     const handleBoardRef: React.RefCallback<HTMLElement> = useCallback((element) => {
@@ -145,8 +152,9 @@ export const Board = (): JSX.Element => {
                             ? dealDelayClassName({ order: order.get(slot.card.id), styles })
                             : undefined
                     }
-                    shakeCount={shake !== undefined && shake.cardId === slot.card.id ? shake.count : 0}
+                    isShaking={isShakingCard({ shake, cardId: slot.card.id, game })}
                     onClick={handleCardClick}
+                    onShakeEnd={handleShakeEnd}
                     onLanded={handleLanded}
                     onPointerDown={handleCardPointerDown}
                 />
@@ -164,9 +172,9 @@ type CardProps = {
     isDragging: boolean;
     isInteractive: boolean;
     delayClassName: string | undefined;
-    // How often this card has shaken (0: never); each new count replays the shake.
-    shakeCount: number;
-    onClick: (cardId: string) => void;
+    isShaking: boolean;
+    onClick: (args: { cardId: string; detail: number }) => void;
+    onShakeEnd: () => void;
     onLanded: (cardId: string) => void;
     onPointerDown: (args: { cardId: string; event: React.PointerEvent }) => void;
 };
@@ -179,17 +187,18 @@ const Card = memo(function Card({
     isDragging,
     isInteractive,
     delayClassName,
-    shakeCount,
+    isShaking,
     onClick,
+    onShakeEnd,
     onLanded,
     onPointerDown,
 }: CardProps): JSX.Element {
     const { card } = slot;
     const isShownFaceUp = shownSlot.card.faceUp;
 
-    // Only the first click of a double-click plays: the second would find the card already moved and play it on.
+    // A face-down card has nothing to play, so a click on it is not a miss to shake at.
     const handleClick = (event: React.MouseEvent<HTMLDivElement>): void => {
-        if (isInteractive && isSingleClick(event)) onClick(card.id);
+        if (isInteractive && card.faceUp) onClick({ cardId: card.id, detail: event.detail });
     };
 
     const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>): void => {
@@ -211,7 +220,7 @@ const Card = memo(function Card({
                 (shownSlot.pile === PileKind.Stock || !isInteractive) && styles.passive,
                 isLifted && styles.lifted,
                 isDragging && styles.dragging,
-                hasShaken(shakeCount) && styles.shaking,
+                isShaking && styles.shaking,
                 shownSlot.isBuried && styles.buried,
                 delayClassName,
             )}
@@ -222,12 +231,12 @@ const Card = memo(function Card({
             data-lifted={isLifted}
             data-dragging={isDragging}
             data-card-id={card.id}
-            data-shaking={hasShaken(shakeCount)}
+            data-shaking={isShaking}
             onClick={handleClick}
             onPointerDown={handlePointerDown}
             onTransitionEnd={handleTransitionEnd}
         >
-            <div key={shakeCount} className={styles.inner}>
+            <div className={styles.inner} onAnimationEnd={onShakeEnd}>
                 {isShownFaceUp && <CardFront card={card} />}
                 <div className={styles.back} />
             </div>

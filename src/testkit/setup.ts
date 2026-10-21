@@ -1,3 +1,5 @@
+// First: React DOM picks its event names when it loads (testing-library below loads it).
+import './jsdom-animation-event.ts';
 import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';

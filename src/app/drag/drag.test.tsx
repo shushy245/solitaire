@@ -91,7 +91,7 @@ describe('dragging cards', () => {
         driver.assert.snapBackSounds(1);
     });
 
-    it('swallows the click the browser fires as a drag ends, so a snapped-back card is not then played', async () => {
+    it('swallows the click the browser fires as a drag ends, however late it comes, so a snapped-back card is not then played', async () => {
         driver.given.column({ index: 4, cards: [aceOfHearts] });
         await driver.when.created();
         driver.when.dealt();
@@ -99,9 +99,25 @@ describe('dragging cards', () => {
         driver.pointer.press(aceOfHearts);
         driver.pointer.moveBy({ dx: 300, dy: 400 });
         driver.pointer.release();
+        driver.time.pass(300);
         await driver.click.card(aceOfHearts);
 
         driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Tableau, pileIndex: 4 });
+    });
+
+    it('plays the card on the next plain click after a drag', async () => {
+        driver.given.column({ index: 4, cards: [aceOfHearts] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.pointer.press(aceOfHearts);
+        driver.pointer.moveBy({ dx: 300, dy: 400 });
+        driver.pointer.release();
+        driver.pointer.press(aceOfHearts);
+        driver.pointer.release();
+        await driver.click.card(aceOfHearts);
+
+        driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Foundation, pileIndex: 0 });
     });
 
     it('makes no snap-back sound for a click or for a drag the browser cancels', async () => {

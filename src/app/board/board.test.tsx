@@ -101,6 +101,51 @@ describe('Board', () => {
         driver.assert.cardIn({ card: { rank: Rank.Seven, suit: Suit.Spades }, pile: PileKind.Tableau, pileIndex: 3 });
     });
 
+    it('plays quick clicks on different cards, though the browser counts the second as part of a double-click', async () => {
+        driver.given.column({ index: 1, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
+        driver.given.column({ index: 2, cards: [{ rank: Rank.Ace, suit: Suit.Spades }] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        await driver.click.card({ rank: Rank.Ace, suit: Suit.Hearts });
+        await driver.click.cardRightAfterAnother({ rank: Rank.Ace, suit: Suit.Spades });
+
+        driver.assert.cardIn({ card: { rank: Rank.Ace, suit: Suit.Spades }, pile: PileKind.Foundation, pileIndex: 1 });
+    });
+
+    it('ignores a click on a face-down card — no shake, no sound', async () => {
+        driver.given.column({
+            index: 0,
+            cards: [
+                { rank: Rank.Two, suit: Suit.Clubs, faceUp: false },
+                { rank: Rank.Queen, suit: Suit.Hearts },
+            ],
+        });
+        await driver.when.created();
+        driver.when.dealt();
+
+        await driver.click.card({ rank: Rank.Two, suit: Suit.Clubs });
+
+        driver.assert.shaking({ card: { rank: Rank.Two, suit: Suit.Clubs }, isShaking: false });
+        driver.assert.snapBackSounds(0);
+    });
+
+    it('stops shaking once the shake has played, and once the game moves on', async () => {
+        driver.given.column({ index: 2, cards: [{ rank: Rank.Seven, suit: Suit.Spades }] });
+        driver.given.column({ index: 4, cards: [{ rank: Rank.Six, suit: Suit.Spades }] });
+        driver.given.stock([{ rank: Rank.Five, suit: Suit.Clubs }]);
+        await driver.when.created();
+        driver.when.dealt();
+
+        await driver.click.card({ rank: Rank.Seven, suit: Suit.Spades });
+        driver.fire.shakeEnded({ rank: Rank.Seven, suit: Suit.Spades });
+        driver.assert.shaking({ card: { rank: Rank.Seven, suit: Suit.Spades }, isShaking: false });
+
+        await driver.click.card({ rank: Rank.Six, suit: Suit.Spades });
+        await driver.click.stock();
+        driver.assert.shaking({ card: { rank: Rank.Six, suit: Suit.Spades }, isShaking: false });
+    });
+
     it('ignores clicks on cards while they are still being dealt', async () => {
         driver.given.column({ index: 4, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
         await driver.when.created();

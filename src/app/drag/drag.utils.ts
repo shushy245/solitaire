@@ -11,7 +11,7 @@ export type PileRectModel = PileRefModel & { rect: RectModel };
 // What a pointer-down lifted: the pile it came from and the cards moving together, bottom first.
 export type DragPickupModel = { source: PileRefModel; cardIds: string[] };
 
-// Pointer travel (px) below which a press is a click — keeps double-click working on draggable cards.
+// Pointer travel (px) below which a press is a click (which plays the card), not a drag.
 const CLICK_RADIUS = 5;
 
 export const hasMovedBeyondClick = ({ dx, dy }: { dx: number; dy: number }): boolean =>

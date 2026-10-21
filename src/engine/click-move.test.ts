@@ -84,6 +84,16 @@ describe('findClickMove', () => {
         expect(findClickMove({ state, cardId: kingOfClubs.id })).toBeUndefined();
     });
 
+    it('does not shift a card resting on its own run to an equal place (it would ping-pong between columns)', () => {
+        const blackNineOfClubs = up({ rank: Rank.Nine, suit: Suit.Clubs });
+        const state = aGameState()
+            .withColumn({ index: 0, cards: [hidden, blackNineOfClubs] })
+            .withColumn({ index: 2, cards: [down({ rank: Rank.Six, suit: Suit.Hearts }), blackNine, redEight] })
+            .build();
+
+        expect(findClickMove({ state, cardId: redEight.id })).toBeUndefined();
+    });
+
     it('never takes a card back down from a foundation', () => {
         const state = aGameState()
             .withFoundation({ index: 0, cards: [aceOfHearts, twoOfHearts] })
