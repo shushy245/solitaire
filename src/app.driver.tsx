@@ -4,12 +4,14 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { App } from './app.tsx';
 import { AppTestIds } from './app.utils.ts';
-import { fakeNow } from './testkit/provider-fakes.ts';
 import { HudTestIds } from './app/hud/hud.test-ids.ts';
 import { FakeLogger } from './testkit/fakes/fake-logger.ts';
 import { BoardTestIds } from './app/board/board.test-ids.ts';
+import { SoundProvider } from './app/sound/sound-provider.tsx';
+import { FakeSoundPlayer } from './testkit/fakes/fake-sound.ts';
 import { MotionProvider } from './app/motion/motion-provider.tsx';
 import { MemoryStorage } from './testkit/fakes/memory-storage.ts';
+import { discardSave, fakeNow } from './testkit/provider-fakes.ts';
 import { makeSessionStore } from './app/persistence/session-store.ts';
 import { DEAL_TOTAL_MS, STACK_HOLD_MS } from './app/board/board.utils.ts';
 import { makeBrowserKeyValueStore } from './utils/browser-key-value-store.ts';
@@ -55,6 +57,7 @@ const snapshotTable = (): readonly string[] => [
 export const makeAppDriver = (): AppDriver => {
     vi.useFakeTimers();
     const storage = new MemoryStorage();
+    const sound = new FakeSoundPlayer();
     const logger = new FakeLogger();
     const scenario: { seedParam: number | undefined; laterSeeds: number[] } = { seedParam: undefined, laterSeeds: [] };
     const seedSource = (): number => scenario.laterSeeds.shift() ?? 0;
@@ -68,9 +71,16 @@ export const makeAppDriver = (): AppDriver => {
         const initialSession = store.load({ seedParam: scenario.seedParam, freshSeed: seedSource });
 
         return (
-            <MotionProvider prefersReducedMotion={motionIsFine}>
-                <App initialSession={initialSession} saveSession={store.save} seedSource={seedSource} now={fakeNow} />
-            </MotionProvider>
+            <SoundProvider player={sound} initiallyMuted={false} saveMuted={discardSave}>
+                <MotionProvider prefersReducedMotion={motionIsFine}>
+                    <App
+                        initialSession={initialSession}
+                        saveSession={store.save}
+                        seedSource={seedSource}
+                        now={fakeNow}
+                    />
+                </MotionProvider>
+            </SoundProvider>
         );
     };
 

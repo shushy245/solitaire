@@ -3,17 +3,20 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { aSession } from '~/testkit/builders/index.ts';
 import { DrawMode, makeDrawMove } from '~/engine/index.ts';
+import { FakeSoundPlayer } from '~/testkit/fakes/fake-sound.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Hud } from './hud.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
 import { SessionModel } from '../session/session.utils.ts';
+import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameProvider, useGame } from '../game-provider.tsx';
 import { AUTO_COMPLETE_STEP_MS, GameContextValue } from '../game-provider.utils.ts';
 
 export type HudDriver = {
     given: {
         session: (build: (builder: ReturnType<typeof aSession>) => ReturnType<typeof aSession>) => void;
+        mutedLastTime: () => void;
     };
     when: {
         created: () => Promise<void>;
@@ -31,6 +34,7 @@ export type HudDriver = {
         confirmLeave: () => void;
         keepPlaying: () => void;
         record: () => void;
+        sound: () => void;
     };
     press: { undoShortcut: (args: { modifier: 'ctrl' | 'meta'; isRepeat?: boolean }) => void; escape: () => void };
     time: { pass: (ms: number) => void; autoCompleteSteps: (count: number) => void };
@@ -46,6 +50,8 @@ export type HudDriver = {
         autoCompleteOffered: (isOffered: boolean) => void;
         focusOn: (testId: string) => void;
         undoShortcutListenerRemoved: () => void;
+        soundOn: (isOn: boolean) => void;
+        savedMuted: (muted: readonly boolean[]) => void;
         recordShown: (isShown: boolean) => void;
         record: (args: { played: string; won: string; winRate: string; bestTime: string; bestScore: string }) => void;
     };
@@ -59,7 +65,11 @@ const passTime = (ms: number): void => {
 
 export const makeHudDriver = (): HudDriver => {
     vi.useFakeTimers();
-    const scenario: { session: SessionModel } = { session: aSession().build() };
+    const scenario: { session: SessionModel; isMuted: boolean } = { session: aSession().build(), isMuted: false };
+    const savedMuted: boolean[] = [];
+    const handleSaveMuted = (muted: boolean): void => {
+        savedMuted.push(muted);
+    };
     const outside: { game: GameContextValue | undefined } = { game: undefined };
     const rendered: { unmount: () => void; rerender: (ui: JSX.Element) => void } = {
         unmount: () => undefined,
@@ -80,15 +90,17 @@ export const makeHudDriver = (): HudDriver => {
         const initialSession = (): SessionModel => session;
 
         return (
-            <GameProvider
-                createInitialSession={initialSession}
-                seedSource={fixedSeed}
-                now={now}
-                saveSession={discardSave}
-            >
-                <Hud />
-                <ElsewhereInTheApp />
-            </GameProvider>
+            <SoundProvider player={new FakeSoundPlayer()} initiallyMuted={scenario.isMuted} saveMuted={handleSaveMuted}>
+                <GameProvider
+                    createInitialSession={initialSession}
+                    seedSource={fixedSeed}
+                    now={now}
+                    saveSession={discardSave}
+                >
+                    <Hud />
+                    <ElsewhereInTheApp />
+                </GameProvider>
+            </SoundProvider>
         );
     };
 
@@ -105,6 +117,9 @@ export const makeHudDriver = (): HudDriver => {
         given: {
             session: (build) => {
                 scenario.session = build(aSession()).build();
+            },
+            mutedLastTime: () => {
+                scenario.isMuted = true;
             },
         },
         when: {
@@ -152,6 +167,7 @@ export const makeHudDriver = (): HudDriver => {
             confirmLeave: () => click(HudTestIds.ConfirmLeave),
             keepPlaying: () => click(HudTestIds.ConfirmStay),
             record: () => click(HudTestIds.RecordToggle),
+            sound: () => click(HudTestIds.SoundToggle),
         },
         press: {
             undoShortcut: ({ modifier, isRepeat = false }) => {
@@ -211,6 +227,12 @@ export const makeHudDriver = (): HudDriver => {
             },
             focusOn: (testId) => {
                 expect(screen.getByTestId(testId)).toHaveFocus();
+            },
+            soundOn: (isOn) => {
+                expect(screen.getByTestId(HudTestIds.SoundToggle)).toHaveAttribute('aria-pressed', String(isOn));
+            },
+            savedMuted: (muted) => {
+                expect(savedMuted).toEqual(muted);
             },
             // The panel stays in the page while hidden, so the toggle's aria-controls always points at it.
             recordShown: (isShown) => {

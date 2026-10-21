@@ -12,6 +12,7 @@ export const HudTestIds = {
     ConfirmLeave: 'HudTestIds.ConfirmLeave',
     ConfirmStay: 'HudTestIds.ConfirmStay',
     RecordToggle: 'HudTestIds.RecordToggle',
+    SoundToggle: 'HudTestIds.SoundToggle',
     Record: 'HudTestIds.Record',
     RecordEntry: (entry: string): string => `HudTestIds.RecordEntry.${entry}`,
 } as const;

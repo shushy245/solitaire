@@ -101,18 +101,21 @@ const clearDragOffset = (elements: readonly HTMLElement[]): void => {
 // Pointer-driven drag of a card or run. The offset is written straight to the cards' CSS variables on
 // every pointermove (no React render per frame); on release the offset is cleared in the same task as
 // the move is dispatched, so the CSS transition flies the cards from where they were dropped.
-// Released cards are handed to onRelease so the board keeps them lifted until they land.
+// Released cards are handed to onRelease so the board keeps them lifted until they land; a drop that moves
+// nothing calls onSnapBack (a click or a cancelled drag does not).
 export const useCardDrag = ({
     game,
     isEnabled,
     dispatchMove,
     onRelease,
+    onSnapBack,
     boardRef,
 }: {
     game: GameStateModel;
     isEnabled: boolean;
     dispatchMove: (move: Move) => void;
     onRelease: (cardIds: readonly string[]) => void;
+    onSnapBack: () => void;
     boardRef: MutableRefObject<HTMLElement | undefined>;
 }): CardDragResult => {
     const [draggingIds, setDraggingIds] = useState<ReadonlySet<string>>(NONE);
@@ -195,9 +198,10 @@ export const useCardDrag = ({
                     : legalDropMove({ game: latestGame.current, pickup: drag.pickup, target });
 
             endDrag();
-            if (move !== undefined) dispatchMove(move);
+            if (move === undefined) onSnapBack();
+            else dispatchMove(move);
         },
-        [boardRef, dispatchMove, endDrag],
+        [boardRef, dispatchMove, endDrag, onSnapBack],
     );
 
     const handleCancel = useCallback(

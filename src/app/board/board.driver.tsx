@@ -2,12 +2,15 @@ import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
+import { FakeSoundPlayer } from '~/testkit/fakes/fake-sound.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 import { CardModel, DrawMode, GameStateModel, Rank, Suit, topCard } from '~/engine/index.ts';
 
 import { Board } from './board.tsx';
 import { PileKind } from './layout.utils.ts';
 import { BoardTestIds } from './board.test-ids.ts';
+import { SoundKind } from '../sound/sound.utils.ts';
+import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameProvider, useGame } from '../game-provider.tsx';
 import { GameContextValue } from '../game-provider.utils.ts';
 import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
@@ -49,6 +52,7 @@ export type BoardDriver = {
         dealtStockTopLifted: (isLifted: boolean) => void;
         dragging: (args: { card: CardName; isDragging: boolean }) => void;
         pointerListenersDetached: () => void;
+        snapBackSounds: (count: number) => void;
     };
 };
 
@@ -79,6 +83,7 @@ export const makeBoardDriver = (): BoardDriver => {
     } = { builder: aGameState(), dealt: undefined, progress: DealProgress.Unstarted };
 
     const rendered: { unmount: () => void } = { unmount: () => undefined };
+    const sound = new FakeSoundPlayer();
     const outside: { game: GameContextValue | undefined } = { game: undefined };
     const pointer = { x: 100, y: 100 };
     const listenerSpies = {
@@ -147,15 +152,17 @@ export const makeBoardDriver = (): BoardDriver => {
                 const session = sessionUnderTest();
                 const initialSession = (): SessionModel => session;
                 rendered.unmount = render(
-                    <GameProvider
-                        createInitialSession={initialSession}
-                        seedSource={fixedSeed}
-                        now={fakeNow}
-                        saveSession={discardSave}
-                    >
-                        <Board />
-                        <ElsewhereInTheApp />
-                    </GameProvider>,
+                    <SoundProvider player={sound} initiallyMuted={false} saveMuted={discardSave}>
+                        <GameProvider
+                            createInitialSession={initialSession}
+                            seedSource={fixedSeed}
+                            now={fakeNow}
+                            saveSession={discardSave}
+                        >
+                            <Board />
+                            <ElsewhereInTheApp />
+                        </GameProvider>
+                    </SoundProvider>,
                 ).unmount;
             },
             dealt: () => {
@@ -262,6 +269,9 @@ export const makeBoardDriver = (): BoardDriver => {
             },
             dragging: ({ card, isDragging }) => {
                 expect(cardElement(card)).toHaveAttribute('data-dragging', String(isDragging));
+            },
+            snapBackSounds: (count) => {
+                expect(sound.played.filter((played) => played === SoundKind.SnapBack)).toHaveLength(count);
             },
             pointerListenersDetached: () => {
                 const added = pointerHandlers(listenerSpies.add);

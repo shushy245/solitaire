@@ -4,6 +4,8 @@ import { makeDrawMove, MoveKind } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
 import { BoardTestIds } from './board.test-ids.ts';
+import { SoundKind } from '../sound/sound.utils.ts';
+import { useSound } from '../sound/sound-provider.tsx';
 import { useCardDrag } from '../drag/use-card-drag.ts';
 import { useLiftedCards } from './use-lifted-cards.ts';
 import { useDealAnimation } from './use-deal-animation.ts';
@@ -38,6 +40,10 @@ export const Board = (): JSX.Element => {
     const order = useMemo(() => dealOrder(slots), [slots]);
     const dealPhase = useDealAnimation({ dealKey: session.dealNumber, isFreshDeal: isDealUnstarted(session) });
     const { lifted, liftUntilLanded, handleLanded } = useLiftedCards(slots);
+    const { play } = useSound();
+    const handleSnapBack = useCallback((): void => {
+        play(SoundKind.SnapBack);
+    }, [play]);
     const cards = shownCardsFor({ phase: dealPhase, slots });
     const boardElement = useRef<HTMLElement | undefined>(undefined);
     const { draggingIds, handleCardPointerDown } = useCardDrag({
@@ -45,6 +51,7 @@ export const Board = (): JSX.Element => {
         isEnabled: isSettled(dealPhase),
         dispatchMove,
         onRelease: liftUntilLanded,
+        onSnapBack: handleSnapBack,
         boardRef: boardElement,
     });
 

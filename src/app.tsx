@@ -4,6 +4,7 @@ import { AppTestIds } from './app.utils.ts';
 import { Board } from './app/board/board.tsx';
 import { GameProvider } from './app/game-provider.tsx';
 import { joinClassNames } from './utils/join-class-names.ts';
+import { SoundEffects } from './app/sound/sound-effects.tsx';
 import { SessionModel } from './app/session/session.utils.ts';
 import { Celebration } from './app/celebration/celebration.tsx';
 
@@ -42,6 +43,7 @@ export const App = ({
                     </header>
                     <Board />
                     <Celebration />
+                    <SoundEffects />
                 </FullColumn>
             </main>
         </GameProvider>

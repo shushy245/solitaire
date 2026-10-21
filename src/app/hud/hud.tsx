@@ -6,6 +6,7 @@ import { Row } from '../../ui/box.tsx';
 import { useGame } from '../game-provider.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
 import { canUndo } from '../session/session.utils.ts';
+import { useSound } from '../sound/sound-provider.tsx';
 import { useUndoShortcut } from './use-undo-shortcut.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
 import {
@@ -29,6 +30,7 @@ import styles from './hud.module.scss';
 
 export const Hud = (): JSX.Element => {
     const { session, undo, newGame, startAutoComplete } = useGame();
+    const { isMuted, toggleMute } = useSound();
     const { game } = session;
     const [leaveRequest, setLeaveRequest] = useState<LeaveRequestModel | undefined>(undefined);
     const pending = openLeaveRequest({ request: leaveRequest, session });
@@ -107,26 +109,37 @@ export const Hud = (): JSX.Element => {
                         <strong>{formatElapsed(session.elapsedMs)}</strong> {`played`}
                     </span>
                 </p>
-                <button
-                    type="button"
-                    className={styles.button}
-                    aria-expanded={isRecordOpen}
-                    aria-controls={recordId}
-                    data-testid={HudTestIds.RecordToggle}
-                    onClick={handleRecordToggle}
-                >
-                    {`Stats`}
-                </button>
-                {isAutoCompleteOffered(session) && (
+                <Row className={styles.statusActions}>
                     <button
                         type="button"
-                        className={joinClassNames(styles.button, styles.accent)}
-                        data-testid={HudTestIds.AutoComplete}
-                        onClick={startAutoComplete}
+                        className={joinClassNames(styles.button, styles.soundToggle)}
+                        aria-pressed={!isMuted}
+                        data-testid={HudTestIds.SoundToggle}
+                        onClick={toggleMute}
                     >
-                        {`Auto-complete`}
+                        {`Sound`}
                     </button>
-                )}
+                    <button
+                        type="button"
+                        className={styles.button}
+                        aria-expanded={isRecordOpen}
+                        aria-controls={recordId}
+                        data-testid={HudTestIds.RecordToggle}
+                        onClick={handleRecordToggle}
+                    >
+                        {`Stats`}
+                    </button>
+                    {isAutoCompleteOffered(session) && (
+                        <button
+                            type="button"
+                            className={joinClassNames(styles.button, styles.accent)}
+                            data-testid={HudTestIds.AutoComplete}
+                            onClick={startAutoComplete}
+                        >
+                            {`Auto-complete`}
+                        </button>
+                    )}
+                </Row>
             </Row>
             <RecordPanel id={recordId} isOpen={isRecordOpen} stats={session.stats} />
             {pending !== undefined && (

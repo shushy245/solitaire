@@ -20,6 +20,11 @@
     min-height: 44px;
 }
 
+.statusActions {
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
 .stats {
     display: flex;
     flex-wrap: wrap;
@@ -126,6 +131,12 @@
 
 .confirmActions {
     gap: 8px;
+}
+
+// Sound on reads plainly; off is struck through, so the state shows without relying on colour.
+.soundToggle[aria-pressed='false'] {
+    color: var(--text-muted);
+    text-decoration: line-through;
 }
 
 // The record opens as a full line under the status row, like the leave question.

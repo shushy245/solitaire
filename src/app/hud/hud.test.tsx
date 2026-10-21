@@ -353,4 +353,26 @@ describe('Hud', () => {
             driver.assert.recordShown(false);
         });
     });
+
+    describe('sound', () => {
+        it('is on by default, and turns off and on again, remembering each choice', async () => {
+            await driver.when.created();
+
+            driver.assert.soundOn(true);
+            driver.click.sound();
+            driver.assert.soundOn(false);
+            driver.click.sound();
+
+            driver.assert.soundOn(true);
+            driver.assert.savedMuted([true, false]);
+        });
+
+        it('starts off when it was turned off last time', async () => {
+            driver.given.mutedLastTime();
+
+            await driver.when.created();
+
+            driver.assert.soundOn(false);
+        });
+    });
 });

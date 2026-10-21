@@ -3,11 +3,13 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { DrawMode } from '~/engine/index.ts';
 import { aSession } from '~/testkit/builders/index.ts';
+import { FakeSoundPlayer } from '~/testkit/fakes/fake-sound.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Board } from '../board/board.tsx';
 import { Celebration } from './celebration.tsx';
 import { SessionModel } from '../session/session.utils.ts';
+import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameContextValue } from '../game-provider.utils.ts';
 import { GameProvider, useGame } from '../game-provider.tsx';
 import { MotionProvider } from '../motion/motion-provider.tsx';
@@ -88,11 +90,13 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
                         now={fakeNow}
                         saveSession={discardSave}
                     >
-                        <MotionProvider prefersReducedMotion={prefersReducedMotion}>
-                            <Board />
-                            <Celebration />
-                            <ElsewhereInTheApp />
-                        </MotionProvider>
+                        <SoundProvider player={new FakeSoundPlayer()} initiallyMuted={false} saveMuted={discardSave}>
+                            <MotionProvider prefersReducedMotion={prefersReducedMotion}>
+                                <Board />
+                                <Celebration />
+                                <ElsewhereInTheApp />
+                            </MotionProvider>
+                        </SoundProvider>
                     </GameProvider>,
                 ).unmount;
             },

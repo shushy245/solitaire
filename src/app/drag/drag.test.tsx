@@ -77,6 +77,22 @@ describe('dragging cards', () => {
         driver.assert.dragging({ card: redTen, isDragging: false });
         driver.assert.cardIn({ card: redTen, pile: PileKind.Tableau, pileIndex: 0 });
         driver.assert.cardIn({ card: blackNine, pile: PileKind.Tableau, pileIndex: 0 });
+        driver.assert.snapBackSounds(1);
+    });
+
+    it('makes no snap-back sound for a click or for a drag the browser cancels', async () => {
+        driver.given.column({ index: 0, cards: [redTen] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.pointer.press(redTen);
+        driver.pointer.moveBy({ dx: 2, dy: 1 });
+        driver.pointer.release();
+        driver.pointer.press(redTen);
+        driver.pointer.moveBy({ dx: 30, dy: 40 });
+        driver.pointer.cancel();
+
+        driver.assert.snapBackSounds(0);
     });
 
     it('ends the drag when the pointer is cancelled (e.g. the browser takes over the touch)', async () => {
