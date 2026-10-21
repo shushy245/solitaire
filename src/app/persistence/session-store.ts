@@ -24,17 +24,27 @@ export type SessionStore = {
 
 export const makeSessionStore = ({ store, logger }: { store: KeyValueStore; logger: Logger }): SessionStore => {
     // Missing data is normal (first visit); corrupt data is reported, then treated as missing.
-    const readSaved = <T>({ key, parse }: { key: string; parse: (raw: string | undefined) => SavedResult<T> }) => {
+    // `operation` names who is reading (the load, or a save merging the record), so the log says where it came from.
+    const readSaved = <T>({
+        operation,
+        key,
+        parse,
+    }: {
+        operation: string;
+        key: string;
+        parse: (raw: string | undefined) => SavedResult<T>;
+    }) => {
         const result = parse(store.read(key));
 
         if (result.kind === SavedKind.Corrupt) {
-            logger.warn('sessionStore.load: saved data discarded', { key, reason: result.reason });
+            logger.warn(`${operation}: saved data discarded`, { key, reason: result.reason });
         }
 
         return result.kind === SavedKind.Found ? result.value : undefined;
     };
 
-    const readSavedStats = (): StatsModel => readSaved({ key: SAVED_STATS_KEY, parse: parseSavedStats }) ?? emptyStats;
+    const readSavedStats = (operation: string): StatsModel =>
+        readSaved({ operation, key: SAVED_STATS_KEY, parse: parseSavedStats }) ?? emptyStats;
 
     // The record as this tab last loaded or saved it — what it has added since is the difference.
     const synced: { stats: StatsModel } = { stats: emptyStats };
@@ -44,7 +54,7 @@ export const makeSessionStore = ({ store, logger }: { store: KeyValueStore; logg
     const saveStats = (stats: StatsModel): void => {
         if (stats === synced.stats) return;
 
-        const merged = mergeStats({ saved: readSavedStats(), before: synced.stats, after: stats });
+        const merged = mergeStats({ saved: readSavedStats('sessionStore.save'), before: synced.stats, after: stats });
 
         if (store.write({ key: SAVED_STATS_KEY, value: serializeStats(merged) }) === WriteOutcome.Saved) {
             synced.stats = stats;
@@ -53,11 +63,11 @@ export const makeSessionStore = ({ store, logger }: { store: KeyValueStore; logg
 
     return {
         load: ({ requestedDeal, freshSeed }) => {
-            const stats = readSavedStats();
+            const stats = readSavedStats('sessionStore.load');
             synced.stats = stats;
 
             return chooseInitialSession({
-                savedGame: readSaved({ key: SAVED_GAME_KEY, parse: parseSavedGame }),
+                savedGame: readSaved({ operation: 'sessionStore.load', key: SAVED_GAME_KEY, parse: parseSavedGame }),
                 stats,
                 requestedDeal,
                 freshSeed,

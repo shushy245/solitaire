@@ -128,4 +128,13 @@ describe('session store', () => {
 
         driver.assert.warningCount(1);
     });
+
+    it('reports an unreadable record found while saving as the save, not the load', () => {
+        driver.when.loaded();
+        driver.given.savedStats('not json');
+
+        driver.when.saved({ ...played, stats: recordPlayed(emptyStats) });
+
+        driver.assert.warnedAbout({ key: SAVED_STATS_KEY, reason: /^sessionStore\.save:/ });
+    });
 });
