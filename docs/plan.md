@@ -226,7 +226,7 @@ type GameContextValue = {
   - review: empty-pile outlines (drop targets) hold 3:1; hovered button text holds 4.5:1 (measured by test)
   - review: no pick-up while auto-complete runs; a mute applies even to a play handle taken earlier
 
-### Story `epic-review` — fixes from the epic-level review (2026-10-21)
+### Story `epic-review` — fixes from the epic-level review (2026-10-21) ✅
 - Owns: `src/app/persistence/`, `src/app/sound/unlocking-player.ts`, `src/app/board/board.tsx`, `src/utils/seed-source.utils.ts`
 - Depends on: felt-and-sound (runs after the epic's stories)
 - Parallel: serial
@@ -399,6 +399,20 @@ type GameContextValue = {
   outlines visible.
 - Awaiting the human: listen in Chrome and Safari — every action audible, nothing clipped or too loud.
 
+### Epic `klondike-v1` (code-review high over `epic/klondike-v1`, 10 findings) → story `epic-review`
+- Fixed (5): a save with an impossible tableau crashed every reload → tableau shape check (property-tested against
+  real play); audio suspended later never returned → re-armed; `?seed=` could not replay turn 3 → `&draw=3`; the
+  stock was clickable mid-deal → waits for the deal; discarded-save logs named the wrong operation.
+- Deferred (2): BF-1 two tabs overwrite each other's game; BF-2 a quota-refused write resumes an older position.
+- Kept (1): a drag off a foundation after a win un-wins it (non-modal win panel, `celebration` decision).
+- RF-backlog (2): the duplicated run rule / engine constants; `CardProps` in `board.tsx`.
+- `epic-review`'s own review (10): all fixed — stock/waste faces in the save check, gesture listeners stay on and
+  defer to the voice's running state (no sound lost after a phone unlock), one home for the requested-deal type,
+  Zod for `?draw=`, an operation enum for log names, two tests de-flaked/sharpened, a misplaced doc comment.
+- Visual pass A+B (`?seed=1&draw=3`, mid-deal click and settled click; 390/768/1280): no overflow, taps ≥44,
+  Lighthouse a11y 100; a mid-deal stock click leaves 0 moves and 0:00. Noted → RF: the stock shows no inert cue
+  while the deal runs.
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
@@ -415,4 +429,5 @@ type GameContextValue = {
 - (epic review) the "run from this card" rule is written three times (rules.ts, apply.ts, drag.utils.ts) and engine
   counts are copied as local constants (MAX_WASTE_FAN, DECK_SIZE, TABLEAU_CARDS) → one engine selector + exports.
 - (epic review) `CardProps` lives in `board.tsx` → `board.utils.ts`.
+- (epic review) the stock gives no visual or aria cue that it is inert during the deal.
 - (`celebration`) one focus-on-appear hook for `LeaveConfirm` and `WinOverlay` (the latter returns no focus).

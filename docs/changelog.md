@@ -1,5 +1,11 @@
 # Changelog
 
+## epic-review — 2026-10-21
+- **Pain:** a review of the whole game found a few ways it could break that no single story's review could see — a damaged save that would crash the page on every visit, sound that never came back after a phone was locked, and a replay link that could not ask for turn-3.
+- **Fix:** saved games are now checked against every rule of where cards can lie, sound restarts at the next tap, `?seed=N&draw=3` replays a turn-3 deal, and the deck ignores clicks while cards are still being dealt.
+- **Trade-off:** two rarer problems were written down rather than fixed — two open tabs overwriting each other's saved game, and a very long game no longer saving once storage fills up.
+- **Result:** 298 tests pass (`vitest`) plus 8 browser tests; 20 review findings across two reviews, 18 fixed, 2 recorded for later; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## felt-and-sound — 2026-10-21
 - **Pain:** the table looked dark and flat, and the game made no sound at all, so moves felt weightless.
 - **Fix:** a brighter green felt with every text, outline and focus ring re-tuned to stay readable, and a short synthesized sound for each card action (deal, draw, flip, place, rejected drop, recycle, card home, win) with a Sound on/off button that is remembered.
