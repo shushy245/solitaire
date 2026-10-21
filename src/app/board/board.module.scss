@@ -207,8 +207,9 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     border-radius: var(--radius);
     backface-visibility: hidden;
     // Soft, layered: a tight contact shadow and a wide diffuse one, never a hard dark edge.
+    // The contact shadow also draws the edge between two cream cards that overlap in a fan.
     box-shadow:
-        0 1px 1px rgb(0 0 0 / 0.1),
+        0 1px 1px rgb(0 0 0 / 0.18),
         0 3px 10px rgb(0 0 0 / 0.14);
 }
 
@@ -221,11 +222,15 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 
 .red {
     color: var(--ink-red);
+
+    .court {
+        background: var(--court-wash-red);
+    }
 }
 
 .index {
     position: absolute;
-    top: calc(var(--card-w) * 0.06);
+    top: calc(var(--card-w) * 0.05);
     left: calc(var(--card-w) * 0.08);
     // Rank and suit side by side, so both stay visible in the strip a covering card leaves showing.
     display: flex;
@@ -239,19 +244,19 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     top: auto;
     left: auto;
     right: calc(var(--card-w) * 0.08);
-    bottom: calc(var(--card-w) * 0.06);
+    bottom: calc(var(--card-w) * 0.05);
     transform: rotate(180deg);
 }
 
 .rank {
     // Floors keep phone-size indices legible; 13px still fits the visible strip of a covered card (--up-y).
-    font-size: max(calc(var(--card-w) * 0.25), 13px);
+    font-size: max(calc(var(--card-w) * 0.27), 13px);
     font-weight: 600;
     letter-spacing: -0.02em;
 }
 
 .suit {
-    font-size: max(calc(var(--card-w) * 0.19), 11px);
+    font-size: max(calc(var(--card-w) * 0.2), 11px);
 }
 
 .center {
@@ -259,14 +264,14 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     inset: 0;
     display: grid;
     place-items: center;
-    font-size: calc(var(--card-w) * 0.46);
+    font-size: calc(var(--card-w) * 0.5);
 }
 
 // A court card's letter sits in a softly tinted, rounded frame — a quiet stand-in for the printed portrait.
 .court {
     inset: 24% 20%;
     border-radius: calc(var(--radius) * 0.8);
-    background: color-mix(in srgb, currentcolor 9%, transparent);
+    background: var(--court-wash);
     font-family: 'Bodoni Moda Variable', 'Bodoni 72', Didot, serif;
     font-size: calc(var(--card-w) * 0.5);
     font-weight: 500;
@@ -284,7 +289,8 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     transform: rotateY(180deg);
     border: calc(var(--card-w) * 0.05) solid var(--card-ivory);
     background:
-        radial-gradient(circle, var(--back-line) 1px, transparent 1.5px) 0 0 / 7px 7px,
+        radial-gradient(circle, var(--back-line) calc(var(--card-w) * 0.012), transparent calc(var(--card-w) * 0.018)) 0 0 /
+            calc(var(--card-w) * 0.08) calc(var(--card-w) * 0.08),
         radial-gradient(circle at 50% 40%, var(--back-glow), var(--back));
 }
 

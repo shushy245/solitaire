@@ -71,8 +71,19 @@ describe('the felt palette', () => {
         expect(contrastRatio({ a: token('--ink-red'), b: token('--card-sheen') })).toBeGreaterThanOrEqual(4.5);
     });
 
+    it('keeps a court letter readable on its tinted frame', () => {
+        const wash = compositeOver({ color: token('--court-wash'), background: token('--card-ivory') });
+        const redWash = compositeOver({ color: token('--court-wash-red'), background: token('--card-ivory') });
+
+        expect(contrastRatio({ a: token('--ink'), b: wash })).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio({ a: token('--ink-red'), b: redWash })).toBeGreaterThanOrEqual(4.5);
+    });
+
+    // 1.5:1 is our own floor, not a WCAG figure: enough lightness difference to tell a face-down card from the felt
+    // without seeing hue. The whole back holds it, its lighter centre included.
     it('sets the card back apart from the felt by lightness, not only by hue (red–green colour blindness)', () => {
         expect(contrastRatio({ a: token('--back'), b: felt })).toBeGreaterThanOrEqual(1.5);
+        expect(contrastRatio({ a: token('--back-glow'), b: felt })).toBeGreaterThanOrEqual(1.5);
         expect(contrastRatio({ a: token('--back'), b: token('--card-ivory') })).toBeGreaterThanOrEqual(4.5);
     });
 });

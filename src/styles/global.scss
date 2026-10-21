@@ -15,13 +15,16 @@
     // gentler than pillar-box, a rounded sans for the corners.
     --card-sheen: #fffdf8;
     --card-ivory: #fbf5ea;
-    --card-edge: #e3d8c6;
+    --card-edge: #d9cdb8;
     --ink: #2b2f3c;
-    --ink-red: #bf3a36;
+    --ink-red: #ad2f2c;
+    // The court cards' frame: each ink at 9%, so a court letter keeps its contrast on its own frame.
+    --court-wash: rgb(43 47 60 / 0.09);
+    --court-wash-red: rgb(173 47 44 / 0.09);
 
     // A dusky navy back with cream dots: darker than the felt, so it never relies on red–green hue to stand apart.
     --back: #2d3f63;
-    --back-glow: #3d5383;
+    --back-glow: #2e4066;
     --back-line: rgb(255 240 214 / 0.32);
 
     // Empty piles are drop targets, so their outlines hold 3:1 against the felt too.
