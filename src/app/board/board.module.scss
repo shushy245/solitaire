@@ -206,16 +206,17 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     inset: 0;
     border-radius: var(--radius);
     backface-visibility: hidden;
+    // Soft, layered: a tight contact shadow and a wide diffuse one, never a hard dark edge.
     box-shadow:
-        0 1px 0 rgb(0 0 0 / 0.25),
-        0 2px 6px rgb(0 0 0 / 0.18);
+        0 1px 1px rgb(0 0 0 / 0.1),
+        0 3px 10px rgb(0 0 0 / 0.14);
 }
 
 .front {
-    background: var(--card-ivory);
     border: 1px solid var(--card-edge);
+    background: linear-gradient(180deg, var(--card-sheen), var(--card-ivory) 60%);
     color: var(--ink);
-    font-family: 'Bodoni Moda Variable', 'Bodoni 72', Didot, serif;
+    font-family: 'Instrument Sans', system-ui, sans-serif;
 }
 
 .red {
@@ -224,33 +225,33 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 
 .index {
     position: absolute;
-    top: calc(var(--card-w) * 0.05);
-    left: calc(var(--card-w) * 0.07);
+    top: calc(var(--card-w) * 0.06);
+    left: calc(var(--card-w) * 0.08);
     // Rank and suit side by side, so both stay visible in the strip a covering card leaves showing.
     display: flex;
     flex-direction: row;
     align-items: baseline;
-    gap: 1px;
+    gap: 2px;
     line-height: 1;
 }
 
 .indexFlipped {
     top: auto;
     left: auto;
-    right: calc(var(--card-w) * 0.07);
-    bottom: calc(var(--card-w) * 0.05);
+    right: calc(var(--card-w) * 0.08);
+    bottom: calc(var(--card-w) * 0.06);
     transform: rotate(180deg);
 }
 
 .rank {
     // Floors keep phone-size indices legible; 13px still fits the visible strip of a covered card (--up-y).
-    font-size: max(calc(var(--card-w) * 0.27), 13px);
-    font-weight: 700;
-    letter-spacing: -0.04em;
+    font-size: max(calc(var(--card-w) * 0.25), 13px);
+    font-weight: 600;
+    letter-spacing: -0.02em;
 }
 
 .suit {
-    font-size: max(calc(var(--card-w) * 0.2), 11px);
+    font-size: max(calc(var(--card-w) * 0.19), 11px);
 }
 
 .center {
@@ -258,11 +259,16 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     inset: 0;
     display: grid;
     place-items: center;
-    font-size: calc(var(--card-w) * 0.5);
+    font-size: calc(var(--card-w) * 0.46);
 }
 
+// A court card's letter sits in a softly tinted, rounded frame — a quiet stand-in for the printed portrait.
 .court {
-    font-size: calc(var(--card-w) * 0.62);
+    inset: 24% 20%;
+    border-radius: calc(var(--radius) * 0.8);
+    background: color-mix(in srgb, currentcolor 9%, transparent);
+    font-family: 'Bodoni Moda Variable', 'Bodoni 72', Didot, serif;
+    font-size: calc(var(--card-w) * 0.5);
     font-weight: 500;
     font-style: italic;
 }
@@ -273,14 +279,13 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     box-shadow: none;
 }
 
-// Oxblood back with a fine brass lattice inside an ivory border, like a printed card.
+// Dusky navy with a fine cream polka dot inside a cream border, like a printed card back.
 .back {
     transform: rotateY(180deg);
     border: calc(var(--card-w) * 0.05) solid var(--card-ivory);
     background:
-        repeating-linear-gradient(45deg, var(--back-line) 0 1px, transparent 1px 6px),
-        repeating-linear-gradient(-45deg, var(--back-line) 0 1px, transparent 1px 6px),
-        radial-gradient(circle at 50% 50%, var(--back-glow), var(--back));
+        radial-gradient(circle, var(--back-line) 1px, transparent 1.5px) 0 0 / 7px 7px,
+        radial-gradient(circle at 50% 40%, var(--back-glow), var(--back));
 }
 
 // Deal stagger — after .card/.inner so their transition shorthands don't reset the delay.

@@ -15,7 +15,8 @@ export type CardPaintModel = {
 };
 
 const RANK_FONT_RATIO = 0.22;
-const CORNER_RATIO = 0.08;
+// Mirrors --radius in table-metrics.module.scss.
+const CORNER_RATIO = 0.1;
 const INSET_RATIO = 0.1;
 
 export const readCardPaint = (): CardPaintModel => {

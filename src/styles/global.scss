@@ -11,14 +11,18 @@
     --text-muted: #d6e2da;
     --brass: #e3bf6a;
 
-    --card-ivory: #fbf7ee;
-    --card-edge: #d8cfbc;
-    --ink: #1d1f27;
-    --ink-red: #b02a30;
+    // Soft paper cards: a warm cream face lit a touch lighter at the top, a charcoal-navy ink and a brick red
+    // gentler than pillar-box, a rounded sans for the corners.
+    --card-sheen: #fffdf8;
+    --card-ivory: #fbf5ea;
+    --card-edge: #e3d8c6;
+    --ink: #2b2f3c;
+    --ink-red: #bf3a36;
 
-    --back: #5c1020;
-    --back-glow: #7b1a2e;
-    --back-line: rgb(227 191 106 / 0.45);
+    // A dusky navy back with cream dots: darker than the felt, so it never relies on red–green hue to stand apart.
+    --back: #2d3f63;
+    --back-glow: #3d5383;
+    --back-line: rgb(255 240 214 / 0.32);
 
     // Empty piles are drop targets, so their outlines hold 3:1 against the felt too.
     --slot-line: rgb(243 236 219 / 0.62);

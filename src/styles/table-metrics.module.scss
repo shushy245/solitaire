@@ -11,7 +11,8 @@
     --down-y: calc(var(--card-h) * 0.08);
     --up-y: calc(var(--card-h) * 0.25);
     --fan-x: calc(var(--card-w) * 0.3);
-    --radius: calc(var(--card-w) * 0.08);
+    // Mirrored by CORNER_RATIO in cascade-canvas.ts, so the win cascade draws the same rounded card.
+    --radius: calc(var(--card-w) * 0.1);
 
     align-items: center;
 }

@@ -65,4 +65,14 @@ describe('the felt palette', () => {
         expect(contrastRatio({ a: token('--ink-red'), b: token('--card-ivory') })).toBeGreaterThanOrEqual(4.5);
         expect(contrastRatio({ a: token('--ink'), b: token('--brass') })).toBeGreaterThanOrEqual(4.5);
     });
+
+    it('keeps the ink readable on the whole face, its lighter sheen included', () => {
+        expect(contrastRatio({ a: token('--ink'), b: token('--card-sheen') })).toBeGreaterThanOrEqual(4.5);
+        expect(contrastRatio({ a: token('--ink-red'), b: token('--card-sheen') })).toBeGreaterThanOrEqual(4.5);
+    });
+
+    it('sets the card back apart from the felt by lightness, not only by hue (red–green colour blindness)', () => {
+        expect(contrastRatio({ a: token('--back'), b: felt })).toBeGreaterThanOrEqual(1.5);
+        expect(contrastRatio({ a: token('--back'), b: token('--card-ivory') })).toBeGreaterThanOrEqual(4.5);
+    });
 });
