@@ -5,10 +5,12 @@ import { DrawMode } from '~/engine/index.ts';
 import { Row } from '../../ui/box.tsx';
 import { useGame } from '../game-provider.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
-import { canUndo } from '../session/session.utils.ts';
+import { useHint } from '../hint/hint-provider.tsx';
 import { useSound } from '../sound/sound-provider.tsx';
 import { useUndoShortcut } from './use-undo-shortcut.ts';
+import { useHintShortcut } from './use-hint-shortcut.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
+import { canUndo, isAutoCompleting } from '../session/session.utils.ts';
 import {
     countLabel,
     drawModeLabelMap,
@@ -40,7 +42,10 @@ export const Hud = (): JSX.Element => {
     // A lapsed question is forgotten, not just hidden — otherwise the next move on this deal would revive it.
     if (leaveRequest !== undefined && pending === undefined) setLeaveRequest(undefined);
 
+    const { isNoMoves, showHint } = useHint();
+
     useUndoShortcut(undo);
+    useHintShortcut(showHint);
 
     const requestNewGame = (drawMode: DrawMode): void => {
         if (needsConfirmationToLeave(session)) {
@@ -85,6 +90,16 @@ export const Hud = (): JSX.Element => {
                     onClick={undo}
                 >
                     {`Undo`}
+                </button>
+                <button
+                    type="button"
+                    className={styles.button}
+                    aria-keyshortcuts="H"
+                    disabled={isAutoCompleting(session)}
+                    data-testid={HudTestIds.Hint}
+                    onClick={showHint}
+                >
+                    {`Hint`}
                 </button>
                 <button
                     type="button"
@@ -141,6 +156,9 @@ export const Hud = (): JSX.Element => {
                     )}
                 </Row>
             </Row>
+            <p role="status" className={styles.hintStatus} data-testid={HudTestIds.HintStatus}>
+                {isNoMoves ? `No moves left — try a new game` : ``}
+            </p>
             <RecordPanel id={recordId} isOpen={isRecordOpen} stats={session.stats} />
             {pending !== undefined && (
                 <LeaveConfirm

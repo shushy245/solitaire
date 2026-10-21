@@ -1,8 +1,10 @@
 import { beforeEach, describe, it } from 'vitest';
 
 import { DrawMode } from '~/engine/index.ts';
+import { aGameState } from '~/testkit/builders/index.ts';
 
 import { HudTestIds } from './hud.test-ids.ts';
+import { HINT_SHOWN_MS } from '../hint/hint.utils.ts';
 import { HudDriver, makeHudDriver } from './hud.driver.tsx';
 
 describe('Hud', () => {
@@ -123,7 +125,7 @@ describe('Hud', () => {
 
             driver.when.unmounted();
 
-            driver.assert.undoShortcutListenerRemoved();
+            driver.assert.shortcutListenersRemoved();
         });
     });
 
@@ -301,6 +303,57 @@ describe('Hud', () => {
 
             driver.assert.score('0');
             driver.assert.moves('0');
+        });
+    });
+
+    describe('hint', () => {
+        it('lights a move when asked, by button or by H', async () => {
+            await driver.when.created();
+
+            driver.click.hint();
+            driver.assert.hintLit(true);
+            driver.time.pass(HINT_SHOWN_MS);
+            driver.assert.hintLit(false);
+
+            driver.press.hintKey();
+            driver.assert.hintLit(true);
+        });
+
+        it('ignores H held down or pressed with Ctrl', async () => {
+            await driver.when.created();
+
+            driver.press.hintKey({ withCtrl: true });
+            driver.press.hintKey({ isRepeat: true });
+
+            driver.assert.hintLit(false);
+        });
+
+        it('says so when there is no move and nothing left to draw, then lets the message go', async () => {
+            driver.given.session((s) => s.withGame(aGameState().build()));
+            await driver.when.created();
+
+            driver.assert.noMovesShown(false);
+            driver.click.hint();
+            driver.assert.noMovesShown(true);
+            driver.time.pass(HINT_SHOWN_MS);
+            driver.assert.noMovesShown(false);
+        });
+
+        it('is unavailable while auto-complete sends the cards home', async () => {
+            driver.given.session((s) => s.asReadyToAutoComplete());
+            await driver.when.created();
+
+            driver.click.autoComplete();
+
+            driver.assert.hintEnabled(false);
+        });
+
+        it('stops listening for H once gone', async () => {
+            await driver.when.created();
+
+            driver.when.unmounted();
+
+            driver.assert.shortcutListenersRemoved();
         });
     });
 

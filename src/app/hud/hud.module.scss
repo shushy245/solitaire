@@ -140,6 +140,13 @@
 }
 
 // The record opens as a full line under the status row, like the leave question.
+.hintStatus {
+    flex: 1 0 100%;
+    margin: 0;
+    color: var(--text);
+    font-size: 1rem;
+}
+
 .record {
     flex: 1 0 100%;
     padding: 10px 14px;

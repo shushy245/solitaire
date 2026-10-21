@@ -8,6 +8,8 @@ export const HudTestIds = {
     NewGame: 'HudTestIds.NewGame',
     Mode: (mode: string): string => `HudTestIds.Mode.${mode}`,
     AutoComplete: 'HudTestIds.AutoComplete',
+    Hint: 'HudTestIds.Hint',
+    HintStatus: 'HudTestIds.HintStatus',
     Confirm: 'HudTestIds.Confirm',
     ConfirmLeave: 'HudTestIds.ConfirmLeave',
     ConfirmStay: 'HudTestIds.ConfirmStay',

@@ -8,10 +8,11 @@ import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Hud } from './hud.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
-import { HintProvider } from '../hint/hint-provider.tsx';
+import { HintContextValue } from '../hint/hint.utils.ts';
 import { SessionModel } from '../session/session.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameProvider, useGame } from '../game-provider.tsx';
+import { HintProvider, useHint } from '../hint/hint-provider.tsx';
 import { AUTO_COMPLETE_STEP_MS, GameContextValue } from '../game-provider.utils.ts';
 
 export type HudDriver = {
@@ -36,8 +37,13 @@ export type HudDriver = {
         keepPlaying: () => void;
         record: () => void;
         sound: () => void;
+        hint: () => void;
     };
-    press: { undoShortcut: (args: { modifier: 'ctrl' | 'meta'; isRepeat?: boolean }) => void; escape: () => void };
+    press: {
+        undoShortcut: (args: { modifier: 'ctrl' | 'meta'; isRepeat?: boolean }) => void;
+        escape: () => void;
+        hintKey: (args?: { withCtrl?: boolean; isRepeat?: boolean }) => void;
+    };
     time: { pass: (ms: number) => void; autoCompleteSteps: (count: number) => void };
     assert: {
         stats: (args: { score: string; moves: string; time: string }) => void;
@@ -50,10 +56,13 @@ export type HudDriver = {
         dealNumber: (dealNumber: number) => void;
         autoCompleteOffered: (isOffered: boolean) => void;
         focusOn: (testId: string) => void;
-        undoShortcutListenerRemoved: () => void;
+        shortcutListenersRemoved: () => void;
         soundOn: (isOn: boolean) => void;
         savedMuted: (muted: readonly boolean[]) => void;
         recordShown: (isShown: boolean) => void;
+        hintLit: (isLit: boolean) => void;
+        noMovesShown: (isShown: boolean) => void;
+        hintEnabled: (isEnabled: boolean) => void;
         record: (args: { played: string; won: string; winRate: string; bestTime: string; bestScore: string }) => void;
     };
 };
@@ -71,7 +80,10 @@ export const makeHudDriver = (): HudDriver => {
     const handleSaveMuted = ({ muted }: { muted: boolean }): void => {
         savedMuted.push(muted);
     };
-    const outside: { game: GameContextValue | undefined } = { game: undefined };
+    const outside: { game: GameContextValue | undefined; hint: HintContextValue | undefined } = {
+        game: undefined,
+        hint: undefined,
+    };
     const rendered: { unmount: () => void; rerender: (ui: JSX.Element) => void } = {
         unmount: () => undefined,
         rerender: () => undefined,
@@ -81,6 +93,7 @@ export const makeHudDriver = (): HudDriver => {
     // Stands in for another part of the app (e.g. the win screen) that can start a new game.
     const ElsewhereInTheApp = (): undefined => {
         outside.game = useGame();
+        outside.hint = useHint();
 
         return undefined;
     };
@@ -171,8 +184,12 @@ export const makeHudDriver = (): HudDriver => {
             keepPlaying: () => click(HudTestIds.ConfirmStay),
             record: () => click(HudTestIds.RecordToggle),
             sound: () => click(HudTestIds.SoundToggle),
+            hint: () => click(HudTestIds.Hint),
         },
         press: {
+            hintKey: ({ withCtrl = false, isRepeat = false } = {}) => {
+                fireEvent.keyDown(window, { key: 'h', ctrlKey: withCtrl, repeat: isRepeat });
+            },
             undoShortcut: ({ modifier, isRepeat = false }) => {
                 fireEvent.keyDown(window, {
                     key: 'z',
@@ -238,6 +255,21 @@ export const makeHudDriver = (): HudDriver => {
                 expect(savedMuted).toEqual(muted);
             },
             // The panel stays in the page while hidden, so the toggle's aria-controls always points at it.
+            hintLit: (isLit) => {
+                const hint = outside.hint;
+
+                if (hint === undefined) throw new Error('hud driver: hintLit needs when.created first');
+                expect(hint.highlight !== undefined).toBe(isLit);
+            },
+            noMovesShown: (isShown) => {
+                const status = screen.getByTestId(HudTestIds.HintStatus);
+                if (isShown) expect(status).toHaveTextContent('No moves left');
+                else expect(status).toBeEmptyDOMElement();
+            },
+            hintEnabled: (isEnabled) => {
+                if (isEnabled) expect(screen.getByTestId(HudTestIds.Hint)).toBeEnabled();
+                else expect(screen.getByTestId(HudTestIds.Hint)).toBeDisabled();
+            },
             recordShown: (isShown) => {
                 const toggle = screen.getByTestId(HudTestIds.RecordToggle);
                 const record = screen.getByTestId(HudTestIds.Record);
@@ -251,7 +283,7 @@ export const makeHudDriver = (): HudDriver => {
                     expect(screen.getByTestId(HudTestIds.RecordEntry(entry))).toHaveTextContent(value);
                 });
             },
-            undoShortcutListenerRemoved: () => {
+            shortcutListenersRemoved: () => {
                 const added = keydownHandlers(keySpies.add);
 
                 expect(added).not.toHaveLength(0);
