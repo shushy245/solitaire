@@ -42,7 +42,8 @@ export type BoardDriver = {
         release: () => void;
         cancel: () => void;
     };
-    click: { stock: () => Promise<void> };
+    click: { stock: () => Promise<void>; card: (card: CardName) => Promise<void> };
+    // The browser's sequence for a double-click: two clicks (the second with detail 2), then dblclick.
     doubleClick: { card: (card: CardName) => Promise<void> };
     fire: { landed: (card: CardName) => void };
     remember: { cardOrder: () => void };
@@ -59,6 +60,7 @@ export type BoardDriver = {
         lifted: (args: { card: CardName; isLifted: boolean }) => void;
         dealtStockTopLifted: (isLifted: boolean) => void;
         dragging: (args: { card: CardName; isDragging: boolean }) => void;
+        shaking: (args: { card: CardName; isShaking: boolean }) => void;
         pointerListenersDetached: () => void;
         snapBackSounds: (count: number) => void;
         cardOrderUnchanged: () => void;
@@ -246,10 +248,15 @@ export const makeBoardDriver = (): BoardDriver => {
             stock: async () => {
                 fireEvent.click(screen.getByTestId(BoardTestIds.Stock));
             },
+            card: async (card) => {
+                fireEvent.click(cardElement(card), { detail: 1 });
+            },
         },
         doubleClick: {
             card: async (card) => {
-                fireEvent.doubleClick(cardElement(card));
+                fireEvent.click(cardElement(card), { detail: 1 });
+                fireEvent.click(cardElement(card), { detail: 2 });
+                fireEvent.doubleClick(cardElement(card), { detail: 2 });
             },
         },
         fire: {
@@ -300,6 +307,9 @@ export const makeBoardDriver = (): BoardDriver => {
             },
             lifted: ({ card, isLifted }) => {
                 expect(cardElement(card)).toHaveAttribute('data-lifted', String(isLifted));
+            },
+            shaking: ({ card, isShaking }) => {
+                expect(cardElement(card)).toHaveAttribute('data-shaking', String(isShaking));
             },
             dragging: ({ card, isDragging }) => {
                 expect(cardElement(card)).toHaveAttribute('data-dragging', String(isDragging));

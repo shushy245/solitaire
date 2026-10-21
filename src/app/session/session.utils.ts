@@ -2,15 +2,12 @@ import {
     applyMove,
     dealGame,
     DrawMode,
-    findFoundationTarget,
+    findClickMove,
     GameStateModel,
     isAutoCompletable,
-    isTopCard,
     isWon,
     Move,
-    MoveKind,
     nextAutoMove,
-    topCard,
 } from '~/engine/index.ts';
 
 import { emptyStats, recordPlayed, recordWin, StatsModel } from '../stats/stats.utils.ts';
@@ -44,7 +41,7 @@ export type SessionModel = {
 
 export enum SessionActionKind {
     Move = 'move',
-    SendToFoundation = 'send-to-foundation',
+    PlayCard = 'play-card',
     Undo = 'undo',
     NewGame = 'new-game',
     Tick = 'tick',
@@ -55,7 +52,7 @@ export enum SessionActionKind {
 type SessionPayloadMap = {
     [SessionActionKind.Move]: { readonly move: Move };
     // An intent, resolved against the game at reduce time — never a move computed from a stale snapshot.
-    [SessionActionKind.SendToFoundation]: { readonly cardId: string };
+    [SessionActionKind.PlayCard]: { readonly cardId: string };
     [SessionActionKind.Undo]: object;
     [SessionActionKind.NewGame]: { readonly seed: number; readonly drawMode: DrawMode };
     [SessionActionKind.Tick]: { readonly elapsedMs: number };
@@ -94,33 +91,14 @@ const advance = ({ session, game }: { session: SessionModel; game: GameStateMode
 const playerMove = ({ session, move }: { session: SessionModel; move: Move }): SessionModel =>
     isAutoCompleting(session) ? session : advance({ session, game: applyMove({ state: session.game, move }) });
 
-const isWasteTop = ({ game, cardId }: { game: GameStateModel; cardId: string }): boolean =>
-    isTopCard({ pile: game.waste, cardId });
-
-// The move that sends `cardId` up, if it is the top of the waste or of a tableau column and has a foundation.
-const foundationMoveFor = ({ game, cardId }: { game: GameStateModel; cardId: string }): Move | undefined => {
-    if (isWasteTop({ game, cardId })) {
-        const card = topCard(game.waste);
-        const to = card === undefined ? undefined : findFoundationTarget({ state: game, card });
-
-        return to === undefined ? undefined : { kind: MoveKind.WasteToFoundation, cardId, to };
-    }
-
-    const from = game.tableau.findIndex((column) => isTopCard({ pile: column, cardId }));
-    const card = topCard(game.tableau[from] ?? []);
-    const to = card === undefined ? undefined : findFoundationTarget({ state: game, card });
-
-    return to === undefined ? undefined : { kind: MoveKind.TableauToFoundation, cardId, from, to };
-};
-
 type ReducerMap = {
     [K in SessionActionKind]: (args: { session: SessionModel; action: SessionActionOf<K> }) => SessionModel;
 };
 
 const reducerMap: ReducerMap = {
     [SessionActionKind.Move]: ({ session, action }) => playerMove({ session, move: action.move }),
-    [SessionActionKind.SendToFoundation]: ({ session, action }) => {
-        const move = foundationMoveFor({ game: session.game, cardId: action.cardId });
+    [SessionActionKind.PlayCard]: ({ session, action }) => {
+        const move = findClickMove({ state: session.game, cardId: action.cardId });
 
         return move === undefined ? session : playerMove({ session, move });
     },

@@ -56,33 +56,59 @@ describe('Board', () => {
         driver.assert.stockLabel('Draw from the stock');
     });
 
-    it('double-clicking a playable top card sends it to a foundation', async () => {
+    it('clicking a playable top card sends it to a foundation', async () => {
         driver.given.column({ index: 4, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
         await driver.when.created();
         driver.when.dealt();
 
-        await driver.doubleClick.card({ rank: Rank.Ace, suit: Suit.Hearts });
+        await driver.click.card({ rank: Rank.Ace, suit: Suit.Hearts });
 
         driver.assert.cardIn({ card: { rank: Rank.Ace, suit: Suit.Hearts }, pile: PileKind.Foundation, pileIndex: 0 });
     });
 
-    it('double-clicking a card that cannot go up leaves it where it is', async () => {
+    it('clicking a card that cannot go up moves it onto the first column that takes it', async () => {
+        driver.given.column({ index: 1, cards: [{ rank: Rank.Seven, suit: Suit.Spades }] });
+        driver.given.column({ index: 3, cards: [{ rank: Rank.Eight, suit: Suit.Hearts }] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        await driver.click.card({ rank: Rank.Seven, suit: Suit.Spades });
+
+        driver.assert.cardIn({ card: { rank: Rank.Seven, suit: Suit.Spades }, pile: PileKind.Tableau, pileIndex: 3 });
+    });
+
+    it('clicking a card with no move shakes it, plays the snap-back sound and leaves it where it is', async () => {
         driver.given.column({ index: 2, cards: [{ rank: Rank.Seven, suit: Suit.Spades }] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        await driver.click.card({ rank: Rank.Seven, suit: Suit.Spades });
+
+        driver.assert.cardIn({ card: { rank: Rank.Seven, suit: Suit.Spades }, pile: PileKind.Tableau, pileIndex: 2 });
+        driver.assert.shaking({ card: { rank: Rank.Seven, suit: Suit.Spades }, isShaking: true });
+        driver.assert.snapBackSounds(1);
+    });
+
+    it('plays a double-clicked card once, so it never hops on to a second column', async () => {
+        driver.given.column({ index: 1, cards: [{ rank: Rank.Seven, suit: Suit.Spades }] });
+        driver.given.column({ index: 3, cards: [{ rank: Rank.Eight, suit: Suit.Hearts }] });
+        driver.given.column({ index: 5, cards: [{ rank: Rank.Eight, suit: Suit.Diamonds }] });
         await driver.when.created();
         driver.when.dealt();
 
         await driver.doubleClick.card({ rank: Rank.Seven, suit: Suit.Spades });
 
-        driver.assert.cardIn({ card: { rank: Rank.Seven, suit: Suit.Spades }, pile: PileKind.Tableau, pileIndex: 2 });
+        driver.assert.cardIn({ card: { rank: Rank.Seven, suit: Suit.Spades }, pile: PileKind.Tableau, pileIndex: 3 });
     });
 
-    it('ignores double-clicks while the cards are still being dealt', async () => {
+    it('ignores clicks on cards while they are still being dealt', async () => {
         driver.given.column({ index: 4, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
         await driver.when.created();
 
-        await driver.doubleClick.card({ rank: Rank.Ace, suit: Suit.Hearts });
+        await driver.click.card({ rank: Rank.Ace, suit: Suit.Hearts });
 
         driver.assert.cardIn({ card: { rank: Rank.Ace, suit: Suit.Hearts }, pile: PileKind.Tableau, pileIndex: 4 });
+        driver.assert.shaking({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isShaking: false });
     });
 
     it('names face-up cards and hides face-down ones from assistive tech', async () => {

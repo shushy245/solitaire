@@ -71,9 +71,9 @@ export const GameProvider = ({
                 flushClock();
                 dispatch({ kind: SessionActionKind.Move, move });
             },
-            sendToFoundation: (cardId) => {
+            playCard: (cardId) => {
                 flushClock();
-                dispatch({ kind: SessionActionKind.SendToFoundation, cardId });
+                dispatch({ kind: SessionActionKind.PlayCard, cardId });
             },
             undo: () => {
                 flushClock();

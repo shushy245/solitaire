@@ -54,7 +54,7 @@ resume-after-reload.
 type GameContextValue = {
     session: SessionModel;                     // game, history, elapsedMs, phase (Playing | AutoCompleting), dealNumber, progress, stats
     dispatchMove: (move: Move) => void;        // illegal/stale moves are ignored, never thrown
-    sendToFoundation: (cardId: string) => void; // intent, resolved against the current game
+    playCard: (cardId: string) => void; // intent, resolved against the current game
     undo: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;
@@ -249,7 +249,7 @@ type GameContextValue = {
 
 ## Epic: Play polish (requested 2026-10-21)
 Interview decisions: one click plays a card (foundation first, else the first legal column; no move → a
-shake), double-click unchanged · Hint highlights one move (source card + target pile, ~2s), pressing again
+shake); a double-click plays once (its second click is ignored, so the old double-click-to-send-up still works) · Hint highlights one move (source card + target pile, ~2s), pressing again
 cycles to the next, suggests the stock when nothing else plays, no score penalty · drop targets: tableau
 columns reach the table's bottom with side padding, and among overlapped piles the best *legal* one wins ·
 cards restyled in CSS (no art assets): rounder, warm, soft shadow, large indices, gentler colours.
@@ -290,8 +290,9 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - engine: a King already heading an otherwise empty column is not moved to another empty column (no pointless move)
   - engine: no legal move → none; face-down cards and the stock never resolve
   - board: a single click on a playable card plays it; on an unplayable card it shakes and nothing changes
-  - board: a click that ends a drag is not a click (the drag threshold still separates them)
-  - pre-mortem: a double-click fires two clicks — the second click's card has already moved, so it never plays twice
+  - board: a click that ends a drag is not a click (the browser's click after a drag's release is swallowed)
+  - pre-mortem: a double-click fires two clicks — only the first (detail 1) plays, so a card never hops on to a second column
+  - pre-mortem: the shake animates `translate`, never `transform` (which places the card)
   - pre-mortem: clicks are ignored mid-deal and during auto-complete
 
 ### Story `hint` — show me a move

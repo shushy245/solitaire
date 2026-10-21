@@ -1,4 +1,4 @@
-import { GameStateModel, hasStock, Rank, Suit, SuitColor, suitColorOf } from '~/engine/index.ts';
+import { findClickMove, GameStateModel, hasStock, Rank, Suit, SuitColor, suitColorOf } from '~/engine/index.ts';
 
 import {
     CardSlotModel,
@@ -141,6 +141,14 @@ export const shownCardsFor = ({
 // card that changed piles would jump to its slot instead of flying. Stacking comes from z, never page order.
 export const inStableOrder = <T extends { slot: CardSlotModel }>(cards: readonly T[]): T[] =>
     [...cards].sort((a, b) => a.slot.card.id.localeCompare(b.slot.card.id));
+
+// The browser counts the clicks of a double-click in `detail`; only the first is a play.
+export const isSingleClick = ({ detail }: { detail: number }): boolean => detail <= 1;
+
+export const hasClickMove = (args: { state: GameStateModel; cardId: string }): boolean =>
+    findClickMove(args) !== undefined;
+
+export const hasShaken = (shakeCount: number): boolean => shakeCount > 0;
 
 export const isDealing = (phase: DealPhase): boolean => phase === DealPhase.Dealing;
 

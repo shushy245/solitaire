@@ -84,6 +84,20 @@ const measurePiles = ({
     return [...groups.values()];
 };
 
+// The browser follows a drag's pointerup with a click on the card under the pointer — the dragged card itself.
+// That click is not a play: swallow it before it reaches the card, and stop waiting once the release's own
+// task has passed (a release over bare felt fires no click at all).
+const swallowClickAfterDrag = (): void => {
+    const swallow = (event: MouseEvent): void => {
+        event.stopPropagation();
+    };
+
+    window.addEventListener('click', swallow, { capture: true, once: true });
+    setTimeout(() => {
+        window.removeEventListener('click', swallow, { capture: true });
+    }, 0);
+};
+
 const setDragOffset = ({ elements, dx, dy }: { elements: readonly HTMLElement[]; dx: number; dy: number }): void => {
     elements.forEach((element) => {
         element.style.setProperty('--drag-x', `${dx}px`);
@@ -200,6 +214,7 @@ export const useCardDrag = ({
             });
 
             endDrag();
+            swallowClickAfterDrag();
             if (move === undefined) onSnapBack();
             else dispatchMove(move);
         },

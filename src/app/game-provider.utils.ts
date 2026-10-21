@@ -7,7 +7,7 @@ export type GameContextValue = {
     session: SessionModel;
     // Illegal or stale moves are ignored, never thrown.
     dispatchMove: (move: Move) => void;
-    sendToFoundation: (cardId: string) => void;
+    playCard: (cardId: string) => void;
     undo: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;

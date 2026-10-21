@@ -102,7 +102,7 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
             },
             winningCardSentUp: () => {
                 act(() => {
-                    game().sendToFoundation('hearts-13');
+                    game().playCard('hearts-13');
                 });
             },
             winUndone: () => {

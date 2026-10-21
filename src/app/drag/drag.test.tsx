@@ -30,7 +30,7 @@ describe('dragging cards', () => {
         driver.assert.dragging({ card: blackNine, isDragging: true });
     });
 
-    it('treats a press with only a little jitter as a click, so double-click still sends a card up', async () => {
+    it('treats a press with only a little jitter as a click, so the click still sends a card up', async () => {
         driver.given.column({ index: 4, cards: [aceOfHearts] });
         await driver.when.created();
         driver.when.dealt();
@@ -38,7 +38,7 @@ describe('dragging cards', () => {
         driver.pointer.press(aceOfHearts);
         driver.pointer.moveBy({ dx: 2, dy: 1 });
         driver.pointer.release();
-        await driver.doubleClick.card(aceOfHearts);
+        await driver.click.card(aceOfHearts);
 
         driver.assert.dragging({ card: aceOfHearts, isDragging: false });
         driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Foundation, pileIndex: 0 });
@@ -89,6 +89,19 @@ describe('dragging cards', () => {
         driver.assert.cardIn({ card: redTen, pile: PileKind.Tableau, pileIndex: 0 });
         driver.assert.cardIn({ card: blackNine, pile: PileKind.Tableau, pileIndex: 0 });
         driver.assert.snapBackSounds(1);
+    });
+
+    it('swallows the click the browser fires as a drag ends, so a snapped-back card is not then played', async () => {
+        driver.given.column({ index: 4, cards: [aceOfHearts] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.pointer.press(aceOfHearts);
+        driver.pointer.moveBy({ dx: 300, dy: 400 });
+        driver.pointer.release();
+        await driver.click.card(aceOfHearts);
+
+        driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Tableau, pileIndex: 4 });
     });
 
     it('makes no snap-back sound for a click or for a drag the browser cancels', async () => {

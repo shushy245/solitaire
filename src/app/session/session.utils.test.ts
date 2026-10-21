@@ -90,7 +90,7 @@ describe('reduceSession — moves and undo', () => {
     });
 });
 
-describe('reduceSession — send to foundation', () => {
+describe('reduceSession — play a clicked card', () => {
     const aceOfHearts = aCard().withSuit(Suit.Hearts).withRank(Rank.Ace).build();
     const twoOfHearts = aCard().withSuit(Suit.Hearts).withRank(Rank.Two).build();
 
@@ -104,7 +104,7 @@ describe('reduceSession — send to foundation', () => {
 
         const next = reduceSession({
             session,
-            action: { kind: SessionActionKind.SendToFoundation, cardId: aceOfHearts.id },
+            action: { kind: SessionActionKind.PlayCard, cardId: aceOfHearts.id },
         });
 
         expect(at(next.game.foundations, 0)).toEqual([aceOfHearts]);
@@ -118,7 +118,7 @@ describe('reduceSession — send to foundation', () => {
 
         const next = reduceSession({
             session: { ...freshSession(), game },
-            action: { kind: SessionActionKind.SendToFoundation, cardId: twoOfHearts.id },
+            action: { kind: SessionActionKind.PlayCard, cardId: twoOfHearts.id },
         });
 
         expect(at(next.game.foundations, 2)).toEqual([aceOfHearts, twoOfHearts]);
@@ -132,12 +132,27 @@ describe('reduceSession — send to foundation', () => {
                 .build(),
         };
 
-        expect(
-            reduceSession({ session, action: { kind: SessionActionKind.SendToFoundation, cardId: twoOfHearts.id } }),
-        ).toBe(session);
-        expect(
-            reduceSession({ session, action: { kind: SessionActionKind.SendToFoundation, cardId: aceOfHearts.id } }),
-        ).toBe(session);
+        expect(reduceSession({ session, action: { kind: SessionActionKind.PlayCard, cardId: twoOfHearts.id } })).toBe(
+            session,
+        );
+        expect(reduceSession({ session, action: { kind: SessionActionKind.PlayCard, cardId: aceOfHearts.id } })).toBe(
+            session,
+        );
+    });
+
+    it('plays a card that cannot go up onto the first column that takes it', () => {
+        const blackThree = aCard().withSuit(Suit.Spades).withRank(Rank.Three).build();
+        const session = {
+            ...freshSession(),
+            game: aGameState()
+                .withColumn({ index: 1, cards: [twoOfHearts] })
+                .withColumn({ index: 5, cards: [blackThree] })
+                .build(),
+        };
+
+        const next = reduceSession({ session, action: { kind: SessionActionKind.PlayCard, cardId: twoOfHearts.id } });
+
+        expect(at(next.game.tableau, 5)).toEqual([blackThree, twoOfHearts]);
     });
 
     it('resolves against the current game, so a repeated send does nothing the second time', () => {
@@ -147,7 +162,7 @@ describe('reduceSession — send to foundation', () => {
                 .withColumn({ index: 4, cards: [aceOfHearts] })
                 .build(),
         };
-        const action = { kind: SessionActionKind.SendToFoundation, cardId: aceOfHearts.id } as const;
+        const action = { kind: SessionActionKind.PlayCard, cardId: aceOfHearts.id } as const;
 
         const once = reduceSession({ session, action });
 

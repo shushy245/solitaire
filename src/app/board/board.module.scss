@@ -148,6 +148,26 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     }
 }
 
+// A click on a card with no move: a short side-to-side shake. `translate` composes with the flip's transform.
+@keyframes shake {
+    0%,
+    100% {
+        translate: 0;
+    }
+    20%,
+    60% {
+        translate: -6%;
+    }
+    40%,
+    80% {
+        translate: 6%;
+    }
+}
+
+.shaking .inner {
+    animation: shake 320ms $ease-out;
+}
+
 .inner {
     position: relative;
     width: 100%;
@@ -259,5 +279,9 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     .card,
     .inner {
         transition: none;
+    }
+
+    .shaking .inner {
+        animation: none;
     }
 }
