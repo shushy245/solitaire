@@ -307,7 +307,7 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 - Cases:
   - engine: hints rank foundation moves, then moves that reveal a face-down card, then waste→tableau, then other
     tableau moves; never a move that just shuffles a run between equal positions (King from an empty column to an empty one)
-  - engine: nothing else playable → the stock (draw or recycle); empty stock and waste with no move → no hint
+  - engine: the stock (draw or recycle) is always the last hint, the only one when nothing else plays; an Ace counts once, not once per empty foundation; empty stock and waste with no move → no hint
   - Hint button and the H key highlight the source card(s) and target pile; the highlight clears after ~2s
   - pressing Hint again shows the next hint, wrapping round
   - any game change clears the highlight and restarts the cycle at the first hint

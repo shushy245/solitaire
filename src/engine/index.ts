@@ -3,7 +3,8 @@ export { dealGame } from './deal.ts';
 export { applyMove } from './apply.ts';
 export { canApplyMove, listLegalMoves, makeDrawMove } from './rules.ts';
 export { findFoundationTarget, isAutoCompletable, nextAutoMove } from './auto-complete.ts';
-export { findClickMove, isPointlessMove } from './click-move.ts';
+export { findClickMove } from './click-move.ts';
+export { listHints } from './hints.ts';
 export {
     hasStock,
     isEmptyPile,
