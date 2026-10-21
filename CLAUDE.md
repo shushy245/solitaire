@@ -30,7 +30,7 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 - **Synthetic pointer events must carry `buttons: 1` while pressed** — a move with `buttons === 0` ends a drag (lost-release guard).
 - **Never draw a seed inside a React initialiser** — StrictMode runs it twice; `main.tsx` decides the first seed.
 - **Node 25 shadows jsdom's `localStorage`** with its own empty global — tests use `src/testkit/fakes/memory-storage.ts`, never `window.localStorage`.
-- **`?seed=N` is consumed on load** (stripped from the address), so a reload resumes; Cypress specs that need a deal visit `?seed=` each time.
+- **`?seed=N` (add `&draw=3` for turn 3) is consumed on load** (stripped from the address), so a reload resumes; Cypress specs that need a deal visit `?seed=` each time.
 - **jsdom cannot draw on a canvas** — `src/testkit/setup.ts` makes `getContext` return nothing; drawing is checked by `cypress/e2e/celebration.cy.ts` reading the canvas.
 - **Sound needs a gesture:** nothing plays until a press/release/key (`unlocking-player.ts`); Cypress fakes `AudioContext` in-page (`cypress/support/fake-audio-context.ts`).
 - **Vitest blanks stylesheet imports** except `global.scss` (`css.include` in `vitest.config.ts`) — the contrast test reads it with `?raw`.

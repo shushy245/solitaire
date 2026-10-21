@@ -34,6 +34,9 @@ export type SavedResult<T> =
 
 // Everything about the current deal that survives a reload. The phase does not: a sweep cut short by the
 // reload resumes as normal play, with Auto-complete offered again.
+// A deal the page address asks for by seed and draw mode.
+export type RequestedDealModel = { readonly seed: number; readonly drawMode: DrawMode };
+
 export type SavedGameModel = Pick<SessionModel, 'game' | 'history' | 'elapsedMs' | 'dealNumber' | 'progress'>;
 
 // A card is saved as one short string — "hearts-11:up" — so a long undo history stays small.
@@ -220,19 +223,19 @@ export const parseSavedGame = (raw: string | undefined): SavedResult<SavedGameMo
 export const parseSavedStats = (raw: string | undefined): SavedResult<StatsModel> =>
     parseSaved({ raw, schema: SavedStatsSchema });
 
-// A seed in the page address asks for that exact deal, so it wins over resuming; the record always carries over.
+// A deal the page asks for (?seed=, ?draw=) wins over resuming; the record always carries over.
 export const chooseInitialSession = ({
     savedGame,
     stats,
-    seedParam,
+    requestedDeal,
     freshSeed,
 }: {
     savedGame: SavedGameModel | undefined;
     stats: StatsModel;
-    seedParam: number | undefined;
+    requestedDeal: RequestedDealModel | undefined;
     freshSeed: () => number;
 }): SessionModel => {
-    if (seedParam !== undefined) return { ...makeSession({ seed: seedParam, drawMode: DrawMode.One }), stats };
+    if (requestedDeal !== undefined) return { ...makeSession(requestedDeal), stats };
     if (savedGame === undefined) return { ...makeSession({ seed: freshSeed(), drawMode: DrawMode.One }), stats };
 
     return { ...savedGame, phase: SessionPhase.Playing, stats };

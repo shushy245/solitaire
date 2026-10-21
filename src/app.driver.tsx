@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { App } from './app.tsx';
 import { AppTestIds } from './app.utils.ts';
+import { DrawMode } from './engine/index.ts';
 import { HudTestIds } from './app/hud/hud.test-ids.ts';
 import { SoundKind } from './app/sound/sound.utils.ts';
 import { FakeLogger } from './testkit/fakes/fake-logger.ts';
@@ -77,7 +78,9 @@ export const makeAppDriver = (): AppDriver => {
 
     const bootApp = (): JSX.Element => {
         const store = makeSessionStore({ store: makeBrowserKeyValueStore({ storage: () => storage, logger }), logger });
-        const initialSession = store.load({ seedParam: scenario.seedParam, freshSeed: seedSource });
+        const requestedDeal =
+            scenario.seedParam === undefined ? undefined : { seed: scenario.seedParam, drawMode: DrawMode.One };
+        const initialSession = store.load({ requestedDeal, freshSeed: seedSource });
 
         return (
             <SoundProvider player={sound} initiallyMuted={false} saveMuted={discardSave}>

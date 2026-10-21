@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { searchWithoutSeed, seedFromSearch } from './seed-source.utils.ts';
+import { DrawMode } from '~/engine/index.ts';
+
+import { dealFromSearch, drawModeFromSearch, searchWithoutSeed, seedFromSearch } from './seed-source.utils.ts';
 
 describe('seedFromSearch', () => {
     it('reads a whole-number seed from the URL', () => {
@@ -24,9 +26,25 @@ describe('seedFromSearch', () => {
     });
 });
 
+describe('drawModeFromSearch', () => {
+    it('asks for turn 3 with draw=3, and turn 1 otherwise', () => {
+        expect(drawModeFromSearch('?seed=4&draw=3')).toBe(DrawMode.Three);
+        expect(drawModeFromSearch('?seed=4&draw=1')).toBe(DrawMode.One);
+        expect(drawModeFromSearch('?seed=4&draw=three')).toBe(DrawMode.One);
+        expect(drawModeFromSearch('?seed=4')).toBe(DrawMode.One);
+    });
+});
+
+describe('dealFromSearch', () => {
+    it('names the seed and draw mode the address asks for, or nothing without a seed', () => {
+        expect(dealFromSearch('?seed=9&draw=3')).toEqual({ seed: 9, drawMode: DrawMode.Three });
+        expect(dealFromSearch('?draw=3')).toBe(undefined);
+    });
+});
+
 describe('searchWithoutSeed', () => {
-    it('drops the seed and keeps every other parameter', () => {
+    it('drops the seed and the draw and keeps every other parameter', () => {
         expect(searchWithoutSeed('?seed=42')).toBe('');
-        expect(searchWithoutSeed('?debug=1&seed=42&x=y')).toBe('?debug=1&x=y');
+        expect(searchWithoutSeed('?debug=1&seed=42&draw=3&x=y')).toBe('?debug=1&x=y');
     });
 });

@@ -189,7 +189,7 @@ describe('chooseInitialSession', () => {
         const session = playedSession();
         const saved = { ...session, progress: DealProgress.Started };
 
-        const initial = chooseInitialSession({ savedGame: saved, stats, seedParam: undefined, freshSeed });
+        const initial = chooseInitialSession({ savedGame: saved, stats, requestedDeal: undefined, freshSeed });
 
         expect(initial.game).toEqual(session.game);
         expect(initial.history).toEqual(session.history);
@@ -198,16 +198,21 @@ describe('chooseInitialSession', () => {
     });
 
     it('deals a fresh random game with the saved record when there is no saved game', () => {
-        const initial = chooseInitialSession({ savedGame: undefined, stats, seedParam: undefined, freshSeed });
+        const initial = chooseInitialSession({ savedGame: undefined, stats, requestedDeal: undefined, freshSeed });
 
         expect(initial.game).toEqual(dealGame({ seed: 99, drawMode: DrawMode.One }));
         expect(initial.stats).toEqual(stats);
     });
 
-    it('deals the requested seed instead of resuming when the page asks for one, keeping the record', () => {
-        const initial = chooseInitialSession({ savedGame: playedSession(), stats, seedParam: 7, freshSeed });
+    it('deals the requested deal, in its draw mode, instead of resuming, keeping the record', () => {
+        const initial = chooseInitialSession({
+            savedGame: playedSession(),
+            stats,
+            requestedDeal: { seed: 7, drawMode: DrawMode.Three },
+            freshSeed,
+        });
 
-        expect(initial.game).toEqual(dealGame({ seed: 7, drawMode: DrawMode.One }));
+        expect(initial.game).toEqual(dealGame({ seed: 7, drawMode: DrawMode.Three }));
         expect(initial.history).toEqual([]);
         expect(initial.stats).toEqual(stats);
     });

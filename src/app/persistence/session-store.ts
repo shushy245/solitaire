@@ -7,6 +7,7 @@ import {
     chooseInitialSession,
     parseSavedGame,
     parseSavedStats,
+    RequestedDealModel,
     SAVED_GAME_KEY,
     SAVED_STATS_KEY,
     SavedKind,
@@ -16,8 +17,8 @@ import {
 } from './persistence.utils.ts';
 
 export type SessionStore = {
-    // The session to start with: the page's ?seed= deal, else the saved game, else a fresh deal — with the saved record.
-    load: (args: { seedParam: number | undefined; freshSeed: () => number }) => SessionModel;
+    // The session to start with: the page's requested deal, else the saved game, else a fresh deal — with the saved record.
+    load: (args: { requestedDeal: RequestedDealModel | undefined; freshSeed: () => number }) => SessionModel;
     save: (session: SessionModel) => void;
 };
 
@@ -51,14 +52,14 @@ export const makeSessionStore = ({ store, logger }: { store: KeyValueStore; logg
     };
 
     return {
-        load: ({ seedParam, freshSeed }) => {
+        load: ({ requestedDeal, freshSeed }) => {
             const stats = readSavedStats();
             synced.stats = stats;
 
             return chooseInitialSession({
                 savedGame: readSaved({ key: SAVED_GAME_KEY, parse: parseSavedGame }),
                 stats,
-                seedParam,
+                requestedDeal,
                 freshSeed,
             });
         },

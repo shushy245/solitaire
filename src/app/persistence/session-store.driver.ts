@@ -39,9 +39,9 @@ export type SessionStoreDriver = {
 // Runs the real Web Storage adapter (over in-memory storage, or one that refuses every call) under the session store.
 export const makeSessionStoreDriver = (): SessionStoreDriver => {
     const logger = new FakeLogger();
-    const scenario: { storage: MemoryStorage | UnavailableStorage; seedParam: number | undefined } = {
+    const scenario: { storage: MemoryStorage | UnavailableStorage; requestedSeed: number | undefined } = {
         storage: new MemoryStorage(),
-        seedParam: undefined,
+        requestedSeed: undefined,
     };
     const saved = (): Storage => scenario.storage;
     const loaded: { session: SessionModel | undefined } = { session: undefined };
@@ -82,12 +82,16 @@ export const makeSessionStoreDriver = (): SessionStoreDriver => {
                 saved().setItem(SAVED_STATS_KEY, serializeStats(stats));
             },
             seedParam: (seed) => {
-                scenario.seedParam = seed;
+                scenario.requestedSeed = seed;
             },
         },
         when: {
             loaded: () => {
-                loaded.session = store().load({ seedParam: scenario.seedParam, freshSeed: () => FRESH_SEED });
+                const requestedDeal =
+                    scenario.requestedSeed === undefined
+                        ? undefined
+                        : { seed: scenario.requestedSeed, drawMode: DrawMode.One };
+                loaded.session = store().load({ requestedDeal, freshSeed: () => FRESH_SEED });
             },
             saved: (session) => {
                 store().save(session);

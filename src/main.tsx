@@ -13,7 +13,7 @@ import { makeSessionStore } from './app/persistence/session-store.ts';
 import { prefersReducedMotion } from './utils/prefers-reduced-motion.ts';
 import { makeBrowserKeyValueStore } from './utils/browser-key-value-store.ts';
 import { makeSoundPreferenceStore } from './app/sound/sound-preference-store.ts';
-import { searchWithoutSeed, seedFromSearch } from './utils/seed-source.utils.ts';
+import { dealFromSearch, searchWithoutSeed } from './utils/seed-source.utils.ts';
 
 import './styles/global.scss';
 
@@ -42,9 +42,9 @@ const soundPlayer = makeUnlockingPlayer({
     logger,
 });
 
-// ?seed= replays a deal; otherwise the saved game resumes, or the first deal is random like every later one.
+// ?seed= (with ?draw=3 for turn 3) replays a deal; otherwise the saved game resumes, or the first deal is random like every later one.
 const initialSession = sessionStore.load({
-    seedParam: seedFromSearch(window.location.search),
+    requestedDeal: dealFromSearch(window.location.search),
     freshSeed: generateSeed,
 });
 
