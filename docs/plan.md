@@ -226,6 +226,25 @@ type GameContextValue = {
   - review: empty-pile outlines (drop targets) hold 3:1; hovered button text holds 4.5:1 (measured by test)
   - review: no pick-up while auto-complete runs; a mute applies even to a play handle taken earlier
 
+### Story `epic-review` — fixes from the epic-level review (2026-10-21)
+- Owns: `src/app/persistence/`, `src/app/sound/unlocking-player.ts`, `src/app/board/board.tsx`, `src/utils/seed-source.utils.ts`
+- Depends on: felt-and-sound (runs after the epic's stories)
+- Parallel: serial
+- Cases:
+  - a saved game whose tableau no game could produce (face-down cards above face-up ones, more hidden cards than the
+    column was dealt, a face-up stack that is not a descending alternating run) is discarded, not rendered
+  - property: every state reached by random legal play passes the save check (it never rejects a real game)
+  - audio suspended later (a locked phone) starts again at the next interaction, without stacking listeners
+  - `?seed=N&draw=3` replays a turn-3 deal; a missing or unknown `draw` means turn 1
+  - the stock ignores clicks while the deal is still flying out
+  - saving logs under the save's own name, not the load's
+- Deferred (BF, recorded): BF-1 two open tabs overwrite each other's saved game on every tick (last writer wins) —
+  fix: save only from the visible tab and flush on hide. BF-2 a refused game write (quota) leaves the last good
+  save, so a reload resumes an older position without a word — measured ~0.49MB per 500 undo steps against a ~5MB
+  quota, so it needs thousands of moves; fix: tell the player, or trim history.
+- Kept: a card dragged off a foundation after a win un-wins it — the win panel is deliberately non-modal
+  (`celebration` triage).
+
 ---
 
 ## Review triage
@@ -393,4 +412,7 @@ type GameContextValue = {
 - (`hud`) `hud.utils.ts` reaches into `session.game.moves` / `session.history` — add session selectors.
 - (`persistence`) eslint-config-shalev: export the single syntax selectors (so a boundary override can drop
   only the null ban) and widen the composition-root `no-console` glob to `main.{ts,tsx}`.
+- (epic review) the "run from this card" rule is written three times (rules.ts, apply.ts, drag.utils.ts) and engine
+  counts are copied as local constants (MAX_WASTE_FAN, DECK_SIZE, TABLEAU_CARDS) → one engine selector + exports.
+- (epic review) `CardProps` lives in `board.tsx` → `board.utils.ts`.
 - (`celebration`) one focus-on-appear hook for `LeaveConfirm` and `WinOverlay` (the latter returns no focus).

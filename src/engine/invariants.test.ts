@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
 import { aGameState } from '~/testkit/builders/index.ts';
+import { playRandomly } from '~/testkit/play-randomly.ts';
 
 import { dealGame } from './deal.ts';
 import { applyMove } from './apply.ts';
@@ -9,21 +10,6 @@ import { listLegalMoves } from './rules.ts';
 import { isMovableRun, isWon } from './selectors.ts';
 import { isAutoCompletable, nextAutoMove } from './auto-complete.ts';
 import { DrawMode, GameStateModel, Move, MoveKind, Rank } from './model.ts';
-
-// Plays a random game: at each step one of the currently legal moves, chosen by the next pick.
-const playRandomly = ({ start, picks }: { start: GameStateModel; picks: readonly number[] }) =>
-    picks.reduce<{ states: GameStateModel[]; moves: Move[] }>(
-        (acc, pick) => {
-            const current = acc.states[acc.states.length - 1] ?? start;
-            const legal = listLegalMoves(current);
-            const move = legal[pick % Math.max(legal.length, 1)];
-
-            return move === undefined
-                ? acc
-                : { states: [...acc.states, applyMove({ state: current, move })], moves: [...acc.moves, move] };
-        },
-        { states: [start], moves: [] },
-    );
 
 // Key-order-independent identity for a move (JSON.stringify alone depends on property order).
 const moveKey = (move: Move) => JSON.stringify(move, Object.keys(move).sort());

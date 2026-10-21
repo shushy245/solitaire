@@ -1,6 +1,15 @@
 import { z } from 'zod';
 
-import { CardModel, DrawMode, FOUNDATION_COUNT, GameStateModel, Rank, Suit, TABLEAU_COUNT } from '~/engine/index.ts';
+import {
+    CardModel,
+    DrawMode,
+    FOUNDATION_COUNT,
+    GameStateModel,
+    isMovableRun,
+    Rank,
+    Suit,
+    TABLEAU_COUNT,
+} from '~/engine/index.ts';
 
 import { StatsModel } from '../stats/stats.utils.ts';
 import { DealProgress, makeSession, SessionModel, SessionPhase } from '../session/session.utils.ts';
@@ -75,6 +84,22 @@ const isBuiltUpInOneSuit = (pile: readonly CardModel[]): boolean => {
 const hasPossibleWasteFan = (game: GameStateModel): boolean =>
     game.wasteFan <= Math.min(game.waste.length, MAX_WASTE_FAN);
 
+// Hidden cards only under shown ones, never more hidden than the column was dealt (column i is dealt i), and the
+// shown cards one descending run of alternating colours — anything else is a position no game reaches (and one
+// the table cannot draw).
+const isPossibleColumn = (column: readonly CardModel[], index: number): boolean => {
+    const firstShown = column.findIndex((card) => card.faceUp);
+    const hiddenCount = firstShown === -1 ? column.length : firstShown;
+    const shown = column.slice(hiddenCount);
+
+    return (
+        hiddenCount <= index &&
+        (column.length === 0 || shown.length > 0) &&
+        shown.every((card) => card.faceUp) &&
+        isMovableRun(shown)
+    );
+};
+
 const isSameDeal = ({ a, b }: { a: GameStateModel; b: GameStateModel }): boolean =>
     a.seed === b.seed && a.drawMode === b.drawMode;
 
@@ -94,6 +119,9 @@ const GameSchema = z
     .refine(holdsEveryCardOnce, { message: `a game must hold the 52 cards exactly once` })
     .refine((game) => game.foundations.every(isBuiltUpInOneSuit), {
         message: 'every foundation must build up from the Ace in one suit, face-up',
+    })
+    .refine((game) => game.tableau.every(isPossibleColumn), {
+        message: 'every tableau column must hide no more cards than it was dealt, under one shown descending run',
     })
     .refine(hasPossibleWasteFan, {
         message: 'the waste fan cannot show more cards than the waste holds or a draw turns',

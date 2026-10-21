@@ -1,7 +1,9 @@
 import { z } from 'zod';
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 
 import { dealGame, DrawMode } from '~/engine/index.ts';
+import { playRandomly } from '~/testkit/play-randomly.ts';
 import { aGameState, aSession } from '~/testkit/builders/index.ts';
 
 import { emptyStats, recordPlayed, recordWin } from '../stats/stats.utils.ts';
@@ -109,6 +111,42 @@ describe('saved game', () => {
         const otherDeal = dealGame({ seed: session.game.seed + 1, drawMode: session.game.drawMode });
 
         expect(reasonOf(serializeGame({ ...session, history: [otherDeal, ...session.history] }))).toMatch(/history/);
+    });
+
+    it('is corrupt when a tableau column holds what no game could produce, so it is never drawn', () => {
+        const deal = dealGame({ seed: 1, drawMode: DrawMode.One });
+        const withColumns = (tableau: typeof deal.tableau) =>
+            serializeGame({ ...makeSession({ seed: 1, drawMode: DrawMode.One }), game: { ...deal, tableau } });
+        const [first = [], second = [], ...rest] = deal.tableau;
+        const [secondHidden, secondShown] = second;
+        const hiddenOnTop = secondHidden === undefined || secondShown === undefined ? [] : [secondShown, secondHidden];
+        // the first column is dealt one face-up card and never holds a hidden one
+        const tooManyHidden = [...second.map((card) => ({ ...card, faceUp: false })), ...first];
+        const notARun = [...first, ...second.filter((card) => card.faceUp)];
+
+        expect(reasonOf(withColumns([first, hiddenOnTop, ...rest]))).toMatch(/tableau/);
+        expect(reasonOf(withColumns([tooManyHidden, [], ...rest]))).toMatch(/tableau/);
+        expect(reasonOf(withColumns([notARun, second.filter((card) => !card.faceUp), ...rest]))).toMatch(/tableau/);
+    });
+
+    it('accepts every position real play reaches, so a real game is never thrown away', () => {
+        fc.assert(
+            fc.property(
+                fc.record({
+                    seed: fc.integer({ min: 0, max: 2 ** 31 - 1 }),
+                    drawMode: fc.constantFrom(DrawMode.One, DrawMode.Three),
+                    picks: fc.array(fc.nat(), { minLength: 1, maxLength: 150 }),
+                }),
+                ({ seed, drawMode, picks }) => {
+                    const { states } = playRandomly({ start: dealGame({ seed, drawMode }), picks });
+                    const last = states[states.length - 1] ?? dealGame({ seed, drawMode });
+                    const session = { ...makeSession({ seed, drawMode }), game: last, history: states.slice(0, -1) };
+
+                    expect(parseSavedGame(serializeGame(session)).kind).toBe(SavedKind.Found);
+                },
+            ),
+            { numRuns: 60 },
+        );
     });
 
     it('is corrupt when a card is not a real card', () => {
