@@ -1,5 +1,11 @@
 # Changelog
 
+## game-over — 2026-10-21
+- **Pain:** a player whose game had run out of moves got no word of it — the deck could still be drawn round forever, and Hint kept pointing at it.
+- **Fix:** the game now checks after every move whether any progress is still possible, and if not shows a "No more moves" notice at the foot of the window with Undo and New game, while Hint says "No moves left" *(instead of: a one-step check that would have called a game over when splitting a run could still free a card for its foundation)*.
+- **Trade-off:** it looks ahead through every rearrangement that changes nothing, so the check is exact, but on rare tables with long runs it gives up after 1,000 positions and says nothing rather than risk a wrong "game over".
+- **Result:** the check takes a few milliseconds on real positions and at most ~80ms in the worst of 6,400 positions sampled from random play (measured); 377 tests pass (`vitest`, 20 more) plus all 8 browser tests; the review raised 10 issues — 3 fixed (including the notice flashing for an instant during the deal), 1 kept, 1 dismissed, 4 queued as bugs to fix, 1 tidy-up queued; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## card-design — 2026-10-21
 - **Pain:** the cards looked sharp and old-fashioned — a high-contrast serif and a dark oxblood back — when the user wanted something softer and more pleasing.
 - **Fix:** warm cream faces with a gentle sheen, rounder corners, soft layered shadows, rounded sans corner indices, tinted frames behind the court letters, and a navy dotted back.

@@ -327,7 +327,7 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - red and black inks stay ≥ 4.5:1 on the card face (contrast test); the back stays distinct from the felt
   - visual pass at 390/768/1280: indices readable at the smallest size (measured)
 
-### Story `game-over` — tell the player when no progress is possible (requested 2026-10-21)
+### Story `game-over` — tell the player when no progress is possible (requested 2026-10-21) ✅
 - Interview decisions: "game over" = **no progress possible**, detected exactly (never a guess). Progress means
   reaching a position with fewer face-down cards, fewer cards in the deck (stock + waste) or more cards home than
   now. `isStuck` explores every position reachable without progress — column shifts, cards down off a foundation,
@@ -362,6 +362,7 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - pre-mortem: positions are told apart by every pile (stock/waste split included), so a reachable position is
     never skipped as "seen"
   - pre-mortem: the panel's buttons are real 44px targets and the panel never covers the foundation row or HUD
+  - review: a fresh stuck deal never mounts the panel mid-deal (readiness is reported per deal number)
 
 ---
 
@@ -587,6 +588,28 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 - Visual A+B (`?seed=7`; settled, three draws, a covered card; 390/768/1280): no overflow, Lighthouse a11y 100,
   covered-card rank ink fully visible at 390 (before the index fixes added more room).
 
+### `game-over` (code-review high, 10 findings; visual pass A+B)
+- Found at story-start (user decision): the planned single-step rule called a run split that frees a card for its
+  foundation "game over" → bounded search for progress. Measured over 6,400 random-play positions: p99.9 searches
+  128 table positions, two outliers reached 4–5k (~400ms) → cap 1,000 (worst ~80ms), answering "not stuck".
+- Fixed (3): a fresh stuck deal mounted the panel for one commit mid-deal and took focus (the table counted as ready
+  until the board said otherwise; also on New game) → readiness reported per deal number, `isTableReadyFor`; a
+  three-dot `session.game.drawMode` chain; `countFaceDown` repeated `isFaceDown`.
+- Kept (1): `isStuck` runs in render, memoised per game — measured a few ms typically, ~80ms at the cap; precondition
+  recorded on `MAX_POSITIONS`.
+- Dismissed (1): no test for "not during auto-complete" — an auto-completable game always has a card to send home,
+  so it is never stuck; `canHint` also excludes it.
+- BF (4): BF-3 draws made after the game got stuck pile up history, so the panel's Undo takes one press per draw
+  before "another line" — fix: Undo back to the last position that was not stuck. BF-4 the HUD's New game still
+  asks "leave this game?" on a stuck game (two prompts at once) — fix: a stuck game needs no confirmation. BF-5 the
+  panel at the window's foot can cover the last cards of a long column (not seen by the pass: its deal is short)
+  — fix: let it be dismissed, or lift it clear of the columns. BF-6 the clock keeps running on a stuck game.
+- RF (1): the focus-taking panels (win, game over) return no focus when they close — `LeaveConfirm` does.
+- Visual A+B (`?seed=22&draw=3`, stuck from the deal; 390/768/1280): no overflow, taps ≥44, text ≥16px, Lighthouse
+  a11y 100, focus lands on New game (Undo disabled), traversal clean. Not rendered: the panel with Undo enabled.
+  Noted, kept: the note line is ~40 characters (a short notice, under the 45 floor) and wraps one word at 390.
+  The deal-readiness fix after the pass changed timing only, no style — checked in Chrome, not re-passed.
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
@@ -605,4 +628,6 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 - (epic review) `CardProps` lives in `board.tsx` → `board.utils.ts`.
 - (epic review) the stock gives no visual or aria cue that it is inert during the deal.
 - (`easy-drops`) `isTableauPile` in drag.utils repeats `isTableauSlot` in layout.utils → one pile-kind predicate.
+- (`game-over`) the win panel and the game-over panel return no focus when they close (`LeaveConfirm` does) —
+  extend `useFocusOnAppear` to hand focus back when it was lost.
 - (`card-design`) `--radius` and `CORNER_RATIO` (cascade-canvas.ts) duplicate one value → read the card's computed radius.
