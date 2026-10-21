@@ -175,8 +175,17 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     animation: shake 320ms $ease-out;
 }
 
-.hinted .front {
-    box-shadow: 0 0 0 3px var(--hint), 0 0 16px var(--hint-glow);
+// A hinted card's ring sits on a flat layer over the card, outside the 3D flip (.inner): repainting a face with
+// backface-visibility in a preserve-3d layer left Chrome showing a face-up card's back after the hint went out.
+.card.hinted::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    box-shadow:
+        0 0 0 3px var(--hint),
+        0 0 16px var(--hint-glow);
+    pointer-events: none;
 }
 
 .inner {

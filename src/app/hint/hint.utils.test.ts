@@ -24,15 +24,20 @@ const game = aGameState()
 
 describe('nextHint', () => {
     it('starts at the most useful hint', () => {
-        expect(nextHint({ previous: undefined, game })).toEqual({ kind: HintKind.Showing, game, index: 0 });
+        expect(nextHint({ previous: undefined, game })).toMatchObject({
+            kind: HintKind.Showing,
+            game,
+            index: 0,
+            move: { kind: MoveKind.TableauToFoundation, cardId: aceOfHearts.id },
+        });
     });
 
     it('moves on to the next hint for the same game, wrapping round to the first', () => {
         const first = nextHint({ previous: undefined, game });
         const second = nextHint({ previous: first, game });
 
-        expect(second).toEqual({ kind: HintKind.Showing, game, index: 1 });
-        expect(nextHint({ previous: second, game })).toEqual({ kind: HintKind.Showing, game, index: 0 });
+        expect(second).toMatchObject({ kind: HintKind.Showing, game, index: 1 });
+        expect(nextHint({ previous: second, game })).toMatchObject({ kind: HintKind.Showing, game, index: 0 });
     });
 
     it('starts over at the first hint once the game has changed', () => {
@@ -41,7 +46,7 @@ describe('nextHint', () => {
             .withColumn({ index: 0, cards: [aceOfHearts] })
             .build();
 
-        expect(nextHint({ previous: nextHint({ previous: first, game }), game: changed })).toEqual({
+        expect(nextHint({ previous: nextHint({ previous: first, game }), game: changed })).toMatchObject({
             kind: HintKind.Showing,
             game: changed,
             index: 0,

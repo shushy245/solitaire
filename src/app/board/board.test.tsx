@@ -219,13 +219,32 @@ describe('Board', () => {
         driver.assert.hinted({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isHinted: true });
     });
 
-    it('lights no hint while the cards are still being dealt', async () => {
+    it('ignores a hint asked for mid-deal, so the first hint after the deal is still the best one', async () => {
         driver.given.column({ index: 2, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
+        driver.given.stock([{ rank: Rank.Five, suit: Suit.Clubs }]);
         await driver.when.created();
 
         driver.when.hintRequestedElsewhere();
-
         driver.assert.hinted({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isHinted: false });
+
+        driver.when.dealt();
+        driver.when.hintRequestedElsewhere();
+        driver.assert.pileHinted({ pile: PileKind.Foundation, pileIndex: 0, isHinted: true });
+    });
+
+    it('an undo does not bring back a hint that a move put out', async () => {
+        driver.given.column({ index: 2, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
+        driver.given.stock([{ rank: Rank.Five, suit: Suit.Clubs }]);
+        await driver.when.created();
+        driver.when.dealt();
+
+        driver.when.hintRequestedElsewhere();
+        await driver.click.stock();
+        driver.when.undoneElsewhere();
+
+        driver.assert.pileHinted({ pile: PileKind.Foundation, pileIndex: 0, isHinted: false });
+        driver.when.hintRequestedElsewhere();
+        driver.assert.pileHinted({ pile: PileKind.Foundation, pileIndex: 0, isHinted: true });
     });
 
     it('names face-up cards and hides face-down ones from assistive tech', async () => {

@@ -351,7 +351,6 @@ export const makeBoardDriver = (): BoardDriver => {
             dragging: ({ card, isDragging }) => {
                 expect(cardElement(card)).toHaveAttribute('data-dragging', String(isDragging));
             },
-            // A card element moved within the DOM loses its transform transition, so it would jump, not fly.
             hinted: ({ card, isHinted }) => {
                 expect(cardElement(card)).toHaveAttribute('data-hinted', String(isHinted));
             },
@@ -364,6 +363,7 @@ export const makeBoardDriver = (): BoardDriver => {
             stockHinted: (isHinted) => {
                 expect(screen.getByTestId(BoardTestIds.Stock)).toHaveAttribute('data-hinted', String(isHinted));
             },
+            // A card element moved within the DOM loses its transform transition, so it would jump, not fly.
             cardOrderUnchanged: () => {
                 expect(renderedCardOrder()).toEqual(remembered.cardOrder);
             },

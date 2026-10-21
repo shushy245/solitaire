@@ -1,6 +1,6 @@
 import { listLegalMoves } from './rules.ts';
-import { isPointlessMove } from './click-move.ts';
 import { GameStateModel, Move, MoveKind, MoveOf } from './model.ts';
+import { isOntoEmptyColumn, isPointlessMove, isRevealingMove } from './click-move.ts';
 
 type FoundationMove = MoveOf<MoveKind.WasteToFoundation | MoveKind.TableauToFoundation>;
 
@@ -8,31 +8,55 @@ const foundationKinds: ReadonlySet<MoveKind> = new Set([MoveKind.WasteToFoundati
 
 const isFoundationMove = (move: Move): move is FoundationMove => foundationKinds.has(move.kind);
 
-// An Ace can go to any empty foundation; that is one hint, not four.
-const isRepeatFoundationHint = ({ move, index, moves }: { move: Move; index: number; moves: readonly Move[] }) =>
-    isFoundationMove(move) &&
-    moves.slice(0, index).some((earlier) => isFoundationMove(earlier) && earlier.cardId === move.cardId);
+const isOntoEmptyPile = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
+    isFoundationMove(move) || isOntoEmptyColumn({ state, move });
 
-// How useful each kind of move is as a hint; lower is shown first, a kind missing here is never shown.
-const hintRankMap: Partial<Record<MoveKind, number>> = {
-    [MoveKind.WasteToFoundation]: 0,
-    [MoveKind.TableauToFoundation]: 0,
-    [MoveKind.TableauToTableau]: 1,
-    [MoveKind.WasteToTableau]: 2,
-    [MoveKind.Draw]: 3,
-    [MoveKind.Recycle]: 3,
+const cardIdOf = (move: Move): string | undefined => ('cardId' in move ? move.cardId : undefined);
+
+// An Ace fits every empty foundation and a King every empty column; that is one hint, not one per empty pile.
+const isRepeatHint = ({
+    state,
+    move,
+    index,
+    moves,
+}: {
+    state: GameStateModel;
+    move: Move;
+    index: number;
+    moves: readonly Move[];
+}): boolean =>
+    isOntoEmptyPile({ state, move }) &&
+    moves
+        .slice(0, index)
+        .some(
+            (earlier) =>
+                cardIdOf(earlier) === cardIdOf(move) &&
+                earlier.kind === move.kind &&
+                isOntoEmptyPile({ state, move: earlier }),
+        );
+
+// How useful a move is as a hint; lower is shown first, undefined is never shown. A column move ranks high when it
+// turns a card over, low when it only empties its column.
+const hintRankMap: { [K in MoveKind]: (args: { state: GameStateModel; move: Move }) => number | undefined } = {
+    [MoveKind.WasteToFoundation]: () => 0,
+    [MoveKind.TableauToFoundation]: () => 0,
+    [MoveKind.TableauToTableau]: ({ state, move }) => (isRevealingMove({ state, move }) ? 1 : 3),
+    [MoveKind.WasteToTableau]: () => 2,
+    [MoveKind.FoundationToTableau]: () => undefined,
+    [MoveKind.Draw]: () => 4,
+    [MoveKind.Recycle]: () => 4,
 };
 
-// The moves worth suggesting, most useful first: up to a foundation, then a column move that turns a card over or
-// empties its column, then the waste onto a column, then the stock — always last, so cycling the hints ends on it.
+// The moves worth suggesting, most useful first: up to a foundation, then a column move that turns a card over,
+// then the waste onto a column, then a column move that empties its column, then the stock — always last, so cycling the hints ends on it.
 // Never a card back off a foundation, never a run shifted to an equal place. Empty when nothing plays and nothing
 // is left to draw.
 export const listHints = (state: GameStateModel): Move[] =>
     listLegalMoves(state)
         .filter((move) => !isPointlessMove({ state, move }))
-        .filter((move, index, moves) => !isRepeatFoundationHint({ move, index, moves }))
+        .filter((move, index, moves) => !isRepeatHint({ state, move, index, moves }))
         .flatMap((move) => {
-            const rank = hintRankMap[move.kind];
+            const rank = hintRankMap[move.kind]({ state, move });
 
             return rank === undefined ? [] : [{ move, rank }];
         })

@@ -9,8 +9,10 @@ export enum HintKind {
 }
 
 // The hint last asked for, always tied to the game it was worked out for: a move made since makes it stale.
+// The move is kept with its place in the list, so lighting it never works the list out again.
 export type HintModel =
-    { kind: HintKind.Showing; game: GameStateModel; index: number } | { kind: HintKind.NoMoves; game: GameStateModel };
+    | { kind: HintKind.Showing; game: GameStateModel; index: number; move: Move }
+    | { kind: HintKind.NoMoves; game: GameStateModel };
 
 // What a hint lights up: the cards that would move, the card they land on (in `cardIds` too), or — when they land on
 // an empty pile — that pile; the stock for a draw or a recycle.
@@ -22,27 +24,33 @@ export const HINT_SHOWN_MS = 2000;
 export const isShowingHint = (hint: HintModel | undefined): hint is HintModel & { kind: HintKind.Showing } =>
     hint !== undefined && hint.kind === HintKind.Showing;
 
-export const isNoMovesHint = (hint: HintModel | undefined): boolean =>
-    hint !== undefined && hint.kind === HintKind.NoMoves;
-
 const isSameGame = ({ hint, game }: { hint: HintModel; game: GameStateModel }): boolean => hint.game === game;
+
+// The one staleness rule: a hint is shown only while it is visible and the game is the one it was worked out for.
+export const isCurrentHint = ({
+    hint,
+    isVisible,
+    game,
+}: {
+    hint: HintModel | undefined;
+    isVisible: boolean;
+    game: GameStateModel;
+}): boolean => isVisible && hint !== undefined && isSameGame({ hint, game });
 
 // The hint after `previous`: the next one for the same game (wrapping round), the first for a changed game.
 export const nextHint = ({ previous, game }: { previous: HintModel | undefined; game: GameStateModel }): HintModel => {
-    const count = listHints(game).length;
+    const hints = listHints(game);
+    const index =
+        isShowingHint(previous) && isSameGame({ hint: previous, game }) ? (previous.index + 1) % hints.length : 0;
+    const move = hints[index];
 
-    if (count === 0) return { kind: HintKind.NoMoves, game };
-
-    const index = isShowingHint(previous) && isSameGame({ hint: previous, game }) ? (previous.index + 1) % count : 0;
-
-    return { kind: HintKind.Showing, game, index };
+    return move === undefined ? { kind: HintKind.NoMoves, game } : { kind: HintKind.Showing, game, index, move };
 };
 
-// The kind of pile each move lands on; a draw or a recycle lands on no pile (it is the stock's own move).
+// The kind of pile each hinted move lands on; a draw or a recycle lands on no pile (it is the stock's own move).
 const targetPileKindMap: Partial<Record<MoveKind, PileKind>> = {
     [MoveKind.WasteToTableau]: PileKind.Tableau,
     [MoveKind.TableauToTableau]: PileKind.Tableau,
-    [MoveKind.FoundationToTableau]: PileKind.Tableau,
     [MoveKind.WasteToFoundation]: PileKind.Foundation,
     [MoveKind.TableauToFoundation]: PileKind.Foundation,
 };
@@ -66,6 +74,10 @@ const movingCardIds = ({ game, move }: { game: GameStateModel; move: Move }): st
     return column.slice(column.findIndex((card) => card.id === move.cardId)).map((card) => card.id);
 };
 
+const stockKinds: ReadonlySet<MoveKind> = new Set([MoveKind.Draw, MoveKind.Recycle]);
+
+const isStockMove = (move: Move): boolean => stockKinds.has(move.kind);
+
 export const highlightOf = ({ game, move }: { game: GameStateModel; move: Move }): HighlightModel => {
     const target = targetPileOf(move);
     const landing = target === undefined ? undefined : topCard(pileAt({ game, pile: target }));
@@ -74,26 +86,30 @@ export const highlightOf = ({ game, move }: { game: GameStateModel; move: Move }
     return {
         cardIds: new Set(landing === undefined ? cardIds : [...cardIds, landing.id]),
         pile: landing === undefined ? target : undefined,
-        isStock: target === undefined,
+        isStock: isStockMove(move),
     };
 };
 
 // What to light up now: nothing once the hint has faded, nor once the game has moved on from it.
-export const shownHighlight = ({
-    hint,
-    isVisible,
-    game,
-}: {
+export const shownHighlight = (args: {
     hint: HintModel | undefined;
     isVisible: boolean;
     game: GameStateModel;
 }): HighlightModel | undefined => {
-    if (!isVisible || !isShowingHint(hint) || !isSameGame({ hint, game })) return undefined;
+    const { hint, game } = args;
 
-    const move = listHints(game)[hint.index];
+    if (!isCurrentHint(args) || !isShowingHint(hint)) return undefined;
 
-    return move === undefined ? undefined : highlightOf({ game, move });
+    return highlightOf({ game, move: hint.move });
 };
+
+const isNoMovesHint = (hint: HintModel | undefined): boolean => hint !== undefined && hint.kind === HintKind.NoMoves;
+
+export const isNoMovesShown = (args: {
+    hint: HintModel | undefined;
+    isVisible: boolean;
+    game: GameStateModel;
+}): boolean => isCurrentHint(args) && isNoMovesHint(args.hint);
 
 export const isHintedCard = ({
     highlight,
@@ -129,5 +145,9 @@ export type HintContextValue = {
     highlight: HighlightModel | undefined;
     // True while the latest hint request found nothing to suggest (shown for as long as a hint would be).
     isNoMoves: boolean;
+    // Hints are off while the cards are dealt or sent home, and once the game is won.
+    canHint: boolean;
     showHint: () => void;
+    // The board tells the provider when the table is laid out, so a request mid-deal is refused, not wasted.
+    reportTableReady: (isReady: boolean) => void;
 };

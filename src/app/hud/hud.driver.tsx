@@ -254,7 +254,6 @@ export const makeHudDriver = (): HudDriver => {
             savedMuted: (muted) => {
                 expect(savedMuted).toEqual(muted);
             },
-            // The panel stays in the page while hidden, so the toggle's aria-controls always points at it.
             hintLit: (isLit) => {
                 const hint = outside.hint;
 
@@ -270,6 +269,7 @@ export const makeHudDriver = (): HudDriver => {
                 if (isEnabled) expect(screen.getByTestId(HudTestIds.Hint)).toBeEnabled();
                 else expect(screen.getByTestId(HudTestIds.Hint)).toBeDisabled();
             },
+            // The panel stays in the page while hidden, so the toggle's aria-controls always points at it.
             recordShown: (isShown) => {
                 const toggle = screen.getByTestId(HudTestIds.RecordToggle);
                 const record = screen.getByTestId(HudTestIds.Record);

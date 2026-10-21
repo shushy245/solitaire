@@ -359,6 +359,15 @@ describe('Hud', () => {
             driver.assert.hintEnabled(false);
         });
 
+        it('is unavailable once the game is won', async () => {
+            driver.given.session((s) => s.asWon());
+            await driver.when.created();
+
+            driver.assert.hintEnabled(false);
+            driver.press.hintKey();
+            driver.assert.noMovesShown(false);
+        });
+
         it('stops listening for H once gone', async () => {
             await driver.when.created();
 

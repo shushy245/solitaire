@@ -139,7 +139,7 @@
     text-decoration: line-through;
 }
 
-// The record opens as a full line under the status row, like the leave question.
+// The hint's 'no moves' line, a full line under the status row; empty (and zero-height) otherwise.
 .hintStatus {
     flex: 1 0 100%;
     margin: 0;
@@ -147,6 +147,7 @@
     font-size: 1rem;
 }
 
+// The record opens as a full line under the status row, like the leave question.
 .record {
     flex: 1 0 100%;
     padding: 10px 14px;

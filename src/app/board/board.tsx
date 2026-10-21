@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { makeDrawMove, MoveKind } from '~/engine/index.ts';
 
@@ -52,9 +52,13 @@ export const Board = (): JSX.Element => {
         play(SoundKind.SnapBack);
     }, [play]);
     const canPlayCards = isSettled(dealPhase) && !isAutoCompleting(session);
-    const { highlight: requestedHighlight } = useHint();
-    // Mid-deal the cards are still flying to their places, so a hint would light them in passing.
-    const highlight = isSettled(dealPhase) ? requestedHighlight : undefined;
+    const { highlight, reportTableReady } = useHint();
+    const isTableReady = isSettled(dealPhase);
+
+    // Mid-deal the cards are still flying to their places: a hint asked for then is refused, not lit in passing.
+    useEffect(() => {
+        reportTableReady(isTableReady);
+    }, [isTableReady, reportTableReady]);
     const cards = inStableOrder(shownCardsFor({ phase: dealPhase, slots }));
     const boardElement = useRef<HTMLElement | undefined>(undefined);
     const { draggingIds, handleCardPointerDown, isDragClick } = useCardDrag({

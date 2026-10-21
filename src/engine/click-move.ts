@@ -12,7 +12,7 @@ const toTableauKinds: ReadonlySet<MoveKind> = new Set([
 
 const isToTableau = (move: Move): move is ToTableauMove => toTableauKinds.has(move.kind);
 
-const isOntoEmptyColumn = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
+export const isOntoEmptyColumn = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
     isToTableau(move) && isEmptyPile(state.tableau[move.to] ?? []);
 
 // The card a column-to-column move leaves showing: the one under the moved card, if any.
@@ -25,6 +25,15 @@ const cardUnder = ({ state, move }: { state: GameStateModel; move: MoveOf<MoveKi
 // A legal move that changes nothing worth having. In real play a face-up card always lies on its own run, so
 // moving off a face-up card only shifts the run to an equal place (and a click would ping-pong it); a run that
 // already heads its column, moved to another empty one, is the same shift.
+// A column move that turns over the face-down card under the moved run.
+export const isRevealingMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
+    if (move.kind !== MoveKind.TableauToTableau) return false;
+
+    const under = cardUnder({ state, move });
+
+    return under !== undefined && isFaceDown(under);
+};
+
 export const isPointlessMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
     if (move.kind !== MoveKind.TableauToTableau) return false;
 

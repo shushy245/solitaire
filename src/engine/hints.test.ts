@@ -55,6 +55,33 @@ describe('listHints', () => {
         expect(listHints(state)).toEqual([{ kind: MoveKind.TableauToTableau, cardId: blackNine.id, from: 0, to: 1 }]);
     });
 
+    it('ranks a waste card onto a column above a column move that only empties its column', () => {
+        const state = aGameState()
+            .withWaste([up({ rank: Rank.Nine, suit: Suit.Clubs })])
+            .withColumn({ index: 0, cards: [blackNine] })
+            .withColumn({ index: 1, cards: [down({ rank: Rank.Four, suit: Suit.Spades }), redTen] })
+            .withStock([stockCard])
+            .build();
+
+        expect(listHints(state).map((move) => move.kind)).toEqual([
+            MoveKind.WasteToTableau,
+            MoveKind.TableauToTableau,
+            MoveKind.Draw,
+        ]);
+    });
+
+    it('suggests a King into an empty column once, not once per empty column', () => {
+        const kingOfClubs = up({ rank: Rank.King, suit: Suit.Clubs });
+        const state = aGameState()
+            .withWaste([kingOfClubs])
+            .withColumn({ index: 0, cards: [down({ rank: Rank.Four, suit: Suit.Spades }), redTen] })
+            .build();
+
+        expect(listHints(state).filter((move) => move.kind === MoveKind.WasteToTableau)).toEqual([
+            { kind: MoveKind.WasteToTableau, cardId: kingOfClubs.id, to: 1 },
+        ]);
+    });
+
     it('never suggests taking a card back down from a foundation', () => {
         const state = aGameState()
             .withFoundation({ index: 0, cards: [aceOfHearts, up({ rank: Rank.Two, suit: Suit.Hearts })] })
