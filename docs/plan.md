@@ -300,7 +300,7 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - review: a card resting on its own run is not shifted to an equal column (no ping-pong)
   - review: a face-down card ignores clicks; a shake ends with its animation or when the game moves on
 
-### Story `hint` — show me a move
+### Story `hint` — show me a move ✅
 - Owns: `src/app/hud/` (button), `src/engine/` (`listHints`), `src/app/board/` (highlight)
 - Depends on: click-to-play
 - Parallel: serial
@@ -314,6 +314,9 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - "No moves" is announced when there is nothing to suggest; no score penalty either way
   - pre-mortem: the clear timer is cancelled on unmount and on a new hint (no stale clear wiping a newer highlight)
   - pre-mortem: H while typing in no field (there are none) — H with a modifier key does nothing
+  - review: an undo back to the hinted game does not revive the hint; a press mid-deal is refused, not used up
+  - review: a column move that only empties its column ranks below the waste; a King fits empty columns once
+  - review: no hints once the game is won; a hint costs no points or moves
 
 ### Story `card-design` — softer, more pleasing cards
 - Owns: `src/app/board/board.module.scss`, `src/styles/global.scss`
@@ -524,6 +527,20 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   `data-shaking` it saw is the review's shake-state finding, fixed after the pass.
 - Found while testing: jsdom has no `AnimationEvent`, so React listened for `webkitAnimationEnd` →
   `src/testkit/jsdom-animation-event.ts` (landmine in CLAUDE.md).
+
+### `hint` (code-review high, 10 findings; visual pass A+B)
+- Fixed (9): undo restored the hinted game object and revived the hint → the provider drops the hint on any game
+  change; a mid-deal press used up the best hint unseen → the board reports the table dealt and requests wait;
+  ranking put column-emptying moves above waste plays → reveal 1, waste 2, empty 3; a King got one hint per empty
+  column → one per card; hints after a win said "No moves left" → off once won; the staleness rule lived twice
+  and `listHints` ran twice per press → one `isCurrentHint`, the hint keeps its move; `isStock` inferred from a
+  missing target → from the move kind; three comments displaced by inserted code.
+- Kept (1): a stuck game keeps hinting at the deck instead of "No moves left" — the deck can still bring a
+  playable card, and "no moves" is only certain with stock and waste empty (plan decision).
+- Visual A+B (`?seed=7`; settled, after one press, after four; 390/768/1280): no overflow, taps ≥44, Lighthouse
+  a11y 100. Found: at 768/1280 a face-up Jack painted as its back after the ring went out — the ring was a
+  box-shadow on `.front` inside the preserve-3d layer → moved to `.card.hinted::after`; not reproduced since.
+  Not seen by the pass: the "No moves left" line with text (its deal always had a move) — covered by HUD tests.
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a

@@ -1,5 +1,11 @@
 # Changelog
 
+## hint — 2026-10-21
+- **Pain:** a stuck player had no way to ask "what can I do here?", which most solitaire games offer.
+- **Fix:** a Hint button (or the H key) rings the cards that could move and where they would land for two seconds; pressing again shows the next idea, best first, and the deck last; when nothing at all is left it says "No moves left".
+- **Trade-off:** hints never suggest pointless shuffles or taking cards back off the foundations, and in a game that is stuck they keep pointing at the deck rather than declaring it lost, since the deck can still turn up a playable card.
+- **Result:** hints cost no points; they go out the moment a move is made and never come back on an undo; 354 tests pass (`vitest`, 31 more); the review raised 10 issues — 9 fixed (including an undo bringing a hint back and a press during the deal wasting the best hint), 1 kept by design; the visual pass found a card left showing its back after a hint in Chrome (fixed by drawing the ring outside the card's flip), otherwise clean on phone, tablet and laptop widths, accessibility 100.
+
 ## click-to-play — 2026-10-21
 - **Pain:** the only quick way to play a card was a double-click that could only send it up to a foundation; every other move needed a drag, unlike most solitaire games.
 - **Fix:** one click plays a card's obvious move — up to its foundation if it fits, otherwise onto the first column that takes it — and a card with no move gives a short shake and the "rejected" sound.
