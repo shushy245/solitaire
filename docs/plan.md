@@ -328,24 +328,28 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - visual pass at 390/768/1280: indices readable at the smallest size (measured)
 
 ### Story `game-over` — tell the player when no progress is possible (requested 2026-10-21)
-- Interview decisions: "game over" = **no progress possible**, detected exactly (never a guess): no table move
-  that changes anything, and cycling the deck all the way round — drawing and recycling, playing nothing — never
-  turns up a playable card. Not a solver: a deal that is lost but still has moves is not flagged. On trigger, a
-  non-blocking "No more moves" panel with Undo and New game; the game stays open, so undoing lets the player try
-  another line. It is recorded as a loss only by being left unwon (stats already count played-not-won).
-- Owns: `src/engine/` (new `isStuck`), `src/app/game-over/` (panel), `src/app/hint/hint.utils.ts` (its "No moves
-  left" uses `isStuck`)
+- Interview decisions: "game over" = **no progress possible**, detected exactly (never a guess). Progress means
+  reaching a position with fewer face-down cards, fewer cards in the deck (stock + waste) or more cards home than
+  now. `isStuck` explores every position reachable without progress — column shifts, cards down off a foundation,
+  draws and recycles (real turn-3 groupings) — and is stuck only when none of them leads to progress (story-start
+  decision, 2026-10-21: the single-step rule first planned called a run split that frees a card for its foundation
+  "game over"). A safety cap on positions explored answers "not stuck" — a missed announcement, never a false one.
+  Not a solver: a deal that is lost but still has progress to make is not flagged. On trigger, a non-blocking
+  "No more moves" panel with Undo and New game; the game stays open, so undoing lets the player try another
+  line. It is recorded as a loss only by being left unwon (stats already count played-not-won).
+- Owns: `src/engine/` (new `isStuck`), `src/app/game-over/` (panel), `src/app/hint/` (its "No moves left" uses
+  `isStuck`; the provider works it out once per game), `src/app.tsx` (mounts the panel)
 - Depends on: card-design
 - Parallel: serial
 - Cases:
-  - engine: stuck when no non-pointless move exists and no card reachable on the waste during a full draw/recycle
-    cycle can be played (turn 1: every stock and waste card comes up; turn 3: only the cards each draw of three
-    leaves on top)
-  - engine: not stuck while any table move would change something (a card turned over, a column emptied, a card
-    up or down a foundation)
-  - engine: not stuck when a card further round the deck would play, even if the current waste top cannot
   - engine: a won game is not stuck; an empty stock and waste with no table move is stuck
-  - property: from random play, `isStuck` is never true while some legal non-stock move exists
+  - engine: not stuck while a move turns a card over, sends a card home or plays the waste
+  - engine: not stuck when a card further round the deck would play, even if the current waste top cannot
+  - engine: turn 3 — a card only ever buried inside a draw of three does not count; one each draw leaves on top does
+  - engine: a run split that frees a card for its foundation is not stuck; shifts and foundation moves that lead
+    nowhere are stuck
+  - property: from random play, a stuck position never has a legal move that turns a card over, sends a card home
+    or plays the waste
   - panel: appears when the game becomes stuck, with Undo and New game; Undo closes it and steps back; New game
     deals in the same mode
   - panel: not shown mid-deal, during auto-complete, or for a won game; a game resumed already stuck shows it
@@ -353,6 +357,11 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - pre-mortem: the check runs once per game change, not per clock tick (the deck cycle is up to 24 draws)
   - pre-mortem: turn-3 cycling must use the real draw groupings, or a card the player can never reach counts as
     playable (a false "not stuck") — or one they can reach is missed (a false "game over")
+  - pre-mortem: a card taken down off a foundation and put back is not progress (measured against the start, not
+    per move), or a stuck game with a foundation card that fits a column is never flagged
+  - pre-mortem: positions are told apart by every pile (stock/waste split included), so a reachable position is
+    never skipped as "seen"
+  - pre-mortem: the panel's buttons are real 44px targets and the panel never covers the foundation row or HUD
 
 ---
 
