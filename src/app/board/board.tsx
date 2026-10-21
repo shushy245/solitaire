@@ -17,6 +17,7 @@ import {
     cardLabel,
     dealDelayClassName,
     FACE_DOWN_LABEL,
+    inStableOrder,
     isCourtCard,
     isDealing,
     isSettled,
@@ -44,7 +45,7 @@ export const Board = (): JSX.Element => {
     const handleSnapBack = useCallback((): void => {
         play(SoundKind.SnapBack);
     }, [play]);
-    const cards = shownCardsFor({ phase: dealPhase, slots });
+    const cards = inStableOrder(shownCardsFor({ phase: dealPhase, slots }));
     const boardElement = useRef<HTMLElement | undefined>(undefined);
     const { draggingIds, handleCardPointerDown } = useCardDrag({
         game,

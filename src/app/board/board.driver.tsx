@@ -45,6 +45,7 @@ export type BoardDriver = {
     click: { stock: () => Promise<void> };
     doubleClick: { card: (card: CardName) => Promise<void> };
     fire: { landed: (card: CardName) => void };
+    remember: { cardOrder: () => void };
     time: { pass: (ms: number) => void };
     assert: {
         cardCount: (count: number) => void;
@@ -60,6 +61,7 @@ export type BoardDriver = {
         dragging: (args: { card: CardName; isDragging: boolean }) => void;
         pointerListenersDetached: () => void;
         snapBackSounds: (count: number) => void;
+        cardOrderUnchanged: () => void;
     };
 };
 
@@ -106,6 +108,10 @@ export const makeBoardDriver = (): BoardDriver => {
 
         return undefined;
     };
+
+    const remembered: { cardOrder: readonly (string | null)[] } = { cardOrder: [] };
+    const renderedCardOrder = (): (string | null)[] =>
+        screen.getAllByTestId(BoardTestIds.AnyCard).map((element) => element.getAttribute('data-card-id'));
 
     const cardElement = ({ rank, suit }: CardName): HTMLElement =>
         screen.getByTestId(BoardTestIds.Card(buildCard({ rank, suit }).id));
@@ -251,6 +257,11 @@ export const makeBoardDriver = (): BoardDriver => {
                 fireEvent.transitionEnd(cardElement(card), { propertyName: 'transform' });
             },
         },
+        remember: {
+            cardOrder: () => {
+                remembered.cardOrder = renderedCardOrder();
+            },
+        },
         time: {
             pass: passTime,
         },
@@ -292,6 +303,10 @@ export const makeBoardDriver = (): BoardDriver => {
             },
             dragging: ({ card, isDragging }) => {
                 expect(cardElement(card)).toHaveAttribute('data-dragging', String(isDragging));
+            },
+            // A card element moved within the DOM loses its transform transition, so it would jump, not fly.
+            cardOrderUnchanged: () => {
+                expect(renderedCardOrder()).toEqual(remembered.cardOrder);
             },
             snapBackSounds: (count) => {
                 expect(sound.played.filter((played) => played === SoundKind.SnapBack)).toHaveLength(count);

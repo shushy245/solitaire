@@ -137,6 +137,11 @@ export const shownCardsFor = ({
     return slots.map((slot, index) => ({ slot, shown: shown[index] ?? slot }));
 };
 
+// The page order of the card elements never changes: a moved element loses its transform transition, so a
+// card that changed piles would jump to its slot instead of flying. Stacking comes from z, never page order.
+export const inStableOrder = <T extends { slot: CardSlotModel }>(cards: readonly T[]): T[] =>
+    [...cards].sort((a, b) => a.slot.card.id.localeCompare(b.slot.card.id));
+
 export const isDealing = (phase: DealPhase): boolean => phase === DealPhase.Dealing;
 
 // Cards only respond once the deal has settled — mid-deal they sit over the stock and other piles.

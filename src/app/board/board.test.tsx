@@ -31,6 +31,18 @@ describe('Board', () => {
         driver.assert.dealtStockTopNowOnWaste();
     });
 
+    it('keeps every card in its place in the page while cards move, so a drawn card flies instead of jumping', async () => {
+        driver.given.dealtGame({ seed: 12, drawMode: DrawMode.One });
+        await driver.when.created();
+        driver.when.dealt();
+        driver.remember.cardOrder();
+
+        await driver.click.stock();
+        await driver.click.stock();
+
+        driver.assert.cardOrderUnchanged();
+    });
+
     it('offers to draw while the stock has cards and to recycle once it is empty', async () => {
         driver.given.emptyStockWithWaste();
         await driver.when.created();
