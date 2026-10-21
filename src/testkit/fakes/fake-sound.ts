@@ -10,17 +10,35 @@ export class FakeSoundPlayer implements SoundPlayer {
     }
 }
 
-// A voice that records what it sounds; its resume can be made to fail like a browser refusing audio.
+export enum ResumeOutcome {
+    Resumes = 'resumes',
+    Refuses = 'refuses',
+    // Neither resolves nor rejects — a browser waiting for a gesture it will accept.
+    Waits = 'waits',
+}
+
+// A voice that records what it sounds. Each resume answers with the next outcome given (the last one repeats),
+// like a browser that refuses audio on a touch press and allows it on the release.
 export class FakeSoundVoice implements SoundVoice {
     readonly played: SoundKind[] = [];
+    private resumes = 0;
 
-    constructor(private readonly resumeOutcome: 'resumes' | 'refuses') {}
+    constructor(private readonly outcomes: readonly ResumeOutcome[]) {}
 
     play(sound: SoundKind): void {
         this.played.push(sound);
     }
 
     resume(): Promise<void> {
-        return this.resumeOutcome === 'resumes' ? Promise.resolve() : Promise.reject(new Error('audio not allowed'));
+        const outcome = this.outcomes[Math.min(this.resumes, this.outcomes.length - 1)] ?? ResumeOutcome.Resumes;
+        this.resumes += 1;
+
+        return resumeOutcomeMap[outcome]();
     }
 }
+
+const resumeOutcomeMap: Record<ResumeOutcome, () => Promise<void>> = {
+    [ResumeOutcome.Resumes]: () => Promise.resolve(),
+    [ResumeOutcome.Refuses]: () => Promise.reject(new Error('audio not allowed by this gesture')),
+    [ResumeOutcome.Waits]: () => new Promise<void>(() => undefined),
+};

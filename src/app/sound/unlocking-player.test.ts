@@ -1,5 +1,7 @@
 import { beforeEach, describe, it } from 'vitest';
 
+import { ResumeOutcome } from '~/testkit/fakes/fake-sound.ts';
+
 import { SoundKind } from './sound.utils.ts';
 import { makeUnlockingPlayerDriver, UnlockingPlayerDriver } from './unlocking-player.driver.ts';
 
@@ -19,46 +21,58 @@ describe('unlocking sound player', () => {
         driver.assert.sounded([]);
     });
 
-    it('starts audio at the first pointer press, once, and plays from then on', () => {
+    it('starts audio at the first pointer press, once, and plays from then on', async () => {
         driver.when.created();
 
-        driver.when.pointerPressed();
-        driver.when.pointerPressed();
+        await driver.when.pointerPressed();
+        await driver.when.pointerPressed();
         driver.when.played(SoundKind.Draw);
 
         driver.assert.voicesCreated(1);
         driver.assert.sounded([SoundKind.Draw]);
     });
 
-    it('starts audio at the first key press too', () => {
+    it('starts audio at the first key press too', async () => {
         driver.when.created();
 
-        driver.when.keyPressed();
+        await driver.when.keyPressed();
         driver.when.played(SoundKind.Place);
 
         driver.assert.sounded([SoundKind.Place]);
     });
 
-    it('stays silent, and says so once, where the browser has no audio', () => {
+    it('plays nothing while audio is still waiting to start, rather than piling sounds up', async () => {
+        driver.given.resumes([ResumeOutcome.Waits]);
+        driver.when.created();
+
+        await driver.when.pointerPressed();
+        driver.when.played(SoundKind.Draw);
+
+        driver.assert.sounded([]);
+    });
+
+    it('tries again at the next interaction when the browser refuses one (a touch press, then its release)', async () => {
+        driver.given.resumes([ResumeOutcome.Refuses, ResumeOutcome.Resumes]);
+        driver.when.created();
+
+        await driver.when.pointerPressed();
+        driver.when.played(SoundKind.Deal);
+        await driver.when.pointerReleased();
+        driver.when.played(SoundKind.Draw);
+
+        driver.assert.voicesCreated(1);
+        driver.assert.sounded([SoundKind.Draw]);
+    });
+
+    it('stays silent, and says so once, where the browser has no audio', async () => {
         driver.given.audioUnavailable();
         driver.when.created();
 
-        driver.when.pointerPressed();
+        await driver.when.pointerPressed();
+        await driver.when.pointerReleased();
         driver.when.played(SoundKind.Draw);
-        driver.when.played(SoundKind.Place);
 
         driver.assert.sounded([]);
-        driver.assert.warnedOnce();
-    });
-
-    it('reports a refused resume without letting it escape as an unhandled rejection', async () => {
-        driver.given.audioRefusedToResume();
-        driver.when.created();
-
-        driver.when.pointerPressed();
-        await Promise.resolve();
-        await Promise.resolve();
-
         driver.assert.warnedOnce();
     });
 });

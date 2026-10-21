@@ -1,39 +1,49 @@
 import { expect } from 'vitest';
-import { fireEvent } from '@testing-library/react';
+import { act, fireEvent } from '@testing-library/react';
 
 import { FakeLogger } from '~/testkit/fakes/fake-logger.ts';
-import { FakeSoundVoice } from '~/testkit/fakes/fake-sound.ts';
+import { FakeSoundVoice, ResumeOutcome } from '~/testkit/fakes/fake-sound.ts';
 
 import { SoundKind } from './sound.utils.ts';
 import { SoundVoice } from './sound-player.port.ts';
 import { makeUnlockingPlayer } from './unlocking-player.ts';
 
 export type UnlockingPlayerDriver = {
-    given: { audioUnavailable: () => void; audioRefusedToResume: () => void };
+    given: { audioUnavailable: () => void; resumes: (outcomes: readonly ResumeOutcome[]) => void };
     when: {
         created: () => void;
         played: (sound: SoundKind) => void;
-        pointerPressed: () => void;
-        keyPressed: () => void;
+        pointerPressed: () => Promise<void>;
+        pointerReleased: () => Promise<void>;
+        keyPressed: () => Promise<void>;
     };
     assert: {
         voicesCreated: (count: number) => void;
         sounded: (sounds: readonly SoundKind[]) => void;
         warnedOnce: () => void;
-        noWarnings: () => void;
     };
+};
+
+// Lets a resume's promise settle before the next step.
+const settle = async (): Promise<void> => {
+    await act(async () => {
+        await Promise.resolve();
+    });
 };
 
 export const makeUnlockingPlayerDriver = (): UnlockingPlayerDriver => {
     const logger = new FakeLogger();
-    const scenario: { outcome: 'resumes' | 'refuses' | 'unavailable' } = { outcome: 'resumes' };
+    const scenario: { isAvailable: boolean; outcomes: readonly ResumeOutcome[] } = {
+        isAvailable: true,
+        outcomes: [ResumeOutcome.Resumes],
+    };
     const voices: FakeSoundVoice[] = [];
     const created: { play: (sound: SoundKind) => void } = { play: () => undefined };
 
     const createVoice = (): SoundVoice => {
-        if (scenario.outcome === 'unavailable') throw new Error('AudioContext is not defined');
+        if (!scenario.isAvailable) throw new Error('AudioContext is not defined');
 
-        const voice = new FakeSoundVoice(scenario.outcome);
+        const voice = new FakeSoundVoice(scenario.outcomes);
         voices.push(voice);
 
         return voice;
@@ -42,10 +52,10 @@ export const makeUnlockingPlayerDriver = (): UnlockingPlayerDriver => {
     return {
         given: {
             audioUnavailable: () => {
-                scenario.outcome = 'unavailable';
+                scenario.isAvailable = false;
             },
-            audioRefusedToResume: () => {
-                scenario.outcome = 'refuses';
+            resumes: (outcomes) => {
+                scenario.outcomes = outcomes;
             },
         },
         when: {
@@ -55,11 +65,17 @@ export const makeUnlockingPlayerDriver = (): UnlockingPlayerDriver => {
             played: (sound) => {
                 created.play(sound);
             },
-            pointerPressed: () => {
+            pointerPressed: async () => {
                 fireEvent.pointerDown(window);
+                await settle();
             },
-            keyPressed: () => {
+            pointerReleased: async () => {
+                fireEvent.pointerUp(window);
+                await settle();
+            },
+            keyPressed: async () => {
                 fireEvent.keyDown(window, { key: 'a' });
+                await settle();
             },
         },
         assert: {
@@ -71,9 +87,6 @@ export const makeUnlockingPlayerDriver = (): UnlockingPlayerDriver => {
             },
             warnedOnce: () => {
                 expect(logger.warnings).toHaveLength(1);
-            },
-            noWarnings: () => {
-                expect(logger.warnings).toEqual([]);
             },
         },
     };
