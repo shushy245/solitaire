@@ -281,7 +281,7 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - review: a drop dead centre on an illegal pile snaps back even when a legal neighbour's padding grazes it
   - review: an exact tie between the source and a neighbour snaps back, whatever the page order
 
-### Story `click-to-play` — one click plays the obvious move
+### Story `click-to-play` — one click plays the obvious move ✅
 - Owns: `src/app/board/`, `src/engine/` (new `findClickMove` selector)
 - Depends on: easy-drops
 - Parallel: serial
@@ -295,6 +295,10 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
   - pre-mortem: a double-click fires two clicks — only the first (detail 1) plays, so a card never hops on to a second column
   - pre-mortem: the shake animates `translate`, never `transform` (which places the card)
   - pre-mortem: clicks are ignored mid-deal and during auto-complete
+  - review: quick clicks on different cards all play (the browser's click count spans cards)
+  - review: a drag's release click is ignored however late it arrives; the next plain click plays
+  - review: a card resting on its own run is not shifted to an equal column (no ping-pong)
+  - review: a face-down card ignores clicks; a shake ends with its animation or when the game moves on
 
 ### Story `hint` — show me a move
 - Owns: `src/app/hud/` (button), `src/engine/` (`listHints`), `src/app/board/` (highlight)
@@ -505,6 +509,21 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 - Not changed (1): the floor needs a browser to test end to end — checked by hand in Chrome (a drop near the
   window foot lands on the column above).
 - RF (1): `isTableauPile` (drag) repeats `isTableauSlot` (layout) over a different shape.
+
+### `click-to-play` (code-review high, 10 findings; visual pass A+B)
+- Fixed (8): `detail ≥ 2` dropped quick clicks on other cards → only a repeat on the card just played is
+  ignored; the drag-click guard expired on a timer (late touch clicks slipped past, and it leaked between tests
+  under fake timers) → `isDragClick` flag reset per press; a card on its own run ping-ponged → moves off a
+  face-up card are pointless; face-down clicks shook → ignored; shake state never cleared and its re-keying
+  could cut a flip → cleared on animationend / game change, no re-key; inline shake logic → `isShakingCard`;
+  stale double-click docs.
+- Not changed (2): `findClickMove` lists every legal move and runs twice per click — at most a few hundred
+  candidates per click, no measured cost; `isPointlessMove` exported ahead of `hint`, which uses it next.
+- Visual A+B (`?seed=7`; settled, mid-shake, after a click-move; 390/768/1280): no overflow, cards ≥ 46×65,
+  Lighthouse a11y 100. Noted: cards are not keyboard-reachable (already Deferred: keyboard play); the stuck
+  `data-shaking` it saw is the review's shake-state finding, fixed after the pass.
+- Found while testing: jsdom has no `AnimationEvent`, so React listened for `webkitAnimationEnd` →
+  `src/testkit/jsdom-animation-event.ts` (landmine in CLAUDE.md).
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a

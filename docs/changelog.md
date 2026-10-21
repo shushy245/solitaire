@@ -1,5 +1,11 @@
 # Changelog
 
+## click-to-play — 2026-10-21
+- **Pain:** the only quick way to play a card was a double-click that could only send it up to a foundation; every other move needed a drag, unlike most solitaire games.
+- **Fix:** one click plays a card's obvious move — up to its foundation if it fits, otherwise onto the first column that takes it — and a card with no move gives a short shake and the "rejected" sound.
+- **Trade-off:** a click never makes a move that changes nothing (sliding a card to an equal spot, a King between empty columns, a card back off a foundation) — those still need a drag.
+- **Result:** in a real browser a click plays, a double-click plays once, and a drag's release never also plays the card; 323 tests pass (`vitest`, 18 more); the review raised 10 issues — 8 fixed (including fast clicks being dropped and a card hopping between two columns), 2 judged not worth changing; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## easy-drops — 2026-10-21
 - **Pain:** a card had to be dropped almost exactly on a pile to count, so near-misses — just below a column, a little off to the side, or over an illegal pile next to the right one — snapped back.
 - **Fix:** every pile catches drops a little past its edges, each column catches anything dropped below it down to the bottom of the window, and the drop goes to the most-covered pile that accepts the card.
