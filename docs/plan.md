@@ -375,7 +375,7 @@ no-score / limited passes, streaks and per-mode stats, card back / felt / left-h
 the `game-over` triage, not in this epic. Keyboard play stays Deferred.
 Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "progress" a hint or stuck check sees).
 
-### Story `hint-game-over-checks` — Hint and "No more moves" proven right
+### Story `hint-game-over-checks` — Hint and "No more moves" proven right ✅
 - Owns: `cypress/e2e/` (new `hint.cy.ts`, `game-over.cy.ts`), `src/engine/` (property tests, a test-only uncapped
   `isStuck` run), `src/testkit/`
 - Depends on: game-over
@@ -656,10 +656,38 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   panel at the window's foot can cover the last cards of a long column (not seen by the pass: its deal is short)
   — fix: let it be dismissed, or lift it clear of the columns. BF-6 the clock keeps running on a stuck game.
 - RF (1): the focus-taking panels (win, game over) return no focus when they close — `LeaveConfirm` does.
+- BF decisions (user, 2026-10-22): BF-3 — only the panel's Undo leaps back to the last position that was not stuck
+  (HUD Undo / Ctrl+Z stay one step); BF-4 — a stuck game skips the confirmation for New game only (the turn-1/turn-3
+  switch still asks); BF-5 — the panel can be closed, stays closed while the game stays stuck, and comes back once
+  the game has been un-stuck (Hint still says "No moves left").
 - Visual A+B (`?seed=22&draw=3`, stuck from the deal; 390/768/1280): no overflow, taps ≥44, text ≥16px, Lighthouse
   a11y 100, focus lands on New game (Undo disabled), traversal clean. Not rendered: the panel with Undo enabled.
   Noted, kept: the note line is ~40 characters (a short notice, under the 45 floor) and wraps one word at 390.
   The deal-readiness fix after the pass changed timing only, no style — checked in Chrome, not re-passed.
+
+### `hint-game-over-checks` (code-review medium, 10 findings; visual pass A+B)
+- Found by the story: Hint dropped every move off a face-up card as pointless, so a game whose only progress was a
+  run split that frees a card for its foundation had no hint while `isStuck` said "not stuck" → such a split is
+  hinted (ranked with moves that turn a card over).
+- Measured (cap): 4,000 seeds × random play (50–300 moves), every 5th position — 64,034 positions, 2,523 stuck.
+  The 1,000-position cap gave up 3 times, all 3 really stuck: **0.12% of game overs missed** (threshold ~1%) → cap
+  kept. Worst uncapped search: under 16,000 positions, ~1.4s. Never a false "stuck" (the cap only answers "not stuck").
+- Fixtures: `?seed=148&draw=3` is one move from stuck (click the 8♣ onto the 9♦); `?seed=1` hints J♦→Q♣ then 4♥→5♣.
+- Fixed (6): a hinted split could not be played by clicking the hinted card (click still called it pointless) →
+  the freeing rule moved into `isPointlessMove`, one definition for Hint and click; the ping-pong property could fail
+  on a legitimate draw-then-recycle round trip → it checks table moves only; the New game check could not tell a new
+  deal from the old → the cards must lie elsewhere; the ring reader fell back to "no ring" without a window → read
+  through `cy.window()`; the walk re-judged ended walks → skips them; `waitForSettledDeal` copied into 5 Cypress
+  drivers → `cypress/support/drivers/deal.ts` (with `readTable`).
+- Dismissed (3): the panel is checked gone straight after New game, mid-deal — that is the claim ("the panel goes");
+  a fresh random deal stuck from the start would rightly show it again. The property test's progress counters copy
+  `stuck.ts` — on purpose: an oracle must not share the code it checks. `judgeStuck` exported with no app caller —
+  it is the measurement tool this story asked for; precondition: if the cap is ever re-measured or removed, use it.
+- RF (2): `isFreeingMove` runs `applyMove` twice per column move (filter and rank) → compute once per move. The two
+  disabled Undo buttons (HUD outline, panel filled at 45% opacity) look different (visual pass).
+- Visual A+B (`?seed=1` after H; `?seed=22&draw=3`; 390/768/1280): no overflow, taps ≥44, text ≥16px, Lighthouse a11y
+  100 on both, traversal clean, focus visible. Not checked: Lighthouse on the lit ring (it lasts 2s), the ring under
+  reduced motion. The panel note line is 39–40 characters (known, kept from `game-over`).
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
@@ -681,4 +709,6 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
 - (`easy-drops`) `isTableauPile` in drag.utils repeats `isTableauSlot` in layout.utils → one pile-kind predicate.
 - (`game-over`) the win panel and the game-over panel return no focus when they close (`LeaveConfirm` does) —
   extend `useFocusOnAppear` to hand focus back when it was lost.
+- (`hint-game-over-checks`) `isFreeingMove` runs `applyMove` twice per column move in `listHints` → once.
+- (`hint-game-over-checks`) the HUD's and the game-over panel's disabled Undo look different → one disabled style.
 - (`card-design`) `--radius` and `CORNER_RATIO` (cascade-canvas.ts) duplicate one value → read the card's computed radius.

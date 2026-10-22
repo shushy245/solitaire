@@ -1,5 +1,11 @@
 # Changelog
 
+## hint-game-over-checks — 2026-10-22
+- **Pain:** Hint and the "No more moves" notice had only been checked inside a simulated page, and nobody knew how often the game-over check's safety limit hid a real game over.
+- **Fix:** real-browser tests now press Hint and play into a stuck game, automated checks follow the first hint from thousands of random positions, and the safety limit was measured against an unlimited search.
+- **Trade-off:** the limit stays — at 0.12% of game overs it misses a handful rather than risk a slow move on rare tables (an unlimited search took up to 1.4s).
+- **Result:** the checks found Hint offering nothing in a game that still had a way forward (splitting a run to free a card for home) — now hinted, and playable by clicking; 384 tests pass (`vitest`, 7 more) plus 13 browser tests (5 new); the review raised 10 issues — 6 fixed, 3 dismissed, 2 tidy-ups queued (one from the visual pass); visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## game-over — 2026-10-21
 - **Pain:** a player whose game had run out of moves got no word of it — the deck could still be drawn round forever, and Hint kept pointing at it.
 - **Fix:** the game now checks after every move whether any progress is still possible, and if not shows a "No more moves" notice at the foot of the window with Undo and New game, while Hint says "No moves left" *(instead of: a one-step check that would have called a game over when splitting a run could still free a card for its foundation)*.
