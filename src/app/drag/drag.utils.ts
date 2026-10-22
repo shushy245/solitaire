@@ -139,7 +139,8 @@ const byOverlapThenSource =
 
 // The move a drop makes: onto the most-overlapped pile that takes the cards and catches enough of the card,
 // so a legal pile wins over an illegal one it overlaps less. None on bare felt, and none when the source pile
-// is overlapped most — a drop mostly back home is a change of mind, even if it grazes a neighbour.
+// is overlapped more than any pile that would take the cards — a drop mostly back home is a change of mind, even
+// if it grazes a neighbour.
 export const findDropMove = ({
     game,
     pickup,
@@ -158,12 +159,11 @@ export const findDropMove = ({
         }))
         .filter(hasOverlap)
         .sort(byOverlapThenSource(pickup.source));
-    const closest = touched[0];
-
-    if (closest === undefined || isSamePile({ a: closest.pile, b: pickup.source })) return undefined;
-
+    const sourceRank = touched.findIndex((candidate) => isSamePile({ a: candidate.pile, b: pickup.source }));
+    // Only piles overlapped more than the source can win.
+    const rivals = sourceRank === -1 ? touched : touched.slice(0, sourceRank);
     const isEnoughOverlap = ({ area }: TouchedPileModel): boolean => area >= areaOf(dragged) * MIN_DROP_SHARE;
-    const landing = touched.find(
+    const landing = rivals.find(
         (candidate) =>
             isEnoughOverlap(candidate) && legalDropMove({ game, pickup, target: candidate.pile }) !== undefined,
     );

@@ -157,6 +157,18 @@ describe('findDropMove', () => {
         expect(findDropMove({ game, pickup, dragged: rect(25, 100), piles: [...touching].reverse() })).toBeUndefined();
     });
 
+    it('treats a drop that overlaps its source more than any legal pile as no drop, whatever overlaps most', () => {
+        // column 2 (illegal) 40%, column 0 (the source) 35%, column 1 (legal) only 26%
+        const dragged = { left: 0, top: 0, right: 100, bottom: 100 };
+        const stacked = [
+            { pile: PileKind.Tableau, pileIndex: 2, rect: { left: 0, top: 0, right: 40, bottom: 100 } },
+            { pile: PileKind.Tableau, pileIndex: 0, rect: { left: 40, top: 0, right: 75, bottom: 100 } },
+            { pile: PileKind.Tableau, pileIndex: 1, rect: { left: 74, top: 0, right: 100, bottom: 100 } },
+        ];
+
+        expect(findDropMove({ game, pickup, dragged, piles: stacked })).toBeUndefined();
+    });
+
     it('snaps back when no overlapped pile takes the card', () => {
         expect(findDropMove({ game, pickup, dragged: rect(125, 110), piles })).toBeUndefined();
         expect(findDropMove({ game, pickup, dragged: rect(400, 400), piles })).toBeUndefined();
