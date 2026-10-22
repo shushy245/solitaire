@@ -10,6 +10,7 @@ import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 import { Board } from '../board/board.tsx';
 import { Celebration } from './celebration.tsx';
 import { HintProvider } from '../hint/hint-provider.tsx';
+import { BoardTestIds } from '../board/board.test-ids.ts';
 import { SessionModel } from '../session/session.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameProvider, useGame } from '../game-provider.tsx';
@@ -37,6 +38,7 @@ export type CelebrationDriver = {
         overlayShown: (isShown: boolean) => void;
         summary: (summary: string) => void;
         newGameFocused: () => void;
+        tableFocused: () => void;
         cascadeRunning: (isRunning: boolean) => void;
         freshDealIn: (drawMode: DrawMode) => void;
         cascadeCanvasSize: (args: { width: number; height: number }) => void;
@@ -118,8 +120,11 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
             },
         },
         click: {
+            // A mouse click focuses the button in Chrome, so the overlay goes away with focus inside it.
             newGame: () => {
-                fireEvent.click(screen.getByTestId(CelebrationTestIds.NewGame));
+                const button = screen.getByTestId(CelebrationTestIds.NewGame);
+                button.focus();
+                fireEvent.click(button);
             },
         },
         assert: {
@@ -133,6 +138,9 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
             },
             newGameFocused: () => {
                 expect(screen.getByTestId(CelebrationTestIds.NewGame)).toHaveFocus();
+            },
+            tableFocused: () => {
+                expect(screen.getByTestId(BoardTestIds.Stock)).toHaveFocus();
             },
             // Running means frames keep being requested; stopped means none are, whether or not a canvas remains.
             cascadeRunning: (isRunning) => {

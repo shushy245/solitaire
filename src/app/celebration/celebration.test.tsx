@@ -45,6 +45,16 @@ describe('Celebration', () => {
         driver.assert.cascadeRunning(false);
     });
 
+    it('hands focus back to the table when it closes', async () => {
+        driver.given.oneMoveFromWon(DrawMode.One);
+        await driver.when.created();
+        driver.when.winningCardSentUp();
+
+        driver.click.newGame();
+
+        driver.assert.tableFocused();
+    });
+
     it('skips the cascade for a player who prefers reduced motion, and still shows the win', async () => {
         driver.given.oneMoveFromWon(DrawMode.One);
         driver.given.reducedMotion();

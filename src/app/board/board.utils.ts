@@ -28,6 +28,9 @@ export enum DealPhase {
     Settled = 'settled',
 }
 
+// The table's one focusable control (the stock): where focus goes when a panel over the table closes.
+export const TABLE_FOCUS_ID = 'table-focus';
+
 // Motion timings — mirrored by the transition durations in board.module.scss.
 export const STACK_HOLD_MS = 60;
 export const DEAL_STAGGER_MS = 35;

@@ -39,6 +39,7 @@ import {
     stockLabelFor,
     stockSlot,
     suitGlyphMap,
+    TABLE_FOCUS_ID,
 } from './board.utils.ts';
 
 import styles from './board.module.scss';
@@ -126,6 +127,7 @@ export const Board = (): JSX.Element => {
         >
             <button
                 type="button"
+                id={TABLE_FOCUS_ID}
                 aria-label={stockLabelFor(game)}
                 aria-disabled={!isSettled(dealPhase)}
                 className={joinClassNames(

@@ -10,6 +10,7 @@ import { canUndo } from '../session/session.utils.ts';
 import { useSound } from '../sound/sound-provider.tsx';
 import { useUndoShortcut } from './use-undo-shortcut.ts';
 import { useHintShortcut } from './use-hint-shortcut.ts';
+import { isFocusLost } from '../use-hand-focus-to-table.ts';
 import { useFocusOnAppear } from '../use-focus-on-appear.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
 import {
@@ -217,9 +218,6 @@ const ModeButton = ({ mode, isSelected, onSelect }: ModeButtonProps): JSX.Elemen
         </button>
     );
 };
-
-// Removing the focused element hands focus back to the page itself.
-const isFocusLost = (): boolean => document.activeElement === document.body;
 
 const LeaveConfirm = ({ question, onLeave, onStay }: LeaveConfirmProps): JSX.Element => {
     // Whatever had focus when the question appeared (the button that asked) gets it back when the question

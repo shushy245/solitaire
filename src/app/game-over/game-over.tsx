@@ -7,6 +7,7 @@ import { GameOverPanelProps } from './game-over.utils.ts';
 import { GameOverTestIds } from './game-over.test-ids.ts';
 import { useFocusOnAppear } from '../use-focus-on-appear.ts';
 import { canUndoToUnstuck } from '../session/session.utils.ts';
+import { useHandFocusToTableOnClose } from '../use-hand-focus-to-table.ts';
 
 import styles from './game-over.module.scss';
 
@@ -45,9 +46,20 @@ const GameOverPanel = ({ canUndo: isUndoable, onUndo, onNewGame, onClose }: Game
     const titleId = useId();
     // The panel takes focus, so a keyboard player can step back (or, with nothing to undo, deal) straight away.
     const handleFirstActionRef = useFocusOnAppear<HTMLButtonElement>();
+    useHandFocusToTableOnClose();
+
+    // Escape closes it while focus is inside — the page-wide Escape belongs to the "leave this game?" question.
+    const handleKeyDown = (event: React.KeyboardEvent): void => {
+        if (event.key === 'Escape') onClose();
+    };
 
     return (
-        <section aria-labelledby={titleId} className={styles.panel} data-testid={GameOverTestIds.Panel}>
+        <section
+            aria-labelledby={titleId}
+            className={styles.panel}
+            data-testid={GameOverTestIds.Panel}
+            onKeyDown={handleKeyDown}
+        >
             <button
                 type="button"
                 aria-label="Close"

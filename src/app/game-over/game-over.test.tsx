@@ -88,6 +88,35 @@ describe('GameOver', () => {
         driver.assert.panelShown(false);
     });
 
+    it('hands focus back to the table when it is closed', async () => {
+        driver.given.alreadyStuck();
+        await driver.when.created();
+
+        driver.click.close();
+
+        driver.assert.tableFocused();
+    });
+
+    it('hands focus to the table when New game deals, and it stays there while the deal flies out', async () => {
+        driver.given.alreadyStuck();
+        await driver.when.created();
+
+        driver.click.newGame();
+        driver.when.dealSettled();
+
+        driver.assert.tableFocused();
+    });
+
+    it('closes on Escape while focus is in it', async () => {
+        driver.given.alreadyStuck();
+        await driver.when.created();
+
+        driver.press.escape();
+
+        driver.assert.panelShown(false);
+        driver.assert.tableFocused();
+    });
+
     it('comes back once the game has been un-stuck and gets stuck again', async () => {
         driver.given.oneMoveFromStuck(DrawMode.One);
         await driver.when.created();

@@ -6,6 +6,7 @@ import { useGame } from '../game-provider.tsx';
 import { useFocusOnAppear } from '../use-focus-on-appear.ts';
 import { CelebrationTestIds } from './celebration.test-ids.ts';
 import { usePrefersReducedMotion } from '../motion/motion-provider.tsx';
+import { useHandFocusToTableOnClose } from '../use-hand-focus-to-table.ts';
 import { CascadeModel, isCascadeOver, makeCascade, stepCascade } from './cascade.utils.ts';
 import { measureFoundationRect, paintCard, prepareCanvas, readCardPaint } from './cascade-canvas.ts';
 import {
@@ -124,6 +125,7 @@ const WinOverlay = ({ elapsedMs, score, onNewGame }: WinOverlayProps): JSX.Eleme
     const titleId = useId();
     // The win takes focus, so a keyboard player can deal again straight away.
     const handleNewGameRef = useFocusOnAppear<HTMLButtonElement>();
+    useHandFocusToTableOnClose();
 
     return (
         <section aria-labelledby={titleId} className={styles.overlay} data-testid={CelebrationTestIds.Overlay}>

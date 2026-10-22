@@ -10,6 +10,7 @@ import { DrawMode, makeDrawMove, MoveKind, Rank, Suit } from '~/engine/index.ts'
 import { GameOver } from './game-over.tsx';
 import { Board } from '../board/board.tsx';
 import { HintProvider } from '../hint/hint-provider.tsx';
+import { BoardTestIds } from '../board/board.test-ids.ts';
 import { GameOverTestIds } from './game-over.test-ids.ts';
 import { SessionModel } from '../session/session.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
@@ -80,12 +81,14 @@ export type GameOverDriver = {
         undoneElsewhere: () => void;
     };
     click: { undo: () => void; newGame: () => void; close: () => void };
+    press: { escape: () => void };
     time: { pass: (ms: number) => void };
     assert: {
         panelShown: (isShown: boolean) => void;
         panelNeverAppeared: () => void;
         undoFocused: () => void;
         newGameFocused: () => void;
+        tableFocused: () => void;
         undoEnabled: (isEnabled: boolean) => void;
         movesMade: (moves: number) => void;
         timePlayed: (ms: number) => void;
@@ -94,6 +97,12 @@ export type GameOverDriver = {
 };
 
 // The board renders beside the panel: it tells the hint provider when the deal has settled.
+const clickFocused = (testId: string): void => {
+    const button = screen.getByTestId(testId);
+    button.focus();
+    fireEvent.click(button);
+};
+
 export const makeGameOverDriver = (): GameOverDriver => {
     vi.useFakeTimers();
     const scenario: { session: SessionModel } = { session: aSession().build() };
@@ -206,15 +215,22 @@ export const makeGameOverDriver = (): GameOverDriver => {
                 });
             },
         },
+        // A mouse click focuses the button in Chrome, so the panel goes away with focus inside it.
         click: {
             undo: () => {
-                fireEvent.click(screen.getByTestId(GameOverTestIds.Undo));
+                clickFocused(GameOverTestIds.Undo);
             },
             newGame: () => {
-                fireEvent.click(screen.getByTestId(GameOverTestIds.NewGame));
+                clickFocused(GameOverTestIds.NewGame);
             },
             close: () => {
-                fireEvent.click(screen.getByTestId(GameOverTestIds.Close));
+                clickFocused(GameOverTestIds.Close);
+            },
+        },
+        press: {
+            escape: () => {
+                const focused = document.activeElement ?? document.body;
+                fireEvent.keyDown(focused, { key: 'Escape' });
             },
         },
         time: {
@@ -238,6 +254,9 @@ export const makeGameOverDriver = (): GameOverDriver => {
             },
             newGameFocused: () => {
                 expect(screen.getByTestId(GameOverTestIds.NewGame)).toHaveFocus();
+            },
+            tableFocused: () => {
+                expect(screen.getByTestId(BoardTestIds.Stock)).toHaveFocus();
             },
             undoEnabled: (isEnabled) => {
                 if (isEnabled) expect(screen.getByTestId(GameOverTestIds.Undo)).toBeEnabled();
