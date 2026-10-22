@@ -13,6 +13,15 @@ const countFaceDown = (state: GameStateModel): number =>
 
 const countHome = (state: GameStateModel): number => state.foundations.reduce((sum, pile) => sum + pile.length, 0);
 
+const countDeck = (state: GameStateModel): number => state.stock.length + state.waste.length;
+
+// Only cards taken down off foundations since `earlier`: no card turned over, no deck card played, fewer cards home.
+// Face-down and deck counts only ever fall, so every position between the two had the same face-down cards and deck.
+export const isTakeDownOf = ({ earlier, later }: { earlier: GameStateModel; later: GameStateModel }): boolean =>
+    countFaceDown(later) === countFaceDown(earlier) &&
+    countDeck(later) === countDeck(earlier) &&
+    countHome(later) < countHome(earlier);
+
 // Progress on the table, measured against where the search started — never move by move, so a card taken down
 // off a foundation and put back is not progress.
 const isTableProgress = ({ from, to }: { from: GameStateModel; to: GameStateModel }): boolean =>

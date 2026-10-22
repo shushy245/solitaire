@@ -7,7 +7,7 @@ import { aCard, aGameState } from '~/testkit/builders/index.ts';
 import { dealGame } from './deal.ts';
 import { listLegalMoves } from './rules.ts';
 import { isRevealingMove } from './click-move.ts';
-import { isStuck, judgeStuck, StuckVerdict } from './stuck.ts';
+import { isStuck, isTakeDownOf, judgeStuck, StuckVerdict } from './stuck.ts';
 import { DrawMode, GameStateModel, Move, MoveKind, Rank, Suit } from './model.ts';
 
 const up = ({ rank, suit }: { rank: Rank; suit: Suit }) => aCard().withRank(rank).withSuit(suit).build();
@@ -199,5 +199,44 @@ describe('judgeStuck', () => {
     it('says it gave up when the positions to search run past its limit', () => {
         expect(judgeStuck({ start: shiftingTable, maxPositions: 1 })).toBe(StuckVerdict.GaveUp);
         expect(judgeStuck({ start: shiftingTable, maxPositions: 1000 })).toBe(StuckVerdict.Stuck);
+    });
+});
+
+describe('isTakeDownOf', () => {
+    const aceOfHearts = up({ rank: Rank.Ace, suit: Suit.Hearts });
+    const twoOfSpades = up({ rank: Rank.Two, suit: Suit.Spades });
+    const hidden = down({ rank: Rank.Four, suit: Suit.Clubs });
+    const deck = [down({ rank: Rank.Nine, suit: Suit.Diamonds })];
+    const earlier = aGameState()
+        .withStock(deck)
+        .withFoundation({ index: 0, cards: [aceOfHearts] })
+        .withColumn({ index: 0, cards: [hidden, twoOfSpades] })
+        .build();
+    const takenDown = aGameState()
+        .withStock(deck)
+        .withColumn({ index: 0, cards: [hidden, twoOfSpades, aceOfHearts] })
+        .build();
+
+    it('is a take-down when the later position has the same face-down cards and deck, and fewer cards home', () => {
+        expect(isTakeDownOf({ earlier, later: takenDown })).toBe(true);
+    });
+
+    it('is not a take-down when as many cards are home', () => {
+        expect(isTakeDownOf({ earlier, later: earlier })).toBe(false);
+    });
+
+    it('is not a take-down once a card was turned over or a deck card played since', () => {
+        const turnedOver = aGameState()
+            .withStock(deck)
+            .withColumn({ index: 0, cards: [up({ rank: Rank.Four, suit: Suit.Clubs })] })
+            .withColumn({ index: 1, cards: [twoOfSpades, aceOfHearts] })
+            .build();
+        const deckPlayed = aGameState()
+            .withColumn({ index: 0, cards: [hidden, twoOfSpades, aceOfHearts] })
+            .withColumn({ index: 1, cards: [up({ rank: Rank.Nine, suit: Suit.Diamonds })] })
+            .build();
+
+        expect(isTakeDownOf({ earlier, later: turnedOver })).toBe(false);
+        expect(isTakeDownOf({ earlier, later: deckPlayed })).toBe(false);
     });
 });
