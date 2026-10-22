@@ -1,4 +1,13 @@
-import { findClickMove, GameStateModel, hasStock, Rank, Suit, SuitColor, suitColorOf } from '~/engine/index.ts';
+import {
+    findClickMove,
+    GameStateModel,
+    hasStock,
+    PileModel,
+    Rank,
+    Suit,
+    SuitColor,
+    suitColorOf,
+} from '~/engine/index.ts';
 
 import {
     CardSlotModel,
@@ -142,17 +151,38 @@ export const shownCardsFor = ({
 export const inStableOrder = <T extends { slot: CardSlotModel }>(cards: readonly T[]): T[] =>
     [...cards].sort((a, b) => a.slot.card.id.localeCompare(b.slot.card.id));
 
-// The browser counts quick clicks near one spot in `detail`, even across cards. Only a repeat on the card the
-// previous click just played is the second half of a double-click; a quick click on another card is a play.
+// The card a click played, and the one it left showing under the pointer (the card beneath it in its pile).
+export type LastPlayModel = { cardId: string; uncoveredId: string | undefined };
+
+const cardBelow = ({ pile, cardId }: { pile: PileModel; cardId: string }): string | undefined => {
+    const below = pile[pile.findIndex((card) => card.id === cardId) - 1];
+
+    return below === undefined ? undefined : below.id;
+};
+
+export const makeLastPlay = ({ state, cardId }: { state: GameStateModel; cardId: string }): LastPlayModel => ({
+    cardId,
+    uncoveredId: [state.waste, ...state.tableau].map((pile) => cardBelow({ pile, cardId })).find(isDefined),
+});
+
+const isDefined = (cardId: string | undefined): cardId is string => cardId !== undefined;
+
+// The browser counts quick clicks near one spot in `detail`, even across cards. A repeat on the card the previous
+// click just played, or on the card that play left under the pointer, is the second half of a double-click; a quick
+// click on any other card is a play.
 export const isRepeatClick = ({
     cardId,
     detail,
-    lastPlayed,
+    lastPlay,
 }: {
     cardId: string;
     detail: number;
-    lastPlayed: string | undefined;
-}): boolean => detail > 1 && lastPlayed === cardId;
+    lastPlay: LastPlayModel | undefined;
+}): boolean => detail > 1 && lastPlay !== undefined && (lastPlay.cardId === cardId || lastPlay.uncoveredId === cardId);
+
+// A card on a foundation: a click never plays it (it comes down only by drag), so it neither plays nor shakes.
+export const isHomeCard = ({ state, cardId }: { state: GameStateModel; cardId: string }): boolean =>
+    state.foundations.some((pile) => pile.some((card) => card.id === cardId));
 
 export const hasClickMove = (args: { state: GameStateModel; cardId: string }): boolean =>
     findClickMove(args) !== undefined;

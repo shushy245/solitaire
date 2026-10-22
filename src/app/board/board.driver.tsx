@@ -26,6 +26,7 @@ export type BoardDriver = {
         dealtGame: (args: { seed: number; drawMode: DrawMode }) => void;
         column: (args: { index: number; cards: readonly CardScenario[] }) => void;
         waste: (cards: readonly CardName[]) => void;
+        foundation: (args: { index: number; cards: readonly CardName[] }) => void;
         emptyStockWithWaste: () => void;
         stock: (cards: readonly CardName[]) => void;
         readyToAutoCompleteAfterMoves: (moves: number) => void;
@@ -160,6 +161,9 @@ export const makeBoardDriver = (): BoardDriver => {
             },
             waste: (cards) => {
                 scenario.builder = scenario.builder.withWaste(cards.map(buildCard));
+            },
+            foundation: ({ index, cards }) => {
+                scenario.builder = scenario.builder.withFoundation({ index, cards: cards.map(buildCard) });
             },
             emptyStockWithWaste: () => {
                 scenario.builder = scenario.builder

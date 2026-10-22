@@ -115,6 +115,37 @@ describe('Board', () => {
         driver.assert.cardIn({ card: { rank: Rank.Ace, suit: Suit.Spades }, pile: PileKind.Foundation, pileIndex: 1 });
     });
 
+    it('ignores the second click of a double-click on the card the first click uncovered', async () => {
+        driver.given.column({
+            index: 1,
+            cards: [
+                { rank: Rank.Eight, suit: Suit.Diamonds, faceUp: false },
+                { rank: Rank.Seven, suit: Suit.Spades },
+            ],
+        });
+        driver.given.column({ index: 3, cards: [{ rank: Rank.Eight, suit: Suit.Hearts }] });
+        driver.given.column({ index: 5, cards: [{ rank: Rank.Nine, suit: Suit.Clubs }] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        await driver.click.card({ rank: Rank.Seven, suit: Suit.Spades });
+        await driver.click.cardRightAfterAnother({ rank: Rank.Eight, suit: Suit.Diamonds });
+
+        driver.assert.cardIn({ card: { rank: Rank.Seven, suit: Suit.Spades }, pile: PileKind.Tableau, pileIndex: 3 });
+        driver.assert.cardIn({ card: { rank: Rank.Eight, suit: Suit.Diamonds }, pile: PileKind.Tableau, pileIndex: 1 });
+    });
+
+    it('ignores a click on a card already home — no shake, no sound', async () => {
+        driver.given.foundation({ index: 0, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
+        await driver.when.created();
+        driver.when.dealt();
+
+        await driver.click.card({ rank: Rank.Ace, suit: Suit.Hearts });
+
+        driver.assert.shaking({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isShaking: false });
+        driver.assert.snapBackSounds(0);
+    });
+
     it('ignores a click on a face-down card — no shake, no sound', async () => {
         driver.given.column({
             index: 0,

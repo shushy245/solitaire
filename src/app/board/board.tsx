@@ -20,7 +20,10 @@ import {
     dealDelayClassName,
     FACE_DOWN_LABEL,
     hasClickMove,
+    isHomeCard,
     isRepeatClick,
+    LastPlayModel,
+    makeLastPlay,
     isShakingCard,
     ShakeModel,
     inStableOrder,
@@ -74,22 +77,23 @@ export const Board = (): JSX.Element => {
 
     const [shake, setShake] = useState<ShakeModel | undefined>(undefined);
     // The card the latest click played, so the second click of a double-click on it does not play it on again.
-    const lastPlayed = useRef<string | undefined>(undefined);
+    const lastPlay = useRef<LastPlayModel | undefined>(undefined);
 
     // A click plays the card's obvious move (resolved again by the reducer against the latest game); a card with
     // nothing to do shakes instead. The click a drag's release fires is not a play.
     const handleCardClick = useCallback(
         ({ cardId, detail }: { cardId: string; detail: number }): void => {
             if (!canPlayCards || isDragClick()) return;
-            if (isRepeatClick({ cardId, detail, lastPlayed: lastPlayed.current })) return;
+            if (isRepeatClick({ cardId, detail, lastPlay: lastPlay.current })) return;
+            if (isHomeCard({ state: game, cardId })) return;
             if (hasClickMove({ state: game, cardId })) {
-                lastPlayed.current = cardId;
+                lastPlay.current = makeLastPlay({ state: game, cardId });
                 playCard(cardId);
 
                 return;
             }
 
-            lastPlayed.current = undefined;
+            lastPlay.current = undefined;
             play(SoundKind.SnapBack);
             setShake({ cardId, game });
         },
