@@ -29,7 +29,7 @@ const assertRing = ({ cardId, isPainted }: { cardId: string; isPainted: boolean 
     });
 };
 
-const shared = { pressedAt: 0 };
+const shared = { pressedAt: 0, boardTop: 0 };
 
 export const hintDriver = {
     given: {
@@ -38,6 +38,13 @@ export const hintDriver = {
         dealWithTwoColumnHints: (): void => {
             cy.visit('/?seed=1');
             waitForSettledDeal();
+        },
+    },
+    remember: {
+        boardTop: (): void => {
+            cy.findByTestId(BoardTestIds.Board).then((board) => {
+                shared.boardTop = board[0]?.getBoundingClientRect().top ?? Number.NaN;
+            });
         },
     },
     when: {
@@ -81,6 +88,18 @@ export const hintDriver = {
         },
         noMovesLeftSaid: (): void => {
             cy.findByTestId(HudTestIds.HintStatus).should('contain.text', 'No moves left');
+        },
+        // Read in one retry with the message: once it clears (after ~2s) a moved table is back in place.
+        boardNotMovedWhileNoMovesSaid: (): void => {
+            cy.findByTestId(HudTestIds.HintStatus).should((status) => {
+                const board = status[0]?.ownerDocument.querySelector(`[data-testid="${BoardTestIds.Board}"]`);
+                const top = board?.getBoundingClientRect().top;
+
+                if (!status.text().includes('No moves left'))
+                    throw new Error(`hint e2e: "No moves left" is not showing — found "${status.text()}"`);
+                if (top !== shared.boardTop)
+                    throw new Error(`hint e2e: the table moved from y=${shared.boardTop} to y=${String(top)}`);
+            });
         },
     },
 };

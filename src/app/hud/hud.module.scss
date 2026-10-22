@@ -139,9 +139,11 @@
     text-decoration: line-through;
 }
 
-// The hint's 'no moves' line, a full line under the status row; empty (and zero-height) otherwise.
+// The hint's 'no moves' line, a full line under the status row. Its height is kept while empty, so the message
+// appears without moving the table.
 .hintStatus {
     flex: 1 0 100%;
+    min-height: 1lh;
     margin: 0;
     color: var(--text);
     font-size: 1rem;

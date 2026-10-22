@@ -24,11 +24,12 @@ describe('hints in a real browser', () => {
         hintDriver.assert.notRinged(jackOntoQueen);
     });
 
-    it('says "No moves left" in a game where no progress is possible', () => {
+    it('says "No moves left" in a game where no progress is possible, without moving the table', () => {
         gameOverDriver.given.dealStuckFromTheStart();
+        hintDriver.remember.boardTop();
 
         hintDriver.when.hintButtonPressed();
 
-        hintDriver.assert.noMovesLeftSaid();
+        hintDriver.assert.boardNotMovedWhileNoMovesSaid();
     });
 });
