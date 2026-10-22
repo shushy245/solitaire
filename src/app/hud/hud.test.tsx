@@ -5,7 +5,7 @@ import { aGameState } from '~/testkit/builders/index.ts';
 
 import { HudTestIds } from './hud.test-ids.ts';
 import { HINT_SHOWN_MS } from '../hint/hint-timing.ts';
-import { HudDriver, makeHudDriver } from './hud.driver.tsx';
+import { HudDriver, makeHudDriver, ShortcutModifier } from './hud.driver.tsx';
 
 describe('Hud', () => {
     let driver: HudDriver;
@@ -105,8 +105,8 @@ describe('Hud', () => {
             driver.given.session((s) => s.asPlayed(4));
             await driver.when.created();
 
-            driver.press.undoShortcut({ modifier: 'meta' });
-            driver.press.undoShortcut({ modifier: 'meta', isRepeat: true });
+            driver.press.undoShortcut({ modifier: ShortcutModifier.Meta });
+            driver.press.undoShortcut({ modifier: ShortcutModifier.Meta, isRepeat: true });
 
             driver.assert.moves('3');
         });
@@ -115,7 +115,7 @@ describe('Hud', () => {
             driver.given.session((s) => s.asPlayed(4));
             await driver.when.created();
 
-            driver.press.undoShortcut({ modifier: 'ctrl' });
+            driver.press.undoShortcut({ modifier: ShortcutModifier.Ctrl });
 
             driver.assert.moves('3');
         });

@@ -16,6 +16,12 @@ import { GameProvider, useGame } from '../game-provider.tsx';
 import { HintProvider, useHint } from '../hint/hint-provider.tsx';
 import { AUTO_COMPLETE_STEP_MS } from '../game-provider.utils.ts';
 
+// The undo shortcut's modifier: Ctrl on Windows and Linux, Cmd (meta) on a Mac.
+export enum ShortcutModifier {
+    Ctrl = 'ctrl',
+    Meta = 'meta',
+}
+
 export type HudDriver = {
     given: {
         session: (build: (builder: ReturnType<typeof aSession>) => ReturnType<typeof aSession>) => void;
@@ -41,7 +47,7 @@ export type HudDriver = {
         hint: () => void;
     };
     press: {
-        undoShortcut: (args: { modifier: 'ctrl' | 'meta'; isRepeat?: boolean }) => void;
+        undoShortcut: (args: { modifier: ShortcutModifier; isRepeat?: boolean }) => void;
         escape: () => void;
         hintKey: (args?: { withCtrl?: boolean; isRepeat?: boolean }) => void;
     };
@@ -197,8 +203,8 @@ export const makeHudDriver = (): HudDriver => {
             undoShortcut: ({ modifier, isRepeat = false }) => {
                 fireEvent.keyDown(window, {
                     key: 'z',
-                    ctrlKey: modifier === 'ctrl',
-                    metaKey: modifier === 'meta',
+                    ctrlKey: modifier === ShortcutModifier.Ctrl,
+                    metaKey: modifier === ShortcutModifier.Meta,
                     repeat: isRepeat,
                 });
             },
