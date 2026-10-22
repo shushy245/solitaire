@@ -1,5 +1,11 @@
 # Changelog
 
+## two-tabs — 2026-10-22
+- **Pain:** with the game open in two tabs, a tab left in the background kept rewriting its old game over the one being played every second, so a reload could bring back the wrong game.
+- **Fix:** only the tab the player can see saves; a background tab's ticking clock writes nothing.
+- **Trade-off:** the last tab looked at wins — switching back to an old tab and playing on saves that tab's game, not the other one's.
+- **Result:** checked in Chrome with two tabs (the saved game held for the visible tab while the hidden one ticked); 409 tests pass (`vitest`, 3 more) plus the persistence browser tests; the review found nothing; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## stuck-polish — 2026-10-22
 - **Pain:** once a game had run out of moves, the "No more moves" notice got in the way: its Undo needed one press per card drawn since, New game asked "leave this game?" on top of it, it could not be put away, and the clock kept running on a game nobody could play.
 - **Fix:** the notice's Undo now jumps straight back to the last position the game could still be won from, New game deals at once, the notice has a close button that keeps it away while the game stays stuck, and the clock stops until the player undoes out of it.

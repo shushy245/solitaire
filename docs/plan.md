@@ -241,7 +241,7 @@ type GameContextValue = {
   - `?seed=N&draw=3` replays a turn-3 deal; a missing or unknown `draw` means turn 1
   - the stock ignores clicks while the deal is still flying out
   - saving logs under the save's own name, not the load's
-- Deferred (BF, recorded): BF-1 two open tabs overwrite each other's saved game on every tick (last writer wins) —
+- Deferred (BF, recorded): BF-1 (fixed in `two-tabs`) two open tabs overwrite each other's saved game on every tick (last writer wins) —
   fix: save only from the visible tab and flush on hide. BF-2 a refused game write (quota) leaves the last good
   save, so a reload resumes an older position without a word — measured ~0.49MB per 500 undo steps against a ~5MB
   quota, so it needs thousands of moves; fix: tell the player, or trim history.
@@ -454,7 +454,7 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   - pre-mortem: undo-to-unstuck runs the stuck search per history entry — bounded by the draws made after getting
     stuck; an auto-move or New game mid-way never leaves a half-undone state
 
-### Story `two-tabs` — BF-1 from the `epic-review` triage (2026-10-22, autonomous run)
+### Story `two-tabs` — BF-1 from the `epic-review` triage (2026-10-22, autonomous run) ✅
 - Owns: `src/app/persistence/` (new `visible-tab-save.ts`), `src/utils/` (page visibility port + browser adapter),
   `src/main.tsx` (wiring)
 - Depends on: stuck-polish
@@ -795,6 +795,15 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   focus visible, no console errors; the panel covers no card at any width; the clock read 0:00 after the one move that
   made the game stuck. Known: panel note 39–40 characters; focus lands on the panel's first action on appear.
   Observed: after Close, nothing on screen says the game is stuck (by decision: Hint still says "No moves left").
+
+### `two-tabs` (code-review low, 0 findings; visual pass A+B)
+- Checked in Chrome (isolated profile, two tabs): with one tab made to report "hidden" and its clock ticking, the
+  saved game stayed the other tab's for 4s (before: rewritten every second). Two tabs in separate windows are both
+  visible and both save — last writer wins, as designed.
+- Kept (review note): a tab shown again still holds its own game and its next change overwrites the save — "last tab
+  looked at wins" (the plan's decision). Option for the user: reload the saved game when a tab is shown again.
+- Visual A+B (`?seed=1` settled; after a draw and a reload; 390/768/1280): no overflow, taps ≥44, text ≥16px,
+  Lighthouse a11y 100, traversal clean, no console errors; the draw survived the reload. Nothing drawn changed.
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
