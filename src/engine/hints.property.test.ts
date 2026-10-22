@@ -7,8 +7,9 @@ import { dealGame } from './deal.ts';
 import { isStuck } from './stuck.ts';
 import { applyMove } from './apply.ts';
 import { listHints } from './hints.ts';
+import { listLegalMoves } from './rules.ts';
 import { isFaceDown, isWon } from './selectors.ts';
-import { DrawMode, GameStateModel } from './model.ts';
+import { DrawMode, GameStateModel, Move, MoveKind } from './model.ts';
 
 // Long enough to cycle a full deck twice in turn 3 and still play the table moves between.
 const MAX_HINT_STEPS = 200;
@@ -69,6 +70,17 @@ const followFirstHint = (start: GameStateModel): Ending => {
     return walk.length > MAX_HINT_STEPS ? Ending.Looped : Ending.NoHint;
 };
 
+// Where every card lies, and nothing else (the move count and score always change).
+const cardsKey = (state: GameStateModel): string =>
+    JSON.stringify([state.stock, state.waste, state.foundations, state.tableau]);
+
+const deckKinds: ReadonlySet<MoveKind> = new Set([MoveKind.Draw, MoveKind.Recycle]);
+
+const isDeckMove = (move: Move): boolean => deckKinds.has(move.kind);
+
+const makesProgress = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
+    !isDeckMove(move) && isProgress({ from: state, to: applyMove({ state, move }) });
+
 const positionArb = fc.record({
     seed: fc.integer({ min: 0, max: 2 ** 31 - 1 }),
     drawMode: fc.constantFrom(DrawMode.One, DrawMode.Three),
@@ -88,6 +100,33 @@ describe('following the first hint', () => {
                 const start = positionFrom(position);
 
                 expect([Ending.Progress, Ending.Won, Ending.Stuck]).toContain(followFirstHint(start));
+            }),
+            { numRuns: 300 },
+        );
+    });
+
+    it('never leads back to where it started — a hint that is undone by the next hint is pointless', () => {
+        fc.assert(
+            fc.property(positionArb, (position) => {
+                const start = positionFrom(position);
+                const next = afterFirstHint(start);
+                const back = next === undefined ? undefined : afterFirstHint(next);
+
+                expect(back === undefined ? undefined : cardsKey(back)).not.toBe(cardsKey(start));
+            }),
+            { numRuns: 300 },
+        );
+    });
+
+    it('never points at the deck while another move would make progress', () => {
+        fc.assert(
+            fc.property(positionArb, (position) => {
+                const start = positionFrom(position);
+                const [hint] = listHints(start);
+
+                if (hint === undefined || !isDeckMove(hint)) return;
+
+                expect(listLegalMoves(start).filter((move) => makesProgress({ state: start, move }))).toEqual([]);
             }),
             { numRuns: 300 },
         );
