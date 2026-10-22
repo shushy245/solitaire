@@ -8,6 +8,7 @@ import {
     canUndo,
     canUndoToUnstuck,
     cardsTakenDown,
+    isGameOverAt,
     makeSession,
     reduceSession,
     SessionAction,
@@ -369,6 +370,59 @@ describe('reduceSession — undo to the last position that was not stuck', () =>
 
         expect(reduceSession({ session, action: undoToUnstuck })).toBe(session);
         expect(canUndoToUnstuck(session)).toBe(false);
+    });
+});
+
+describe('game over after a card is taken down off a foundation', () => {
+    const hiddenTwo = aCard().withSuit(Suit.Hearts).withRank(Rank.Two).asFaceDown().build();
+    const blackFive = aCard().withSuit(Suit.Spades).withRank(Rank.Five).build();
+    const redSix = aCard().withSuit(Suit.Hearts).withRank(Rank.Six).build();
+    const aceOfDiamonds = aCard().withSuit(Suit.Diamonds).withRank(Rank.Ace).build();
+    const twoOfSpades = aCard().withSuit(Suit.Spades).withRank(Rank.Two).build();
+    const deadStock = [Suit.Clubs, Suit.Diamonds].map((suit) =>
+        aCard().withSuit(suit).withRank(Rank.Nine).asFaceDown().build(),
+    );
+    // Playing the five onto the six turns the two over, and then nothing plays — but the Ace of diamonds can always
+    // come down onto the two of spades and go back up.
+    const oneMoveFromStuck = aGameState()
+        .withFoundation({ index: 0, cards: [aceOfDiamonds] })
+        .withColumn({ index: 0, cards: [hiddenTwo, blackFive] })
+        .withColumn({ index: 1, cards: [redSix] })
+        .withColumn({
+            index: 2,
+            cards: [aCard().withSuit(Suit.Clubs).withRank(Rank.Three).asFaceDown().build(), twoOfSpades],
+        })
+        .withStock(deadStock)
+        .build();
+    const act = (session: SessionModel, move: Move) =>
+        reduceSession({ session, action: { kind: SessionActionKind.Move, move } });
+    const lastMove: Move = { kind: MoveKind.TableauToTableau, cardId: blackFive.id, from: 0, to: 1 };
+    const takeDown: Move = { kind: MoveKind.FoundationToTableau, cardId: aceOfDiamonds.id, from: 0, to: 2 };
+    const putBack: Move = { kind: MoveKind.TableauToFoundation, cardId: aceOfDiamonds.id, from: 2, to: 0 };
+    const unstuck = aSession().withGame(oneMoveFromStuck).asStarted().build();
+    const stuck = act(unstuck, lastMove);
+
+    it('is game over when a card is taken down in a stuck game, and stays so once it is put back', () => {
+        const takenDown = act(stuck, takeDown);
+
+        expect(isGameOverAt(stuck)).toBe(true);
+        expect(isGameOverAt(takenDown)).toBe(true);
+        expect(isGameOverAt(act(takenDown, putBack))).toBe(true);
+    });
+
+    it('is not game over when the same card is taken down in a game that was not stuck', () => {
+        expect(isGameOverAt(act(unstuck, takeDown))).toBe(false);
+    });
+
+    it('the panel’s Undo leaps past a take-down made after getting stuck to the last position that was not stuck', () => {
+        const putBackAfterTakeDown = act(act(stuck, takeDown), putBack);
+
+        const next = reduceSession({
+            session: putBackAfterTakeDown,
+            action: { kind: SessionActionKind.UndoToUnstuck },
+        });
+
+        expect(next.game).toBe(oneMoveFromStuck);
     });
 });
 

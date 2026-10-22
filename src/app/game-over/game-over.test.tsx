@@ -115,6 +115,21 @@ describe('GameOver', () => {
         driver.assert.timePlayed(CLOCK_TICK_MS * 5);
     });
 
+    it('keeps the clock stopped and a closed panel closed while a card is taken down and put back', async () => {
+        driver.given.oneMoveFromStuckWithAceHome();
+        await driver.when.created();
+        driver.when.lastMovePlayed();
+        driver.click.close();
+
+        driver.when.aceTakenDown();
+        driver.time.pass(CLOCK_TICK_MS * 3);
+        driver.when.acePutBack();
+        driver.time.pass(CLOCK_TICK_MS * 3);
+
+        driver.assert.timePlayed(0);
+        driver.assert.panelShown(false);
+    });
+
     it('shows straight away for a game resumed already stuck', async () => {
         driver.given.alreadyStuck();
 

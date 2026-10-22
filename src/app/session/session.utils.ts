@@ -6,6 +6,7 @@ import {
     GameStateModel,
     isAutoCompletable,
     isStuck,
+    isTakeDownOf,
     isWon,
     Move,
     nextAutoMove,
@@ -112,13 +113,23 @@ const isStuckRemembered = (game: GameStateModel): boolean => {
     return answer;
 };
 
-// Where the game last was not stuck, searched from the newest position back: a stuck game stays stuck whatever is
-// drawn, so the search walks back over the draws made after getting stuck to the position it lands on.
+// Game over: stuck, or stuck earlier in this game with only cards taken down off foundations since — everything such
+// a position can reach, the stuck one could reach too, so putting a card back is not progress. Only earlier positions
+// with more cards home are searched, so a long run of draws in a game that is not stuck searches nothing new.
+export const isGameOverAt = ({ game, history }: Pick<SessionModel, 'game' | 'history'>): boolean =>
+    isStuckRemembered(game) ||
+    history.some((earlier) => isTakeDownOf({ earlier, later: game }) && isStuckRemembered(earlier));
+
+// Where the game last was not over, searched from the newest position back: a stuck game stays stuck whatever is
+// drawn or taken down, so the search walks back over those moves to the position it lands on. Each position is
+// judged against the history before it, never the moves that came after.
 const lastUnstuckIndex = (state: UndoStateModel): number | undefined => {
-    if (!canUndo(state) || !isStuckRemembered(state.game)) return undefined;
+    if (!canUndo(state) || !isGameOverAt(state)) return undefined;
 
     const newestFirst = state.history.map((game, index) => ({ game, index })).reverse();
-    const found = newestFirst.find(({ game }) => !isStuckRemembered(game));
+    const found = newestFirst.find(
+        ({ game, index }) => !isGameOverAt({ game, history: state.history.slice(0, index) }),
+    );
 
     return found === undefined ? undefined : found.index;
 };

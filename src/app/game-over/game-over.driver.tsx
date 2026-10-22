@@ -44,6 +44,19 @@ const oneMoveFromStuckWithDeck = aGameState()
     .withStock(deadStock)
     .build();
 
+// The same, with the Ace of diamonds home: it can come down onto the two of spades and go back up, stuck or not.
+const aceOfDiamonds = aCard().withRank(Rank.Ace).withSuit(Suit.Diamonds).build();
+const twoOfSpades = aCard().withRank(Rank.Two).withSuit(Suit.Spades).build();
+const oneMoveFromStuckWithAceHome = aGameState()
+    .withFoundation({ index: 0, cards: [aceOfDiamonds] })
+    .withColumn({ index: 0, cards: [hiddenTwo, blackFive] })
+    .withColumn({ index: 1, cards: [redSix] })
+    .withColumn({
+        index: 2,
+        cards: [aCard().withRank(Rank.Three).withSuit(Suit.Clubs).asFaceDown().build(), twoOfSpades],
+    })
+    .build();
+
 const stuck = aGameState()
     .withColumn({ index: 0, cards: [hiddenTwo, blackFive] })
     .build();
@@ -52,6 +65,7 @@ export type GameOverDriver = {
     given: {
         oneMoveFromStuck: (drawMode: DrawMode) => void;
         oneMoveFromStuckWithDeck: () => void;
+        oneMoveFromStuckWithAceHome: () => void;
         alreadyStuck: () => void;
         stuckFreshDeal: () => void;
         won: () => void;
@@ -61,6 +75,8 @@ export type GameOverDriver = {
         dealSettled: () => void;
         lastMovePlayed: () => void;
         drawn: (times: number) => void;
+        aceTakenDown: () => void;
+        acePutBack: () => void;
         undoneElsewhere: () => void;
     };
     click: { undo: () => void; newGame: () => void; close: () => void };
@@ -115,6 +131,9 @@ export const makeGameOverDriver = (): GameOverDriver => {
             oneMoveFromStuckWithDeck: () => {
                 scenario.session = aSession().withGame(oneMoveFromStuckWithDeck).asStarted().build();
             },
+            oneMoveFromStuckWithAceHome: () => {
+                scenario.session = aSession().withGame(oneMoveFromStuckWithAceHome).asStarted().build();
+            },
             alreadyStuck: () => {
                 scenario.session = aSession().withGame(stuck).asStarted().build();
             },
@@ -168,6 +187,26 @@ export const makeGameOverDriver = (): GameOverDriver => {
                     if (draw === undefined) throw new Error('game-over driver: nothing left to draw');
                     act(() => {
                         game().dispatchMove(draw);
+                    });
+                });
+            },
+            aceTakenDown: () => {
+                act(() => {
+                    game().dispatchMove({
+                        kind: MoveKind.FoundationToTableau,
+                        cardId: aceOfDiamonds.id,
+                        from: 0,
+                        to: 2,
+                    });
+                });
+            },
+            acePutBack: () => {
+                act(() => {
+                    game().dispatchMove({
+                        kind: MoveKind.TableauToFoundation,
+                        cardId: aceOfDiamonds.id,
+                        from: 2,
+                        to: 0,
                     });
                 });
             },

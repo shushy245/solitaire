@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { isStuck, isWon } from '~/engine/index.ts';
+import { isWon } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
 import { HINT_SHOWN_MS } from './hint-timing.ts';
-import { cardsTakenDown, isAutoCompleting } from '../session/session.utils.ts';
+import { cardsTakenDown, isAutoCompleting, isGameOverAt } from '../session/session.utils.ts';
 import {
     HintContextValue,
     HintModel,
@@ -22,15 +22,16 @@ const HintContext = createContext<HintContextValue | undefined>(undefined);
 // hint. The hint is forgotten the moment the game changes, so an undo back to the same game cannot revive it.
 export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.Element => {
     const { session, reportGameOver } = useGame();
-    const { game } = session;
+    const { game, history } = session;
     const [hint, setHint] = useState<HintModel | undefined>(undefined);
     const [shown, setShown] = useState({ isVisible: false });
     const [tableReport, setTableReport] = useState<TableReportModel | undefined>(undefined);
     const isTableReady = isTableReadyFor({ report: tableReport, dealNumber: session.dealNumber });
     const canHint = isTableReady && !isAutoCompleting(session) && !isWon(game);
     // Worked out once per game, never per clock tick: the search may cycle the whole deck. Only while hints are on —
-    // mid-deal and mid-sweep nobody can act on the answer.
-    const isGameStuck = useMemo(() => canHint && isStuck(game), [canHint, game]);
+    // mid-deal and mid-sweep nobody can act on the answer. Judged with history, so a card taken down off a foundation
+    // in a stuck game leaves it over.
+    const isGameStuck = useMemo(() => canHint && isGameOverAt({ game, history }), [canHint, game, history]);
     const isGameOver = canHint && isGameStuck;
 
     if (hint !== undefined && hint.game !== game) setHint(undefined);
