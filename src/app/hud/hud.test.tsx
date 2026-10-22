@@ -152,6 +152,26 @@ describe('Hud', () => {
             driver.assert.dealNumber(0);
         });
 
+        it('deals straight away on a stuck game — there is nothing left to lose', async () => {
+            driver.given.session((s) => s.withGame(aGameState().build()).asPlayed(5));
+            await driver.when.created();
+
+            driver.click.newGame();
+
+            driver.assert.confirmShown(false);
+            driver.assert.dealNumber(1);
+        });
+
+        it('still asks before switching turn mode on a stuck game', async () => {
+            driver.given.session((s) => s.withGame(aGameState().build()).asPlayed(5));
+            await driver.when.created();
+
+            driver.click.mode(DrawMode.Three);
+
+            driver.assert.confirmShown(true);
+            driver.assert.dealNumber(0);
+        });
+
         it('deals a new game once confirmed', async () => {
             driver.given.session((s) => s.asPlayed(5));
             await driver.when.created();

@@ -23,6 +23,20 @@ export const formatElapsed = (elapsedMs: number): string => {
 // Leaving a game the player has started (and not finished) throws their progress away — ask first.
 export const needsConfirmationToLeave = isGameUnderWay;
 
+const isNewDealInSameMode = ({ session, requestedMode }: { session: SessionModel; requestedMode: DrawMode }): boolean =>
+    requestedMode === session.game.drawMode;
+
+// A stuck game has nothing left to lose, so a new deal in the same mode needs no question; a mode switch still asks.
+export const asksBeforeLeaving = ({
+    session,
+    isGameOver,
+    requestedMode,
+}: {
+    session: SessionModel;
+    isGameOver: boolean;
+    requestedMode: DrawMode;
+}): boolean => needsConfirmationToLeave(session) && !(isGameOver && isNewDealInSameMode({ session, requestedMode }));
+
 export const isAutoCompleteOffered = (session: SessionModel): boolean =>
     isAutoCompletable(session.game) && !isAutoCompleting(session);
 

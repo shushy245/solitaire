@@ -13,6 +13,7 @@ import { useHintShortcut } from './use-hint-shortcut.ts';
 import { useFocusOnAppear } from '../use-focus-on-appear.ts';
 import { joinClassNames } from '../../utils/join-class-names.ts';
 import {
+    asksBeforeLeaving,
     countLabel,
     drawModeLabelMap,
     drawModes,
@@ -23,7 +24,6 @@ import {
     LeaveRequestModel,
     ModeButtonProps,
     ModeSwitchProps,
-    needsConfirmationToLeave,
     openLeaveRequest,
     recordEntries,
     RecordPanelProps,
@@ -43,13 +43,13 @@ export const Hud = (): JSX.Element => {
     // A lapsed question is forgotten, not just hidden — otherwise the next move on this deal would revive it.
     if (leaveRequest !== undefined && pending === undefined) setLeaveRequest(undefined);
 
-    const { isNoMoves, canHint, showHint } = useHint();
+    const { isNoMoves, canHint, isGameOver, showHint } = useHint();
 
     useUndoShortcut(undo);
     useHintShortcut(showHint);
 
     const requestNewGame = (drawMode: DrawMode): void => {
-        if (needsConfirmationToLeave(session)) {
+        if (asksBeforeLeaving({ session, isGameOver, requestedMode: drawMode })) {
             setLeaveRequest({ drawMode, dealNumber: session.dealNumber });
 
             return;
