@@ -398,11 +398,12 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
     any change to the cap
   - any defect these checks find: reproduce as a failing test, fix, record in the triage
 
-### Story `auto-move` — safe cards go home by themselves
+### Story `auto-move` — safe cards go home by themselves ✅
 - Owns: `src/engine/` (new `nextSafeMove`), `src/app/session/` (auto-move step), `src/app/game-provider.tsx` (cadence)
 - Depends on: hint-game-over-checks
 - Parallel: serial
-- Open at story-start: on by default, or a HUD toggle remembered across reloads (the user decides)
+- Decided at story-start (autonomous run, question unanswered): **on, no toggle** — flagged to the user; a toggle
+  is a small follow-up if wanted
 - Cases:
   - engine: an Ace or a 2 whose Ace is home is safe; any other card is safe only when both opposite-colour cards one
     rank lower are already home (nothing left on the table could need it as a base)
@@ -690,6 +691,19 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   100 on both, traversal clean, focus visible. Not checked: Lighthouse on the lit ring (it lasts 2s), the ring under
   reduced motion. The panel note line is 39–40 characters (known, kept from `game-over`).
 
+### `auto-move` (code-review high, 9 findings; visual pass A+B)
+- Fixed (5): a step landing between a press and the drag threshold ended the press, so the sequence ran on → stop
+  on the press (`onPress`); a card the player took down off a foundation flew straight back (−15 then +10) → no
+  auto-move after a FoundationToTableau move; a rejected step could stall in AutoMoving → it ends the phase (as the
+  auto-complete step does; not reachable today — no test can build the disagreement); Auto-complete was offered
+  mid-sequence → not while AutoMoving; the stuck search ran on every position auto-move passes through → skipped.
+- RF (4): `nextSafeMove` and `nextAutoMove` both scan tops for a foundation target (and differ on the face-up check)
+  → one `listFoundationMoves`; a step works out `nextSafeMove` twice; `nextSafeMove` builds every candidate to keep
+  the first; `stepKindMap` lives in `game-provider.tsx` → `game-provider.utils.ts`.
+- Visual A+B (`?seed=1`: settled, after J♦, after draws; 390/768/1280): no overflow, taps ≥44, text ≥16px, Lighthouse
+  a11y 100, traversal clean; drawn Aces flew home with no press; under reduced motion they jump (no animation).
+  Not checked: a press overlapping a live sequence in the browser, turn 3, real touch.
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
@@ -712,4 +726,7 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   extend `useFocusOnAppear` to hand focus back when it was lost.
 - (`hint-game-over-checks`) `isFreeingMove` runs `applyMove` twice per column move in `listHints` → once.
 - (`hint-game-over-checks`) the HUD's and the game-over panel's disabled Undo look different → one disabled style.
+- (`auto-move`) `nextSafeMove` and `nextAutoMove` both scan tops for a foundation target → one `listFoundationMoves`.
+- (`auto-move`) a step works out `nextSafeMove` twice, and `nextSafeMove` builds every candidate to keep the first.
+- (`auto-move`) `stepKindMap` (pure lookup) lives in `game-provider.tsx` → `game-provider.utils.ts`.
 - (`card-design`) `--radius` and `CORNER_RATIO` (cascade-canvas.ts) duplicate one value → read the card's computed radius.

@@ -1,5 +1,11 @@
 # Changelog
 
+## auto-move — 2026-10-22
+- **Pain:** every Ace and low card had to be sent home by hand, even when nothing on the table could ever need it — busywork most solitaire games do for you.
+- **Fix:** after each move, cards that nothing left on the table could need (Aces, Twos, and cards whose two opposite-colour cards one rank lower are already home) fly to their foundations by themselves, one at a time.
+- **Trade-off:** it is always on — no setting to turn it off (the plan left that choice open and it went unanswered), and it holds back any card a column might still want, so some cards still go home by hand.
+- **Result:** one Undo takes back a move together with the cards it sent home; touching a card stops the flight; a card the player pulls down is left alone; a reload never moves anything; 406 tests pass (`vitest`, 22 more) plus all 13 browser tests; the review raised 9 issues — 5 fixed, 4 tidy-ups queued; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## hint-game-over-checks — 2026-10-22
 - **Pain:** Hint and the "No more moves" notice had only been checked inside a simulated page, and nobody knew how often the game-over check's safety limit hid a real game over.
 - **Fix:** real-browser tests now press Hint and play into a stuck game, automated checks follow the first hint from thousands of random positions, and the safety limit was measured against an unlimited search.
