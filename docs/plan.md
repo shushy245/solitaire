@@ -366,6 +366,57 @@ Order: `draw-animation` → `easy-drops` → `click-to-play` → `hint` → `car
 
 ---
 
+## Epic: Trust and flow (requested 2026-10-22)
+Interview decisions: prove Hint and "No more moves" right in a real browser and under property tests, and measure
+how often the stuck check's cap misses a real game over · from a survey of other solitaire games (Microsoft
+Solitaire Collection, Google, solitaired.com, 247 Solitaire — from memory, not a fresh search), only **auto-move
+safe cards** is taken. Considered and not taken: winnable-deals option, restart deal + redo, daily deal, Vegas /
+no-score / limited passes, streaks and per-mode stats, card back / felt / left-handed options. BF-3..BF-6 stay in
+the `game-over` triage, not in this epic. Keyboard play stays Deferred.
+Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "progress" a hint or stuck check sees).
+
+### Story `hint-game-over-checks` — Hint and "No more moves" proven right
+- Owns: `cypress/e2e/` (new `hint.cy.ts`, `game-over.cy.ts`), `src/engine/` (property tests, a test-only uncapped
+  `isStuck` run), `src/testkit/`
+- Depends on: game-over
+- Parallel: serial (first)
+- Cases:
+  - Cypress: Hint (button and H) rings a card and its target pile in a real browser; the ring goes out after ~2s;
+    a second press shows the next hint
+  - Cypress: `?seed=22&draw=3` shows "No more moves" once the deal settles; New game deals in turn 3 and the panel goes
+  - Cypress: a game that becomes stuck after a move shows the panel with Undo enabled; Undo closes it and steps back
+    (needs a seed that gets stuck a move or two in — find one and record it beside `?seed=22&draw=3`)
+  - Cypress: in a stuck game Hint says "No moves left"
+  - property: following the first hint over and over from random deals reaches progress (a card turned over, a card
+    home, fewer cards in the deck), a win or a stuck game within a bounded number of steps — never a loop of moves
+    that only shift cards back and forth
+  - property: the first hint is never a pointless move, and never the deck while a table move would make progress
+  - measurement: over many seeds × random play, run `isStuck` with and without the 1,000-position cap; record the
+    rate of missed notices (cap said "not stuck", uncapped said stuck) and the worst uncapped search size here.
+    It never reports a false "stuck". A miss rate above ~1% of stuck positions is raised with the user before
+    any change to the cap
+  - any defect these checks find: reproduce as a failing test, fix, record in the triage
+
+### Story `auto-move` — safe cards go home by themselves
+- Owns: `src/engine/` (new `nextSafeMove`), `src/app/session/` (auto-move step), `src/app/game-provider.tsx` (cadence)
+- Depends on: hint-game-over-checks
+- Parallel: serial
+- Open at story-start: on by default, or a HUD toggle remembered across reloads (the user decides)
+- Cases:
+  - engine: an Ace or a 2 whose Ace is home is safe; any other card is safe only when both opposite-colour cards one
+    rank lower are already home (nothing left on the table could need it as a base)
+  - engine: only top cards of the waste or a column are moved; never a card from a foundation
+  - after each player move (and after a draw), safe cards fly home one at a time at the auto-complete cadence, each
+    a normal scored move (+10)
+  - undo steps back over the player's move and the auto-moves it caused together, in one press
+  - a move that leaves no safe card moves nothing; auto-move never runs mid-deal, mid-drag or once the game is won
+  - auto-moving the last card wins the game exactly once (stats, win sound, cascade)
+  - Hint and the stuck check see the position after auto-moves, never the one in between
+  - pre-mortem: a new game, undo or drag started mid-sequence stops it (no move lands on the wrong game)
+  - pre-mortem: a restored game on load runs no auto-moves until the player moves (no surprise moves on reload)
+
+---
+
 ## Review triage
 
 ### `scaffold` (code-review high, 10 findings)

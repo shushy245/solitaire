@@ -47,5 +47,6 @@ Full history: `docs/changelog.md`; commit-level record: `git log`.
 - `hint` — Hint button / H rings one move for 2s, cycling best-first (`listHints`, `src/engine/hints.ts`). `src/app/hint/` (rules `hint.utils.ts`, `HintProvider` holds the hint per game and its timer; the board reports when the table is dealt). The ring is a `::after` outside the 3D flip layer.
 
 ## What's next
-`game-over` closed. Open: BF-3..BF-6 from its review, the "Play polish" epic-level review, the manual
+Epic "Trust and flow" planned (`docs/plan.md`): `hint-game-over-checks` → `auto-move` — not started.
+Also open: BF-3..BF-6 from its review, the "Play polish" epic-level review, the manual
 Chrome/Safari listen, BF-1/BF-2 and the RF-backlog in `docs/plan.md` — the user picks what is next.
