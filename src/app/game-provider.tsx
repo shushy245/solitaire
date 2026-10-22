@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { AUTO_COMPLETE_STEP_MS, CLOCK_TICK_MS, GameContextValue, GameProviderProps } from './game-provider.utils.ts';
 import {
@@ -22,7 +22,9 @@ export const GameProvider = ({
 }: GameProviderProps): JSX.Element => {
     const [session, dispatch] = useReducer(reducer, undefined, createInitialSession);
 
-    const lastTick = useRef(now());
+    // Read once at mount (a lazy initial value); every later reading comes from flushClock.
+    const [mountedAt] = useState(now);
+    const lastTick = useRef(mountedAt);
     // Reported by the hint provider, which works out once per position whether the game is over (stuck).
     const isGameOver = useRef(false);
 

@@ -1,7 +1,7 @@
 import { DrawMode, isAutoCompletable } from '~/engine/index.ts';
 
 import { StatsModel, winPercent } from '../stats/stats.utils.ts';
-import { isAutoCompleting, isGameUnderWay, SessionModel } from '../session/session.utils.ts';
+import { drawModeOf, isAutoCompleting, isGameUnderWay, SessionModel } from '../session/session.utils.ts';
 
 const MS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
@@ -24,7 +24,7 @@ export const formatElapsed = (elapsedMs: number): string => {
 export const needsConfirmationToLeave = isGameUnderWay;
 
 const isNewDealInSameMode = ({ session, requestedMode }: { session: SessionModel; requestedMode: DrawMode }): boolean =>
-    requestedMode === session.game.drawMode;
+    requestedMode === drawModeOf(session);
 
 // A stuck game has nothing left to lose, so a new deal in the same mode needs no question; a mode switch still asks.
 export const asksBeforeLeaving = ({
