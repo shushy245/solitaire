@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './app.tsx';
 import { Logger } from './utils/logger.port.ts';
 import { generateSeed } from './utils/generate-seed.ts';
+import { isPageVisible } from './utils/is-page-visible.ts';
 import { getElementById } from './utils/get-element-by-id.ts';
 import { SoundProvider } from './app/sound/sound-provider.tsx';
 import { MotionProvider } from './app/motion/motion-provider.tsx';
@@ -11,6 +12,7 @@ import { makeWebAudioVoice } from './app/sound/web-audio-voice.ts';
 import { makeUnlockingPlayer } from './app/sound/unlocking-player.ts';
 import { makeSessionStore } from './app/persistence/session-store.ts';
 import { prefersReducedMotion } from './utils/prefers-reduced-motion.ts';
+import { makeVisibleTabSave } from './app/persistence/visible-tab-save.ts';
 import { makeBrowserKeyValueStore } from './utils/browser-key-value-store.ts';
 import { makeSoundPreferenceStore } from './app/sound/sound-preference-store.ts';
 import { dealFromSearch, searchWithoutSeed } from './utils/seed-source.utils.ts';
@@ -33,6 +35,7 @@ const monotonicNow = (): number => performance.now();
 
 const browserStore = makeBrowserKeyValueStore({ storage: () => window.localStorage, logger });
 const sessionStore = makeSessionStore({ store: browserStore, logger });
+const saveSession = makeVisibleTabSave({ save: sessionStore.save, isPageVisible });
 const soundPreference = makeSoundPreferenceStore({ store: browserStore, logger });
 
 // Silent until the player first presses a pointer or key, as browsers require.
@@ -65,7 +68,7 @@ createRoot(root).render(
             <MotionProvider prefersReducedMotion={prefersReducedMotion}>
                 <App
                     initialSession={initialSession}
-                    saveSession={sessionStore.save}
+                    saveSession={saveSession}
                     seedSource={generateSeed}
                     now={monotonicNow}
                 />
