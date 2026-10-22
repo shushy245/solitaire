@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { DrawMode } from '~/engine/index.ts';
 import { aSession } from '~/testkit/builders/index.ts';
+import { makeHookProbe } from '~/testkit/hook-probe.tsx';
 import { FakeSoundPlayer } from '~/testkit/fakes/fake-sound.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
@@ -11,7 +12,6 @@ import { Celebration } from './celebration.tsx';
 import { HintProvider } from '../hint/hint-provider.tsx';
 import { SessionModel } from '../session/session.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
-import { GameContextValue } from '../game-provider.utils.ts';
 import { GameProvider, useGame } from '../game-provider.tsx';
 import { MotionProvider } from '../motion/motion-provider.tsx';
 import { CelebrationTestIds } from './celebration.test-ids.ts';
@@ -51,20 +51,10 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
         session: aSession().build(),
         isMotionReduced: false,
     };
-    const outside: { game: GameContextValue | undefined } = { game: undefined };
     const rendered: { unmount: () => void } = { unmount: () => undefined };
 
-    const ElsewhereInTheApp = (): undefined => {
-        outside.game = useGame();
-
-        return undefined;
-    };
-
-    const game = (): GameContextValue => {
-        if (outside.game === undefined) throw new Error('celebration driver: call when.created() first');
-
-        return outside.game;
-    };
+    const elsewhere = makeHookProbe({ useValue: useGame, driver: 'celebration' });
+    const game = elsewhere.read;
 
     const prefersReducedMotion = (): boolean => scenario.isMotionReduced;
 
@@ -96,7 +86,7 @@ export const makeCelebrationDriver = (): CelebrationDriver => {
                                 <HintProvider>
                                     <Board />
                                     <Celebration />
-                                    <ElsewhereInTheApp />
+                                    <elsewhere.Probe />
                                 </HintProvider>
                             </MotionProvider>
                         </SoundProvider>

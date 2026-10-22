@@ -1,11 +1,11 @@
 import { expect, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
 
+import { makeHookProbe } from '~/testkit/hook-probe.tsx';
 import { DrawMode, Rank, Suit } from '~/engine/index.ts';
 import { aCard, aGameState, aSession } from '~/testkit/builders/index.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
-import { HintContextValue } from './hint.utils.ts';
 import { GameProvider } from '../game-provider.tsx';
 import { SessionModel } from '../session/session.utils.ts';
 import { HintProvider, useHint } from './hint-provider.tsx';
@@ -30,19 +30,8 @@ export type HintProviderDriver = {
 export const makeHintProviderDriver = (): HintProviderDriver => {
     vi.useFakeTimers();
     const scenario: { session: SessionModel } = { session: aSession().build() };
-    const outside: { hint: HintContextValue | undefined } = { hint: undefined };
-
-    const ElsewhereInTheApp = (): undefined => {
-        outside.hint = useHint();
-
-        return undefined;
-    };
-
-    const hint = (): HintContextValue => {
-        if (outside.hint === undefined) throw new Error('hint-provider driver: call when.created() first');
-
-        return outside.hint;
-    };
+    const elsewhere = makeHookProbe({ useValue: useHint, driver: 'hint-provider' });
+    const hint = elsewhere.read;
 
     return {
         given: {
@@ -65,7 +54,7 @@ export const makeHintProviderDriver = (): HintProviderDriver => {
                         saveSession={discardSave}
                     >
                         <HintProvider>
-                            <ElsewhereInTheApp />
+                            <elsewhere.Probe />
                         </HintProvider>
                     </GameProvider>,
                 );

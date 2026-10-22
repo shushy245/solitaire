@@ -1,6 +1,7 @@
 import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
+import { makeHookProbe } from '~/testkit/hook-probe.tsx';
 import { FakeSoundPlayer } from '~/testkit/fakes/fake-sound.ts';
 import { aCard, aGameState, aSession } from '~/testkit/builders/index.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
@@ -12,7 +13,6 @@ import { HintProvider } from '../hint/hint-provider.tsx';
 import { GameOverTestIds } from './game-over.test-ids.ts';
 import { SessionModel } from '../session/session.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
-import { GameContextValue } from '../game-provider.utils.ts';
 import { GameProvider, useGame } from '../game-provider.tsx';
 import { MotionProvider } from '../motion/motion-provider.tsx';
 import { DEAL_TOTAL_MS, STACK_HOLD_MS } from '../board/board.utils.ts';
@@ -107,19 +107,8 @@ export const makeGameOverDriver = (): GameOverDriver => {
         sightings.panel += records.flatMap((record) => [...record.addedNodes]).filter(holdsPanel).length;
     });
     observer.observe(document.body, { childList: true, subtree: true });
-    const outside: { game: GameContextValue | undefined } = { game: undefined };
-
-    const ElsewhereInTheApp = (): undefined => {
-        outside.game = useGame();
-
-        return undefined;
-    };
-
-    const game = (): GameContextValue => {
-        if (outside.game === undefined) throw new Error('game-over driver: call when.created() first');
-
-        return outside.game;
-    };
+    const elsewhere = makeHookProbe({ useValue: useGame, driver: 'game-over' });
+    const game = elsewhere.read;
 
     const prefersReducedMotion = (): boolean => false;
 
@@ -160,7 +149,7 @@ export const makeGameOverDriver = (): GameOverDriver => {
                                 <HintProvider>
                                     <Board />
                                     <GameOver />
-                                    <ElsewhereInTheApp />
+                                    <elsewhere.Probe />
                                 </HintProvider>
                             </MotionProvider>
                         </SoundProvider>

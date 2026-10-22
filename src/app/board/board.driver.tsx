@@ -1,6 +1,7 @@
 import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 
+import { makeHookProbe } from '~/testkit/hook-probe.tsx';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
 import { FakeSoundPlayer } from '~/testkit/fakes/fake-sound.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
@@ -10,10 +11,8 @@ import { Board } from './board.tsx';
 import { PileKind } from './layout.utils.ts';
 import { BoardTestIds } from './board.test-ids.ts';
 import { SoundKind } from '../sound/sound.utils.ts';
-import { HintContextValue } from '../hint/hint.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameProvider, useGame } from '../game-provider.tsx';
-import { GameContextValue } from '../game-provider.utils.ts';
 import { HintProvider, useHint } from '../hint/hint-provider.tsx';
 import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 import { DealProgress, makeSession, SessionModel } from '../session/session.utils.ts';
@@ -107,10 +106,6 @@ export const makeBoardDriver = (): BoardDriver => {
 
     const rendered: { unmount: () => void } = { unmount: () => undefined };
     const sound = new FakeSoundPlayer();
-    const outside: { game: GameContextValue | undefined; hint: HintContextValue | undefined } = {
-        game: undefined,
-        hint: undefined,
-    };
     const pointer = { x: 100, y: 100 };
     const listenerSpies = {
         add: vi.spyOn(window, 'addEventListener'),
@@ -120,12 +115,8 @@ export const makeBoardDriver = (): BoardDriver => {
         spy.mock.calls.filter(([type]) => pointerEvents.has(type)).map(([, handler]) => handler);
 
     // Stands in for another part of the app (e.g. the HUD's undo shortcut) acting on the game.
-    const ElsewhereInTheApp = (): undefined => {
-        outside.game = useGame();
-        outside.hint = useHint();
-
-        return undefined;
-    };
+    const elsewhereGame = makeHookProbe({ useValue: useGame, driver: 'board' });
+    const elsewhereHint = makeHookProbe({ useValue: useHint, driver: 'board' });
 
     const remembered: { cardOrder: readonly (string | null)[] } = { cardOrder: [] };
     const renderedCardOrder = (): (string | null)[] =>
@@ -195,7 +186,8 @@ export const makeBoardDriver = (): BoardDriver => {
                         >
                             <HintProvider>
                                 <Board />
-                                <ElsewhereInTheApp />
+                                <elsewhereGame.Probe />
+                                <elsewhereHint.Probe />
                             </HintProvider>
                         </GameProvider>
                     </SoundProvider>,
@@ -209,29 +201,21 @@ export const makeBoardDriver = (): BoardDriver => {
                 rendered.unmount();
             },
             autoCompleteStartedElsewhere: () => {
-                const game = outside.game;
-
-                if (game === undefined)
-                    throw new Error('board driver: autoCompleteStartedElsewhere needs when.created first');
+                const game = elsewhereGame.read();
 
                 act(() => {
                     game.startAutoComplete();
                 });
             },
             hintRequestedElsewhere: () => {
-                const hint = outside.hint;
-
-                if (hint === undefined)
-                    throw new Error('board driver: hintRequestedElsewhere needs when.created first');
+                const hint = elsewhereHint.read();
 
                 act(() => {
                     hint.showHint();
                 });
             },
             undoneElsewhere: () => {
-                const game = outside.game;
-
-                if (game === undefined) throw new Error('board driver: undoneElsewhere needs when.created first');
+                const game = elsewhereGame.read();
 
                 act(() => {
                     game.undo();

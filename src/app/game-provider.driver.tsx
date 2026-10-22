@@ -3,11 +3,12 @@ import { act, render } from '@testing-library/react';
 
 import { isWon } from '~/engine/index.ts';
 import { aSession } from '~/testkit/builders/index.ts';
+import { makeHookProbe } from '~/testkit/hook-probe.tsx';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { SessionModel } from './session/session.utils.ts';
 import { GameProvider, useGame } from './game-provider.tsx';
-import { AUTO_COMPLETE_STEP_MS, GameContextValue } from './game-provider.utils.ts';
+import { AUTO_COMPLETE_STEP_MS } from './game-provider.utils.ts';
 
 export type GameProviderDriver = {
     given: { readyToAutoComplete: () => void };
@@ -22,19 +23,8 @@ export type GameProviderDriver = {
 export const makeGameProviderDriver = (): GameProviderDriver => {
     vi.useFakeTimers();
     const scenario: { session: SessionModel } = { session: aSession().build() };
-    const outside: { game: GameContextValue | undefined } = { game: undefined };
-
-    const ElsewhereInTheApp = (): undefined => {
-        outside.game = useGame();
-
-        return undefined;
-    };
-
-    const game = (): GameContextValue => {
-        if (outside.game === undefined) throw new Error('game-provider driver: call when.created() first');
-
-        return outside.game;
-    };
+    const elsewhere = makeHookProbe({ useValue: useGame, driver: 'game-provider' });
+    const game = elsewhere.read;
 
     return {
         given: {
@@ -53,7 +43,7 @@ export const makeGameProviderDriver = (): GameProviderDriver => {
                         now={fakeNow}
                         saveSession={discardSave}
                     >
-                        <ElsewhereInTheApp />
+                        <elsewhere.Probe />
                     </GameProvider>,
                 );
             },

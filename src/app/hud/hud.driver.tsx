@@ -3,18 +3,18 @@ import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { aSession } from '~/testkit/builders/index.ts';
+import { makeHookProbe } from '~/testkit/hook-probe.tsx';
 import { DrawMode, makeDrawMove } from '~/engine/index.ts';
 import { FakeSoundPlayer } from '~/testkit/fakes/fake-sound.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 
 import { Hud } from './hud.tsx';
 import { HudTestIds } from './hud.test-ids.ts';
-import { HintContextValue } from '../hint/hint.utils.ts';
 import { SessionModel } from '../session/session.utils.ts';
 import { SoundProvider } from '../sound/sound-provider.tsx';
 import { GameProvider, useGame } from '../game-provider.tsx';
 import { HintProvider, useHint } from '../hint/hint-provider.tsx';
-import { AUTO_COMPLETE_STEP_MS, GameContextValue } from '../game-provider.utils.ts';
+import { AUTO_COMPLETE_STEP_MS } from '../game-provider.utils.ts';
 
 export type HudDriver = {
     given: {
@@ -81,10 +81,6 @@ export const makeHudDriver = (): HudDriver => {
     const handleSaveMuted = ({ muted }: { muted: boolean }): void => {
         savedMuted.push(muted);
     };
-    const outside: { game: GameContextValue | undefined; hint: HintContextValue | undefined } = {
-        game: undefined,
-        hint: undefined,
-    };
     const rendered: { unmount: () => void; rerender: (ui: JSX.Element) => void } = {
         unmount: () => undefined,
         rerender: () => undefined,
@@ -92,12 +88,8 @@ export const makeHudDriver = (): HudDriver => {
     const keySpies = { add: vi.spyOn(window, 'addEventListener'), remove: vi.spyOn(window, 'removeEventListener') };
 
     // Stands in for another part of the app (e.g. the win screen) that can start a new game.
-    const ElsewhereInTheApp = (): undefined => {
-        outside.game = useGame();
-        outside.hint = useHint();
-
-        return undefined;
-    };
+    const elsewhereGame = makeHookProbe({ useValue: useGame, driver: 'hud' });
+    const elsewhereHint = makeHookProbe({ useValue: useHint, driver: 'hud' });
 
     // Stands in for the board, which tells the hint provider when each deal's cards have landed.
     const SettledTable = (): undefined => {
@@ -127,7 +119,8 @@ export const makeHudDriver = (): HudDriver => {
                     <HintProvider>
                         <SettledTable />
                         <Hud />
-                        <ElsewhereInTheApp />
+                        <elsewhereGame.Probe />
+                        <elsewhereHint.Probe />
                     </HintProvider>
                 </GameProvider>
             </SoundProvider>
@@ -166,9 +159,7 @@ export const makeHudDriver = (): HudDriver => {
                 rendered.unmount();
             },
             newGameStartedElsewhere: () => {
-                const game = outside.game;
-
-                if (game === undefined) throw new Error('hud driver: newGameStartedElsewhere needs when.created first');
+                const game = elsewhereGame.read();
 
                 act(() => {
                     game.newGame({ drawMode: DrawMode.One });
@@ -178,11 +169,10 @@ export const makeHudDriver = (): HudDriver => {
                 screen.getByTestId(testId).focus();
             },
             cardDrawnElsewhere: () => {
-                const game = outside.game;
-                const draw = game === undefined ? undefined : makeDrawMove(game.session.game);
+                const game = elsewhereGame.read();
+                const draw = makeDrawMove(game.session.game);
 
-                if (game === undefined || draw === undefined)
-                    throw new Error('hud driver: cardDrawnElsewhere needs when.created and a non-empty stock');
+                if (draw === undefined) throw new Error('hud driver: cardDrawnElsewhere needs a non-empty stock');
 
                 act(() => {
                     game.dispatchMove(draw);
@@ -269,9 +259,7 @@ export const makeHudDriver = (): HudDriver => {
                 expect(savedMuted).toEqual(muted);
             },
             hintLit: (isLit) => {
-                const hint = outside.hint;
-
-                if (hint === undefined) throw new Error('hud driver: hintLit needs when.created first');
+                const hint = elsewhereHint.read();
                 expect(hint.highlight !== undefined).toBe(isLit);
             },
             noMovesShown: (isShown) => {
