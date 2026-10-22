@@ -454,6 +454,22 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   - pre-mortem: undo-to-unstuck runs the stuck search per history entry — bounded by the draws made after getting
     stuck; an auto-move or New game mid-way never leaves a half-undone state
 
+### Story `two-tabs` — BF-1 from the `epic-review` triage (2026-10-22, autonomous run)
+- Owns: `src/app/persistence/` (new `visible-tab-save.ts`), `src/utils/` (page visibility port + browser adapter),
+  `src/main.tsx` (wiring)
+- Depends on: stuck-polish
+- Parallel: serial
+- Decision (autonomous run, recorded fix): only the tab the player can see writes the saved game; a hidden tab's
+  saves are skipped. Dropped from the recorded fix: "flush on hide" — a visible tab writes every change as it
+  happens, so at the moment it is hidden the save already holds its latest position.
+- Cases:
+  - a save while the page is hidden writes nothing (another tab's game survives a background tab's clock ticks)
+  - a save while the page is visible writes, as before
+  - after the page is shown again, its next save writes its latest session (last tab looked at wins)
+  - pre-mortem: visibility is read at each save, never once at start (a tab opened in the background must not stay
+    silent once shown, nor a shown tab write once hidden)
+  - pre-mortem: the record (stats) is saved through the same gate — a hidden tab cannot count a win twice
+
 ---
 
 ## Review triage
