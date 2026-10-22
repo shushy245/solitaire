@@ -13,7 +13,7 @@ pnpm dev          # http://localhost:5173
 
 ```sh
 pnpm test         # unit + component tests (Vitest)
-pnpm lint
+pnpm lint         # ESLint, then Prettier over JSON/SCSS/HTML
 pnpm typecheck
 pnpm cy:run       # e2e (Cypress) — needs `pnpm dev` running
 ```
