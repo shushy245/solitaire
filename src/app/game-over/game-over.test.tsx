@@ -40,6 +40,30 @@ describe('GameOver', () => {
         driver.assert.panelShown(false);
     });
 
+    it('Undo goes back to the last position that was not stuck, however many draws came after', async () => {
+        driver.given.oneMoveFromStuckWithDeck();
+        await driver.when.created();
+        driver.when.lastMovePlayed();
+        driver.when.drawn(2);
+
+        driver.click.undo();
+
+        driver.assert.movesMade(0);
+        driver.assert.panelShown(false);
+    });
+
+    it('the game’s own Undo still takes back one draw at a time', async () => {
+        driver.given.oneMoveFromStuckWithDeck();
+        await driver.when.created();
+        driver.when.lastMovePlayed();
+        driver.when.drawn(2);
+
+        driver.when.undoneElsewhere();
+
+        driver.assert.movesMade(2);
+        driver.assert.panelShown(true);
+    });
+
     it('New game deals in the stuck game’s mode, and the panel goes', async () => {
         driver.given.oneMoveFromStuck(DrawMode.Three);
         await driver.when.created();

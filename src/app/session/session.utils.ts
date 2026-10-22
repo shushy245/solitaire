@@ -5,6 +5,7 @@ import {
     findClickMove,
     GameStateModel,
     isAutoCompletable,
+    isStuck,
     isWon,
     Move,
     nextAutoMove,
@@ -43,6 +44,7 @@ export enum SessionActionKind {
     Move = 'move',
     PlayCard = 'play-card',
     Undo = 'undo',
+    UndoToUnstuck = 'undo-to-unstuck',
     NewGame = 'new-game',
     Tick = 'tick',
     StartAutoComplete = 'start-auto-complete',
@@ -54,6 +56,7 @@ type SessionPayloadMap = {
     // An intent, resolved against the game at reduce time — never a move computed from a stale snapshot.
     [SessionActionKind.PlayCard]: { readonly cardId: string };
     [SessionActionKind.Undo]: object;
+    [SessionActionKind.UndoToUnstuck]: object;
     [SessionActionKind.NewGame]: { readonly seed: number; readonly drawMode: DrawMode };
     [SessionActionKind.Tick]: { readonly elapsedMs: number };
     [SessionActionKind.StartAutoComplete]: object;
@@ -77,12 +80,31 @@ export const makeSession = ({ seed, drawMode }: { seed: number; drawMode: DrawMo
 // Not a move made on this deal yet (undoing back to the deal does not count as unstarted).
 export const isDealUnstarted = (session: SessionModel): boolean => session.progress === DealProgress.Unstarted;
 
-export const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
+export const isAutoCompleting = (session: Pick<SessionModel, 'phase'>): boolean =>
+    session.phase === SessionPhase.AutoCompleting;
 
 // Started and not yet finished: the clock runs, and leaving would throw the player's progress away.
 export const isGameUnderWay = (session: SessionModel): boolean => session.game.moves > 0 && !isWon(session.game);
 
-export const canUndo = (session: SessionModel): boolean => session.history.length > 0 && !isAutoCompleting(session);
+export const canUndo = (session: Pick<SessionModel, 'history' | 'phase'>): boolean =>
+    session.history.length > 0 && !isAutoCompleting(session);
+
+// What undo needs to know — not the clock, so a component can work it out once per position, not per tick.
+type UndoStateModel = Pick<SessionModel, 'game' | 'history' | 'phase'>;
+
+// Where the game last was not stuck, searched from the newest position back: a stuck game stays stuck whatever is
+// drawn, so the search runs once per draw made after getting stuck, plus once for the position it lands on.
+const lastUnstuckIndex = (state: UndoStateModel): number | undefined => {
+    if (!canUndo(state) || !isStuck(state.game)) return undefined;
+
+    const newestFirst = state.history.map((game, index) => ({ game, index })).reverse();
+    const found = newestFirst.find(({ game }) => !isStuck(game));
+
+    return found === undefined ? undefined : found.index;
+};
+
+// The game-over panel's Undo: offered while there is an earlier position the player could still win from.
+export const canUndoToUnstuck = (state: UndoStateModel): boolean => lastUnstuckIndex(state) !== undefined;
 
 const homeCardIds = (game: GameStateModel): string[] => game.foundations.flat().map((card) => card.id);
 
@@ -118,6 +140,14 @@ const reducerMap: ReducerMap = {
         if (previous === undefined || !canUndo(session)) return session;
 
         return { ...session, game: previous, history: session.history.slice(0, -1) };
+    },
+    [SessionActionKind.UndoToUnstuck]: ({ session }) => {
+        const index = lastUnstuckIndex(session);
+        const target = index === undefined ? undefined : session.history[index];
+
+        if (index === undefined || target === undefined) return session;
+
+        return { ...session, game: target, history: session.history.slice(0, index) };
     },
     [SessionActionKind.NewGame]: ({ session, action }) => ({
         ...makeSession({ seed: action.seed, drawMode: action.drawMode }),

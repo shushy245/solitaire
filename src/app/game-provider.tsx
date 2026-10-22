@@ -79,6 +79,10 @@ export const GameProvider = ({
                 flushClock();
                 dispatch({ kind: SessionActionKind.Undo });
             },
+            undoToUnstuck: () => {
+                flushClock();
+                dispatch({ kind: SessionActionKind.UndoToUnstuck });
+            },
             newGame: ({ drawMode }) => {
                 flushClock();
                 dispatch({ kind: SessionActionKind.NewGame, seed: seedSource(), drawMode });

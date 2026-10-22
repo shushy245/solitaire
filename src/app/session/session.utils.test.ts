@@ -6,6 +6,7 @@ import { dealGame, DrawMode, isWon, makeDrawMove, Move, MoveKind, Rank, Suit } f
 
 import {
     canUndo,
+    canUndoToUnstuck,
     cardsTakenDown,
     makeSession,
     reduceSession,
@@ -289,6 +290,65 @@ describe('cardsTakenDown', () => {
         expect(cardsTakenDown(homeToThree)).toEqual(new Set());
         expect(cardsTakenDown(pulledDown())).toEqual(new Set([threeOfHearts.id]));
         expect(cardsTakenDown(act(pulledDown(), { kind: SessionActionKind.Undo }))).toEqual(new Set());
+    });
+});
+
+describe('reduceSession — undo to the last position that was not stuck', () => {
+    const hiddenTwo = aCard().withSuit(Suit.Hearts).withRank(Rank.Two).asFaceDown().build();
+    const blackFive = aCard().withSuit(Suit.Spades).withRank(Rank.Five).build();
+    const redSix = aCard().withSuit(Suit.Hearts).withRank(Rank.Six).build();
+    const deadStock = [Suit.Clubs, Suit.Diamonds].map((suit) =>
+        aCard().withSuit(suit).withRank(Rank.Nine).asFaceDown().build(),
+    );
+    // Playing the five onto the six turns the two over, and then nothing ever plays — the deck's nines included.
+    const oneMoveFromStuck = aGameState()
+        .withColumn({ index: 0, cards: [hiddenTwo, blackFive] })
+        .withColumn({ index: 1, cards: [redSix] })
+        .withStock(deadStock)
+        .build();
+    const lastMove: Move = { kind: MoveKind.TableauToTableau, cardId: blackFive.id, from: 0, to: 1 };
+    const undoToUnstuck: SessionAction = { kind: SessionActionKind.UndoToUnstuck };
+    const stuckThenDrawn = () =>
+        drawIn(
+            drawIn(
+                reduceSession({
+                    session: aSession().withGame(oneMoveFromStuck).asStarted().build(),
+                    action: { kind: SessionActionKind.Move, move: lastMove },
+                }),
+            ),
+        );
+
+    it('goes back over the move that got the game stuck and every draw after it', () => {
+        const session = stuckThenDrawn();
+
+        const next = reduceSession({ session, action: undoToUnstuck });
+
+        expect(next.game).toBe(oneMoveFromStuck);
+        expect(next.history).toEqual([]);
+        expect(canUndoToUnstuck(session)).toBe(true);
+    });
+
+    it('a second press, once out of the stuck game, changes nothing (no leap further back)', () => {
+        const drawnFirst = drawIn(aSession().withGame(oneMoveFromStuck).asStarted().build());
+        const stuck = drawIn(
+            reduceSession({ session: drawnFirst, action: { kind: SessionActionKind.Move, move: lastMove } }),
+        );
+        const once = reduceSession({ session: stuck, action: undoToUnstuck });
+
+        expect(once.game).toBe(drawnFirst.game);
+        expect(reduceSession({ session: once, action: undoToUnstuck })).toBe(once);
+        expect(canUndoToUnstuck(once)).toBe(false);
+    });
+
+    it('changes nothing when every earlier position was stuck too', () => {
+        const stuckFromTheStart = aGameState()
+            .withColumn({ index: 0, cards: [hiddenTwo, blackFive] })
+            .withStock(deadStock)
+            .build();
+        const session = drawIn(aSession().withGame(stuckFromTheStart).asStarted().build());
+
+        expect(reduceSession({ session, action: undoToUnstuck })).toBe(session);
+        expect(canUndoToUnstuck(session)).toBe(false);
     });
 });
 

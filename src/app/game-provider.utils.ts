@@ -9,6 +9,8 @@ export type GameContextValue = {
     dispatchMove: (move: Move) => void;
     playCard: (cardId: string) => void;
     undo: () => void;
+    // Back to the last position that was not stuck (the game-over panel's Undo).
+    undoToUnstuck: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;
 };

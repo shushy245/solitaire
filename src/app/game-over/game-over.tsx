@@ -1,20 +1,25 @@
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 
 import { Row } from '../../ui/box.tsx';
 import { useGame } from '../game-provider.tsx';
 import { useHint } from '../hint/hint-provider.tsx';
-import { canUndo } from '../session/session.utils.ts';
 import { GameOverPanelProps } from './game-over.utils.ts';
 import { GameOverTestIds } from './game-over.test-ids.ts';
 import { useFocusOnAppear } from '../use-focus-on-appear.ts';
+import { canUndoToUnstuck } from '../session/session.utils.ts';
 
 import styles from './game-over.module.scss';
 
 // Shown while no progress is possible. The game stays open behind it, so Undo lets the player try another line.
 export const GameOver = (): JSX.Element | undefined => {
-    const { session, undo, newGame } = useGame();
-    const { game } = session;
+    const { session, undoToUnstuck, newGame } = useGame();
+    const { game, history, phase } = session;
     const { isGameOver } = useHint();
+    // A stuck search per position since the game got stuck — worked out once per position, never per clock tick.
+    const isUndoable = useMemo(
+        () => isGameOver && canUndoToUnstuck({ game, history, phase }),
+        [isGameOver, game, history, phase],
+    );
 
     if (!isGameOver) return undefined;
 
@@ -22,7 +27,7 @@ export const GameOver = (): JSX.Element | undefined => {
         newGame({ drawMode: game.drawMode });
     };
 
-    return <GameOverPanel canUndo={canUndo(session)} onUndo={undo} onNewGame={handleNewGame} />;
+    return <GameOverPanel canUndo={isUndoable} onUndo={undoToUnstuck} onNewGame={handleNewGame} />;
 };
 
 const GameOverPanel = ({ canUndo: isUndoable, onUndo, onNewGame }: GameOverPanelProps): JSX.Element => {

@@ -2,9 +2,9 @@ import { expect, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 
 import { FakeSoundPlayer } from '~/testkit/fakes/fake-sound.ts';
-import { DrawMode, MoveKind, Rank, Suit } from '~/engine/index.ts';
 import { aCard, aGameState, aSession } from '~/testkit/builders/index.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
+import { DrawMode, makeDrawMove, MoveKind, Rank, Suit } from '~/engine/index.ts';
 
 import { GameOver } from './game-over.tsx';
 import { Board } from '../board/board.tsx';
@@ -30,6 +30,20 @@ const oneMoveFromStuck = aGameState()
     .withColumn({ index: 1, cards: [redSix] })
     .build();
 
+// The same, with two cards left in the deck that never play: drawing them keeps the game stuck.
+const deadStock = [Rank.Nine, Rank.Nine].map((rank, i) =>
+    aCard()
+        .withRank(rank)
+        .withSuit(i === 0 ? Suit.Clubs : Suit.Diamonds)
+        .asFaceDown()
+        .build(),
+);
+const oneMoveFromStuckWithDeck = aGameState()
+    .withColumn({ index: 0, cards: [hiddenTwo, blackFive] })
+    .withColumn({ index: 1, cards: [redSix] })
+    .withStock(deadStock)
+    .build();
+
 const stuck = aGameState()
     .withColumn({ index: 0, cards: [hiddenTwo, blackFive] })
     .build();
@@ -37,6 +51,7 @@ const stuck = aGameState()
 export type GameOverDriver = {
     given: {
         oneMoveFromStuck: (drawMode: DrawMode) => void;
+        oneMoveFromStuckWithDeck: () => void;
         alreadyStuck: () => void;
         stuckFreshDeal: () => void;
         won: () => void;
@@ -45,6 +60,8 @@ export type GameOverDriver = {
         created: () => Promise<void>;
         dealSettled: () => void;
         lastMovePlayed: () => void;
+        drawn: (times: number) => void;
+        undoneElsewhere: () => void;
     };
     click: { undo: () => void; newGame: () => void };
     assert: {
@@ -93,6 +110,9 @@ export const makeGameOverDriver = (): GameOverDriver => {
             oneMoveFromStuck: (drawMode) => {
                 scenario.session = aSession().withGame(oneMoveFromStuck).withDrawMode(drawMode).asStarted().build();
             },
+            oneMoveFromStuckWithDeck: () => {
+                scenario.session = aSession().withGame(oneMoveFromStuckWithDeck).asStarted().build();
+            },
             alreadyStuck: () => {
                 scenario.session = aSession().withGame(stuck).asStarted().build();
             },
@@ -137,6 +157,22 @@ export const makeGameOverDriver = (): GameOverDriver => {
             lastMovePlayed: () => {
                 act(() => {
                     game().dispatchMove({ kind: MoveKind.TableauToTableau, cardId: blackFive.id, from: 0, to: 1 });
+                });
+            },
+            drawn: (times) => {
+                Array.from({ length: times }).forEach(() => {
+                    const draw = makeDrawMove(game().session.game);
+
+                    if (draw === undefined) throw new Error('game-over driver: nothing left to draw');
+                    act(() => {
+                        game().dispatchMove(draw);
+                    });
+                });
+            },
+            // The HUD's Undo and Ctrl+Z go through the game's plain undo.
+            undoneElsewhere: () => {
+                act(() => {
+                    game().undo();
                 });
             },
         },
