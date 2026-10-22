@@ -74,9 +74,21 @@ export const suitGlyphMap: Record<Suit, string> = {
     [Suit.Spades]: '♠',
 };
 
-export const FACE_DOWN_LABEL = 'Face-down card';
+const FACE_DOWN_LABEL = 'Face-down card';
 
-export const cardLabel = ({ rank, suit }: { rank: Rank; suit: Suit }): string => `${rankNameMap[rank]} of ${suit}`;
+const placeLabelMap: Record<PileKind, (pileIndex: number) => string> = {
+    [PileKind.Stock]: () => 'stock',
+    [PileKind.Waste]: () => 'waste',
+    [PileKind.Foundation]: (pileIndex) => `foundation ${pileIndex + 1}`,
+    [PileKind.Tableau]: (pileIndex) => `column ${pileIndex + 1}`,
+};
+
+// Cards sit in the page by id, not in table order, so each name says where the card lies.
+export const cardLabel = ({ card, pile, pileIndex }: CardSlotModel): string => {
+    const name = card.faceUp ? `${rankNameMap[card.rank]} of ${card.suit}` : FACE_DOWN_LABEL;
+
+    return `${name}, ${placeLabelMap[pile](pileIndex)}`;
+};
 
 export const isCourtCard = (rank: Rank): boolean => rank >= Rank.Jack;
 

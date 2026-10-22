@@ -63,7 +63,7 @@ export type BoardDriver = {
         dealtStockTopNowOnWaste: () => void;
         dealtStockTopStillOnStock: () => void;
         cardLabel: (args: { card: CardName; label: string }) => void;
-        cardFaceDownAndUnlabelled: (card: CardName) => void;
+        cardFaceDownAndUnlabelled: (args: { card: CardName; label: string }) => void;
         stockLabel: (label: string) => void;
         dealPhase: (phase: DealPhase) => void;
         lifted: (args: { card: CardName; isLifted: boolean }) => void;
@@ -335,9 +335,9 @@ export const makeBoardDriver = (): BoardDriver => {
             cardLabel: ({ card, label }) => {
                 expect(cardElement(card)).toHaveAccessibleName(label);
             },
-            cardFaceDownAndUnlabelled: (card) => {
+            cardFaceDownAndUnlabelled: ({ card, label }) => {
                 expect(cardElement(card)).toHaveAttribute('data-face', 'down');
-                expect(cardElement(card)).toHaveAccessibleName('Face-down card');
+                expect(cardElement(card)).toHaveAccessibleName(label);
                 expect(within(cardElement(card)).queryByText(/[♠♥♦♣]/)).not.toBeInTheDocument();
             },
             stockLabel: (label) => {

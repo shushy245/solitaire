@@ -296,8 +296,28 @@ describe('Board', () => {
         });
         await driver.when.created();
 
-        driver.assert.cardLabel({ card: { rank: Rank.Queen, suit: Suit.Hearts }, label: 'Queen of hearts' });
-        driver.assert.cardFaceDownAndUnlabelled({ rank: Rank.Two, suit: Suit.Clubs });
+        driver.assert.cardLabel({ card: { rank: Rank.Queen, suit: Suit.Hearts }, label: 'Queen of hearts, column 1' });
+        driver.assert.cardFaceDownAndUnlabelled({
+            card: { rank: Rank.Two, suit: Suit.Clubs },
+            label: 'Face-down card, column 1',
+        });
+    });
+
+    // The cards sit in the page in a fixed order (by id), not table order, so the name carries the place.
+    it('names where each card lies: column, waste, foundation or stock', async () => {
+        driver.given.column({ index: 2, cards: [{ rank: Rank.Nine, suit: Suit.Spades }] });
+        driver.given.waste([{ rank: Rank.Five, suit: Suit.Diamonds }]);
+        driver.given.foundation({ index: 3, cards: [{ rank: Rank.Ace, suit: Suit.Clubs }] });
+        driver.given.stock([{ rank: Rank.King, suit: Suit.Hearts }]);
+        await driver.when.created();
+
+        driver.assert.cardLabel({ card: { rank: Rank.Nine, suit: Suit.Spades }, label: 'Nine of spades, column 3' });
+        driver.assert.cardLabel({ card: { rank: Rank.Five, suit: Suit.Diamonds }, label: 'Five of diamonds, waste' });
+        driver.assert.cardLabel({ card: { rank: Rank.Ace, suit: Suit.Clubs }, label: 'Ace of clubs, foundation 4' });
+        driver.assert.cardFaceDownAndUnlabelled({
+            card: { rank: Rank.King, suit: Suit.Hearts },
+            label: 'Face-down card, stock',
+        });
     });
 
     it('ignores clicks on the stock while the cards are still being dealt', async () => {

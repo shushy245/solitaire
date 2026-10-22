@@ -18,7 +18,6 @@ import {
     boardHeightClassNames,
     cardLabel,
     dealDelayClassName,
-    FACE_DOWN_LABEL,
     hasClickMove,
     isHomeCard,
     isRepeatClick,
@@ -233,7 +232,7 @@ const Card = memo(function Card({
     return (
         <div
             role="img"
-            aria-label={card.faceUp ? cardLabel(card) : FACE_DOWN_LABEL}
+            aria-label={cardLabel(slot)}
             className={joinClassNames(
                 styles.card,
                 ...slotClassNames({ slot: shownSlot, styles }),
