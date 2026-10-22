@@ -48,7 +48,11 @@ const isEnablingMove = ({ state, move }: { state: GameStateModel; move: Move }):
             'to' in next &&
             next.to === move.to &&
             (next.kind === MoveKind.WasteToTableau ||
-                isUncoveringMove({ state: after, move: next, isFreeing: freeingCheckFor(after) })),
+                isUncoveringMove({
+                    state: after,
+                    move: next,
+                    isFreeing: (candidate) => isFreeingMove({ state: after, move: candidate }),
+                })),
     );
 };
 

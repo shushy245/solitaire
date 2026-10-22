@@ -5,19 +5,24 @@ export type HookProbeModel<T> = {
     read: () => T;
 };
 
+// Rendered or not is its own state, so a hook that legitimately returns undefined still reads back.
+type ProbedModel<T> = { isRendered: false } | { isRendered: true; value: T };
+
 export const makeHookProbe = <T,>({ useValue, driver }: { useValue: () => T; driver: string }): HookProbeModel<T> => {
-    const latest: { value: T | undefined } = { value: undefined };
+    const latest: { probed: ProbedModel<T> } = { probed: { isRendered: false } };
 
     const Probe = (): undefined => {
-        latest.value = useValue();
+        latest.probed = { isRendered: true, value: useValue() };
 
         return undefined;
     };
 
     const read = (): T => {
-        if (latest.value === undefined) throw new Error(`${driver} driver: call when.created() first`);
+        const { probed } = latest;
 
-        return latest.value;
+        if (!probed.isRendered) throw new Error(`${driver} driver: call when.created() first`);
+
+        return probed.value;
     };
 
     return { Probe, read };

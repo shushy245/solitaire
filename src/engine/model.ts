@@ -89,5 +89,6 @@ export const TABLEAU_COUNT = 7;
 export const DECK_SIZE = FOUNDATION_COUNT * CARDS_PER_SUIT;
 // Column i is dealt i + 1 cards.
 export const DEALT_TABLEAU_CARDS = (TABLEAU_COUNT * (TABLEAU_COUNT + 1)) / 2;
+export const TURN_THREE_DRAW_COUNT = 3;
 // Turn 3 draws three, so at most three waste cards ever show.
-export const MAX_WASTE_FAN = 3;
+export const MAX_WASTE_FAN = TURN_THREE_DRAW_COUNT;

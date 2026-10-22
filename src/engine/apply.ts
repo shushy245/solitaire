@@ -2,9 +2,9 @@ import { replaceAt } from './setters.ts';
 import { canApplyMove } from './rules.ts';
 import { clampScore, REVEAL_BONUS, scoreMove } from './scoring.ts';
 import { isEmptyPile, isFaceDown, runFrom, topCard } from './selectors.ts';
-import { DrawMode, GameStateModel, MAX_WASTE_FAN, MoveKind, MoveOf, PileModel } from './model.ts';
+import { DrawMode, GameStateModel, MoveKind, MoveOf, PileModel, TURN_THREE_DRAW_COUNT } from './model.ts';
 
-const drawCountMap: Record<DrawMode, number> = { [DrawMode.One]: 1, [DrawMode.Three]: MAX_WASTE_FAN };
+const drawCountMap: Record<DrawMode, number> = { [DrawMode.One]: 1, [DrawMode.Three]: TURN_THREE_DRAW_COUNT };
 
 // Each transition only relocates cards; it runs after canApplyMove has accepted the move.
 type TransitionMap = { [K in MoveKind]: (args: { state: GameStateModel; move: MoveOf<K> }) => GameStateModel };
