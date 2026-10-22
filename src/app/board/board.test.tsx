@@ -354,6 +354,15 @@ describe('Board', () => {
             driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Tableau, pileIndex: 4 });
         });
 
+        it('pressing a card mid-sequence stops it, before the press has moved far enough to drag', async () => {
+            await driver.click.card(blackFive);
+
+            driver.pointer.press(blackFive);
+            driver.time.pass(AUTO_COMPLETE_STEP_MS * 3);
+
+            driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Tableau, pileIndex: 4 });
+        });
+
         it('a hint asked for mid-sequence is refused, so it never points at the position in between', async () => {
             await driver.click.card(blackFive);
 

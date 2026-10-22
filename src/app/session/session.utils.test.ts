@@ -341,6 +341,34 @@ describe('reduceSession — auto-move', () => {
         expect(act(stopped, { kind: SessionActionKind.StopAutoMove })).toBe(stopped);
     });
 
+    it('does not start after the player takes a card down off a foundation, so it is not sent straight back', () => {
+        const threeOfHearts = aCard().withSuit(Suit.Hearts).withRank(Rank.Three).build();
+        const blackFour = aCard().withSuit(Suit.Clubs).withRank(Rank.Four).build();
+        const blackTwos = [Suit.Clubs, Suit.Spades].map((suit) => [
+            aCard().withSuit(suit).withRank(Rank.Ace).build(),
+            aCard().withSuit(suit).withRank(Rank.Two).build(),
+        ]);
+        const heartsToThree = [Rank.Ace, Rank.Two].map((rank) => aCard().withSuit(Suit.Hearts).withRank(rank).build());
+        const session = aSession()
+            .withGame(
+                aGameState()
+                    .withFoundation({ index: 0, cards: [...heartsToThree, threeOfHearts] })
+                    .withFoundation({ index: 1, cards: blackTwos[0] ?? [] })
+                    .withFoundation({ index: 2, cards: blackTwos[1] ?? [] })
+                    .withColumn({ index: 0, cards: [blackFour] })
+                    .build(),
+            )
+            .build();
+
+        const pulledDown = act(session, {
+            kind: SessionActionKind.Move,
+            move: { kind: MoveKind.FoundationToTableau, cardId: threeOfHearts.id, from: 0, to: 0 },
+        });
+
+        expect(pulledDown.game.tableau[0]?.map((card) => card.id)).toEqual([blackFour.id, threeOfHearts.id]);
+        expect(pulledDown.phase).toBe(SessionPhase.Playing);
+    });
+
     it('a step outside a sequence does nothing', () => {
         const session = beforeFreeing();
 

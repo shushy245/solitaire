@@ -28,8 +28,10 @@ export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.E
     const [tableReport, setTableReport] = useState<TableReportModel | undefined>(undefined);
     const isTableReady = isTableReadyFor({ report: tableReport, dealNumber: session.dealNumber });
     const canHint = isTableReady && !isAutoCompleting(session) && !isAutoMoving(session) && !isWon(game);
-    // Worked out once per game, never per clock tick: the search may cycle the whole deck.
-    const isGameStuck = useMemo(() => isStuck(game), [game]);
+    // Worked out once per game, never per clock tick: the search may cycle the whole deck. Not for the positions
+    // auto-move passes through, which nobody can act on.
+    const isMidAutoMove = isAutoMoving(session);
+    const isGameStuck = useMemo(() => !isMidAutoMove && isStuck(game), [isMidAutoMove, game]);
     const isGameOver = canHint && isGameStuck;
 
     if (hint !== undefined && hint.game !== game) setHint(undefined);

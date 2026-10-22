@@ -66,7 +66,7 @@ export const Board = (): JSX.Element => {
         // No pick-up while dealing, nor while auto-complete moves the cards itself (a drop would be ignored).
         isEnabled: canPlayCards,
         dispatchMove,
-        onPickUp: stopAutoMove,
+        onPress: stopAutoMove,
         onRelease: liftUntilLanded,
         onSnapBack: handleSnapBack,
         boardRef: boardElement,

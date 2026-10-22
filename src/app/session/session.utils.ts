@@ -7,6 +7,7 @@ import {
     isAutoCompletable,
     isWon,
     Move,
+    MoveKind,
     nextAutoMove,
     nextSafeMove,
 } from '~/engine/index.ts';
@@ -101,12 +102,17 @@ const advance = ({ session, game }: { session: SessionModel; game: GameStateMode
 const phaseAfterPlayerMove = (game: GameStateModel): SessionPhase =>
     nextSafeMove(game) === undefined ? SessionPhase.Playing : SessionPhase.AutoMoving;
 
+// A card the player took down off a foundation was taken down on purpose — sending it straight back would undo them.
+const isTakenFromFoundation = (move: Move): boolean => move.kind === MoveKind.FoundationToTableau;
+
 const playerMove = ({ session, move }: { session: SessionModel; move: Move }): SessionModel => {
     if (isAutoCompleting(session)) return session;
 
     const next = advance({ session, game: applyMove({ state: session.game, move }) });
 
-    return next === session ? session : { ...next, phase: phaseAfterPlayerMove(next.game) };
+    if (next === session) return session;
+
+    return { ...next, phase: isTakenFromFoundation(move) ? SessionPhase.Playing : phaseAfterPlayerMove(next.game) };
 };
 
 type ReducerMap = {
@@ -153,12 +159,13 @@ const reducerMap: ReducerMap = {
     // An auto-move belongs to the player move that caused it: it replaces the game without a history entry, so one
     // undo takes both back.
     [SessionActionKind.AutoMoveStep]: ({ session }) => {
-        const move = nextSafeMove(session.game);
-
         if (!isAutoMoving(session)) return session;
-        if (move === undefined) return { ...session, phase: SessionPhase.Playing };
 
-        const game = applyMove({ state: session.game, move });
+        const move = nextSafeMove(session.game);
+        const game = move === undefined ? session.game : applyMove({ state: session.game, move });
+
+        // Nothing safe left, or a rejected step (nothing changed) — never stall in AutoMoving.
+        if (game === session.game) return { ...session, phase: SessionPhase.Playing };
 
         return { ...session, game, phase: phaseAfterPlayerMove(game) };
     },

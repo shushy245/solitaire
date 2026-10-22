@@ -94,7 +94,9 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 .placeholder.hinted,
 .stockButton.hinted {
     border-color: var(--hint);
-    box-shadow: 0 0 0 2px var(--hint), 0 0 16px var(--hint-glow);
+    box-shadow:
+        0 0 0 2px var(--hint),
+        0 0 16px var(--hint-glow);
 }
 
 .stockButton {
@@ -289,8 +291,8 @@ $ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
     transform: rotateY(180deg);
     border: calc(var(--card-w) * 0.05) solid var(--card-ivory);
     background:
-        radial-gradient(circle, var(--back-line) calc(var(--card-w) * 0.012), transparent calc(var(--card-w) * 0.018)) 0 0 /
-            calc(var(--card-w) * 0.08) calc(var(--card-w) * 0.08),
+        radial-gradient(circle, var(--back-line) calc(var(--card-w) * 0.012), transparent calc(var(--card-w) * 0.018)) 0
+            0 / calc(var(--card-w) * 0.08) calc(var(--card-w) * 0.08),
         radial-gradient(circle at 50% 40%, var(--back-glow), var(--back));
 }
 
