@@ -3,7 +3,7 @@ import { beforeEach, describe, it } from 'vitest';
 import { DrawMode, Rank, Suit } from '~/engine/index.ts';
 
 import { PileKind } from './layout.utils.ts';
-import { HINT_SHOWN_MS } from '../hint/hint.utils.ts';
+import { HINT_SHOWN_MS } from '../hint/hint-timing.ts';
 import { BoardDriver, makeBoardDriver } from './board.driver.tsx';
 import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 

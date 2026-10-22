@@ -4,7 +4,7 @@ import { DrawMode } from '~/engine/index.ts';
 import { aGameState } from '~/testkit/builders/index.ts';
 
 import { HudTestIds } from './hud.test-ids.ts';
-import { HINT_SHOWN_MS } from '../hint/hint.utils.ts';
+import { HINT_SHOWN_MS } from '../hint/hint-timing.ts';
 import { HudDriver, makeHudDriver } from './hud.driver.tsx';
 
 describe('Hud', () => {

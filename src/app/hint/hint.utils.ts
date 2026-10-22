@@ -31,9 +31,6 @@ export const isTableReadyFor = ({
     dealNumber: number;
 }): boolean => report !== undefined && report.dealNumber === dealNumber && report.isReady;
 
-// How long a hint stays lit.
-export const HINT_SHOWN_MS = 2000;
-
 export const isShowingHint = (hint: HintModel | undefined): hint is HintModel & { kind: HintKind.Showing } =>
     hint !== undefined && hint.kind === HintKind.Showing;
 

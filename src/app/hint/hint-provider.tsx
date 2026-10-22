@@ -3,9 +3,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { isStuck, isWon } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
+import { HINT_SHOWN_MS } from './hint-timing.ts';
 import { isAutoCompleting } from '../session/session.utils.ts';
 import {
-    HINT_SHOWN_MS,
     HintContextValue,
     HintModel,
     isNoMovesShown,
