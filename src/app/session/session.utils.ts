@@ -117,8 +117,15 @@ const isStuckRemembered = (game: GameStateModel): boolean => {
 // a position can reach, the stuck one could reach too, so putting a card back is not progress. Only earlier positions
 // with more cards home are searched, so a long run of draws in a game that is not stuck searches nothing new.
 export const isGameOverAt = ({ game, history }: Pick<SessionModel, 'game' | 'history'>): boolean =>
+    isGameOverBefore({ game, history, end: history.length });
+
+// isGameOverAt against only the first `end` positions of history — the walk back judges each position this way
+// without copying the history for every step.
+const isGameOverBefore = ({ game, history, end }: Pick<SessionModel, 'game' | 'history'> & { end: number }): boolean =>
     isStuckRemembered(game) ||
-    history.some((earlier) => isTakeDownOf({ earlier, later: game }) && isStuckRemembered(earlier));
+    history.some(
+        (earlier, index) => index < end && isTakeDownOf({ earlier, later: game }) && isStuckRemembered(earlier),
+    );
 
 // Where the game last was not over, searched from the newest position back: a stuck game stays stuck whatever is
 // drawn or taken down, so the search walks back over those moves to the position it lands on. Each position is
@@ -128,7 +135,7 @@ const lastUnstuckIndex = (state: UndoStateModel): number | undefined => {
 
     const newestFirst = state.history.map((game, index) => ({ game, index })).reverse();
     const found = newestFirst.find(
-        ({ game, index }) => !isGameOverAt({ game, history: state.history.slice(0, index) }),
+        ({ game, index }) => !isGameOverBefore({ game, history: state.history, end: index }),
     );
 
     return found === undefined ? undefined : found.index;

@@ -47,14 +47,26 @@ export const isFreeingMove = ({ state, move }: { state: GameStateModel; move: Mo
 // moving off a face-up card only shifts the run to an equal place (and a click would ping-pong it) — unless it
 // frees that face-up card for its foundation; a run that already heads its column, moved to another empty one, is
 // the same shift.
-export const isPointlessMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
+export const isPointlessMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
+    isPointlessMoveGiven({ state, move, isFreeing: (candidate) => isFreeingMove({ state, move: candidate }) });
+
+// isPointlessMove with the freeing check handed in, so a caller that asks it again (Hint's ranking) works it out once.
+export const isPointlessMoveGiven = ({
+    state,
+    move,
+    isFreeing,
+}: {
+    state: GameStateModel;
+    move: Move;
+    isFreeing: (move: Move) => boolean;
+}): boolean => {
     if (move.kind !== MoveKind.TableauToTableau) return false;
 
     const under = cardUnder({ state, move });
 
     if (under === undefined) return isOntoEmptyColumn({ state, move });
 
-    return !isFaceDown(under) && !isFreeingMove({ state, move });
+    return !isFaceDown(under) && !isFreeing(move);
 };
 
 // How eagerly a click plays each kind of move; a kind missing here is never played by a click. Lower goes first.

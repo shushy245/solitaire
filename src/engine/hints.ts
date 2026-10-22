@@ -1,7 +1,7 @@
 import { applyMove } from './apply.ts';
 import { listLegalMoves } from './rules.ts';
 import { GameStateModel, Move, MoveKind, MoveOf } from './model.ts';
-import { isFreeingMove, isOntoEmptyColumn, isPointlessMove, isRevealingMove } from './click-move.ts';
+import { isFreeingMove, isOntoEmptyColumn, isPointlessMoveGiven, isRevealingMove } from './click-move.ts';
 
 type FoundationMove = MoveOf<MoveKind.WasteToFoundation | MoveKind.TableauToFoundation>;
 
@@ -47,19 +47,41 @@ const isEnablingMove = ({ state, move }: { state: GameStateModel; move: Move }):
         (next) =>
             'to' in next &&
             next.to === move.to &&
-            (next.kind === MoveKind.WasteToTableau || isUncoveringMove({ state: after, move: next })),
+            (next.kind === MoveKind.WasteToTableau ||
+                isUncoveringMove({ state: after, move: next, isFreeing: freeingCheckFor(after) })),
     );
 };
 
-const isUncoveringMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
-    isRevealingMove({ state, move }) || isFreeingMove({ state, move });
+type FreeingCheck = (move: Move) => boolean;
+
+// isFreeingMove applies the move to find out, and both the pointless filter and the ranking ask it of one move — so
+// it is worked out once per move.
+const freeingCheckFor = (state: GameStateModel): FreeingCheck => {
+    const known = new Map<Move, boolean>();
+
+    return (move) => {
+        const remembered = known.get(move);
+
+        if (remembered !== undefined) return remembered;
+
+        const answer = isFreeingMove({ state, move });
+        known.set(move, answer);
+
+        return answer;
+    };
+};
+
+type HintArgs = { state: GameStateModel; move: Move; isFreeing: FreeingCheck };
+
+const isUncoveringMove = ({ state, move, isFreeing }: HintArgs): boolean =>
+    isRevealingMove({ state, move }) || isFreeing(move);
 
 // How useful a move is as a hint; lower is shown first, undefined is never shown. A column move ranks high when it
 // turns a card over or frees one for its foundation, low when it only empties its column.
-const hintRankMap: { [K in MoveKind]: (args: { state: GameStateModel; move: Move }) => number | undefined } = {
+const hintRankMap: { [K in MoveKind]: (args: HintArgs) => number | undefined } = {
     [MoveKind.WasteToFoundation]: () => 0,
     [MoveKind.TableauToFoundation]: () => 0,
-    [MoveKind.TableauToTableau]: ({ state, move }) => (isUncoveringMove({ state, move }) ? 1 : 3),
+    [MoveKind.TableauToTableau]: (args) => (isUncoveringMove(args) ? 1 : 3),
     [MoveKind.WasteToTableau]: () => 2,
     [MoveKind.FoundationToTableau]: ({ state, move }) => (isEnablingMove({ state, move }) ? 3 : undefined),
     [MoveKind.Draw]: () => 4,
@@ -74,14 +96,17 @@ export const isReturnOfKeptCard = ({ move, keptOnTable }: { move: Move; keptOnTa
 // frees one for its foundation, then the waste onto a column, then a column move that empties its column, then the
 // stock — always last, so cycling the hints ends on it. Never a card back off a foundation, never a pointless move.
 // Empty when nothing plays and nothing is left to draw.
-export const listHints = (state: GameStateModel): Move[] =>
-    listLegalMoves(state)
-        .filter((move) => !isPointlessMove({ state, move }))
+export const listHints = (state: GameStateModel): Move[] => {
+    const isFreeing = freeingCheckFor(state);
+
+    return listLegalMoves(state)
+        .filter((move) => !isPointlessMoveGiven({ state, move, isFreeing }))
         .filter((move, index, moves) => !isRepeatHint({ state, move, index, moves }))
         .flatMap((move) => {
-            const rank = hintRankMap[move.kind]({ state, move });
+            const rank = hintRankMap[move.kind]({ state, move, isFreeing });
 
             return rank === undefined ? [] : [{ move, rank }];
         })
         .sort((a, b) => a.rank - b.rank)
         .map(({ move }) => move);
+};
