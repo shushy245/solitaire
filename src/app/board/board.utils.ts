@@ -251,3 +251,20 @@ export const placeholderSlot = ({ column, row }: { column: number; row: number }
     fan: 0,
     z: 0,
 });
+
+export type CardProps = {
+    // Where the card really is (drives data attributes and its accessible name) …
+    slot: CardSlotModel;
+    // … and where it is drawn right now (differs only before the deal).
+    shownSlot: CardSlotModel;
+    isLifted: boolean;
+    isDragging: boolean;
+    isInteractive: boolean;
+    delayClassName: string | undefined;
+    isShaking: boolean;
+    isHinted: boolean;
+    onClick: (args: { cardId: string; detail: number }) => void;
+    onShakeEnd: () => void;
+    onLanded: (cardId: string) => void;
+    onPointerDown: (args: { cardId: string; event: React.PointerEvent }) => void;
+};

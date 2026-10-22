@@ -7,6 +7,9 @@ export enum PileKind {
     Tableau = 'tableau',
 }
 
+// Anything that names a pile — a card's slot, a drop target.
+export const isTableauPile = ({ pile }: { pile: PileKind }): boolean => pile === PileKind.Tableau;
+
 // Where a card sits, in table units — CSS turns these into pixels, so the layout stays CSS-responsive.
 export type CardSlotModel = {
     card: CardModel;
@@ -118,15 +121,13 @@ export const movedCardIds = ({
     return new Set(next.filter((slot) => previousKeys.get(slot.card.id) !== slotKey(slot)).map((slot) => slot.card.id));
 };
 
-const isTableauSlot = (slot: CardSlotModel): boolean => slot.pile === PileKind.Tableau;
-
 const depthOf = (slot: CardSlotModel): number => slot.downOffset + slot.upOffset;
 
 // The order a dealer lays tableau cards: one card to every column, then the next row, left to right.
 export const dealOrder = (slots: readonly CardSlotModel[]): Map<string, number> =>
     new Map(
         slots
-            .filter(isTableauSlot)
+            .filter(isTableauPile)
             .sort((a, b) => depthOf(a) - depthOf(b) || a.column - b.column)
             .map((slot, index) => [slot.card.id, index]),
     );

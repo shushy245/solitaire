@@ -1,6 +1,6 @@
 import { canApplyMove, GameStateModel, isTopCard, Move, MoveKind, runFrom } from '~/engine/index.ts';
 
-import { PileKind } from '../board/layout.utils.ts';
+import { isTableauPile, PileKind } from '../board/layout.utils.ts';
 
 export type PileRefModel = { pile: PileKind; pileIndex: number };
 
@@ -89,8 +89,6 @@ export const DROP_PADDING_RATIO = 0.25;
 // pile lands, a graze of a neighbour's padded edge (≈0.12 of the card when dropped dead centre on the next
 // column) does not. Raising DROP_PADDING_RATIO past ~0.37 voids that margin.
 export const MIN_DROP_SHARE = 0.25;
-
-const isTableauPile = (pile: PileRefModel): boolean => pile.pile === PileKind.Tableau;
 
 const areaOf = (rect: RectModel): number => (rect.right - rect.left) * (rect.bottom - rect.top);
 
