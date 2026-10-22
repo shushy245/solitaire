@@ -242,7 +242,7 @@ type GameContextValue = {
   - the stock ignores clicks while the deal is still flying out
   - saving logs under the save's own name, not the load's
 - Deferred (BF, recorded): BF-1 (fixed in `two-tabs`) two open tabs overwrite each other's saved game on every tick (last writer wins) —
-  fix: save only from the visible tab and flush on hide. BF-2 a refused game write (quota) leaves the last good
+  fix: save only from the visible tab and flush on hide. BF-2 (won't fix — user, 2026-10-22: "no need to handle that") a refused game write (quota) leaves the last good
   save, so a reload resumes an older position without a word — measured ~0.49MB per 500 undo steps against a ~5MB
   quota, so it needs thousands of moves; fix: tell the player, or trim history.
 - Kept: a card dragged off a foundation after a win un-wins it — the win panel is deliberately non-modal
