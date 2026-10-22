@@ -417,6 +417,42 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   - pre-mortem: a new game, undo or drag started mid-sequence stops it (no move lands on the wrong game)
   - pre-mortem: a restored game on load runs no auto-moves until the player moves (no surprise moves on reload)
 
+### Story `polish-review` — fixes from the epic-level review of Play polish + Trust and flow (2026-10-22)
+- Owns: `src/engine/` (hints, safe-move), `src/app/session/`, `src/app/board/`, `src/app/drag/`, `src/app/hud/`,
+  `src/app/hint/`
+- Depends on: auto-move
+- Parallel: serial
+- Cases (one per finding, red first):
+  - E1 Hint suggests taking a card down off a foundation when that lets a table card turn over or the waste play onto
+    it, so a game that is not stuck never hears "No moves left"
+  - E2 a card the player took down off a foundation is never auto-moved back by a later move in the same game
+  - E3 each card's accessible name says where it lies (column, waste, foundation, stock), so the id-sorted DOM order
+    still reads sensibly
+  - E4 the second click of a double-click never plays the card the first click uncovered
+  - E5 "No moves left" appears without moving the table (no layout shift)
+  - E6 a drop whose source pile overlaps more than any legal pile snaps back, whatever overlaps most
+  - E7 the stuck search runs only while hints are on (not mid-deal or mid-sweep)
+  - E8 a click on a card already home does nothing (no shake, no snap-back sound)
+
+### Story `stuck-polish` — BF-3..BF-6 from the `game-over` review (2026-10-22, autonomous run)
+- Owns: `src/app/game-over/`, `src/app/session/` (undo-to-unstuck, stuck clock), `src/app/hud/` (leave confirmation),
+  `src/app/game-provider.tsx` (stuck flag into the clock)
+- Depends on: polish-review
+- Parallel: serial
+- Decisions (user, 2026-10-22): panel Undo only leaps; no confirmation for New game only; the panel can be closed.
+- Cases:
+  - BF-3: the panel's Undo goes back to the last position that was not stuck, however many draws were made after
+    the game got stuck; the HUD's Undo and Ctrl+Z still take back one move
+  - BF-3: with no earlier unstuck position (stuck from the deal), the panel's Undo stays disabled
+  - BF-4: New game on a stuck game deals at once, no "leave this game?"; the turn-1/turn-3 switch still asks
+  - BF-5: the panel has a close button; closed, it stays away while the game stays stuck (draws included) and comes
+    back once the game has been un-stuck and gets stuck again; Hint still says "No moves left"
+  - BF-6: the clock stops while the game is stuck and runs again after an Undo out of it
+  - pre-mortem: the stuck search must not run per clock tick (the clock needs a flag worked out once per game)
+  - pre-mortem: closing the panel returns focus somewhere sensible (the table stays playable by pointer)
+  - pre-mortem: undo-to-unstuck runs the stuck search per history entry — bounded by the draws made after getting
+    stuck; an auto-move or New game mid-way never leaves a half-undone state
+
 ---
 
 ## Review triage
