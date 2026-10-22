@@ -58,7 +58,8 @@ type SessionPayloadMap = {
     [SessionActionKind.Undo]: object;
     [SessionActionKind.UndoToUnstuck]: object;
     [SessionActionKind.NewGame]: { readonly seed: number; readonly drawMode: DrawMode };
-    [SessionActionKind.Tick]: { readonly elapsedMs: number };
+    // The game-over check is too costly to run per tick, so the tick carries the answer worked out per position.
+    [SessionActionKind.Tick]: { readonly elapsedMs: number; readonly isGameOver: boolean };
     [SessionActionKind.StartAutoComplete]: object;
     [SessionActionKind.AutoCompleteStep]: object;
 };
@@ -85,6 +86,10 @@ export const isAutoCompleting = (session: Pick<SessionModel, 'phase'>): boolean 
 
 // Started and not yet finished: the clock runs, and leaving would throw the player's progress away.
 export const isGameUnderWay = (session: SessionModel): boolean => session.game.moves > 0 && !isWon(session.game);
+
+// A stuck game is not being played: its clock stops until an undo takes it out of the stuck position.
+const isClockRunning = ({ session, isGameOver }: { session: SessionModel; isGameOver: boolean }): boolean =>
+    isGameUnderWay(session) && !isGameOver;
 
 export const canUndo = (session: Pick<SessionModel, 'history' | 'phase'>): boolean =>
     session.history.length > 0 && !isAutoCompleting(session);
@@ -155,7 +160,9 @@ const reducerMap: ReducerMap = {
         stats: session.stats,
     }),
     [SessionActionKind.Tick]: ({ session, action }) =>
-        isGameUnderWay(session) ? { ...session, elapsedMs: session.elapsedMs + action.elapsedMs } : session,
+        isClockRunning({ session, isGameOver: action.isGameOver })
+            ? { ...session, elapsedMs: session.elapsedMs + action.elapsedMs }
+            : session,
     [SessionActionKind.StartAutoComplete]: ({ session }) =>
         isAutoCompletable(session.game) && !isAutoCompleting(session)
             ? { ...session, phase: SessionPhase.AutoCompleting }

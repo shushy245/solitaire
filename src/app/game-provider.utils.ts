@@ -13,6 +13,8 @@ export type GameContextValue = {
     undoToUnstuck: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;
+    // The hint provider tells the clock whether the game is over: a stuck game's clock stops.
+    reportGameOver: (isGameOver: boolean) => void;
 };
 
 export type GameProviderProps = {

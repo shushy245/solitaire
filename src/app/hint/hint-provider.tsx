@@ -21,7 +21,7 @@ const HintContext = createContext<HintContextValue | undefined>(undefined);
 // so the timer effect restarts and its cleanup cancels the older timer — an earlier timer never puts out a newer
 // hint. The hint is forgotten the moment the game changes, so an undo back to the same game cannot revive it.
 export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.Element => {
-    const { session } = useGame();
+    const { session, reportGameOver } = useGame();
     const { game } = session;
     const [hint, setHint] = useState<HintModel | undefined>(undefined);
     const [shown, setShown] = useState({ isVisible: false });
@@ -34,6 +34,10 @@ export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.E
     const isGameOver = canHint && isGameStuck;
 
     if (hint !== undefined && hint.game !== game) setHint(undefined);
+
+    useEffect(() => {
+        reportGameOver(isGameOver);
+    }, [isGameOver, reportGameOver]);
 
     const showHint = useCallback((): void => {
         if (!canHint) return;

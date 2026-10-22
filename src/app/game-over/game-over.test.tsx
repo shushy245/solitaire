@@ -2,6 +2,7 @@ import { beforeEach, describe, it } from 'vitest';
 
 import { DrawMode } from '~/engine/index.ts';
 
+import { CLOCK_TICK_MS } from '../game-provider.utils.ts';
 import { GameOverDriver, makeGameOverDriver } from './game-over.driver.tsx';
 
 describe('GameOver', () => {
@@ -97,6 +98,21 @@ describe('GameOver', () => {
         driver.when.lastMovePlayed();
 
         driver.assert.panelShown(true);
+    });
+
+    it('stops the clock while the game is stuck, and runs it again after an Undo out of it', async () => {
+        driver.given.oneMoveFromStuckWithDeck();
+        await driver.when.created();
+        driver.when.drawn(1);
+        driver.time.pass(CLOCK_TICK_MS * 2);
+        driver.when.lastMovePlayed();
+
+        driver.time.pass(CLOCK_TICK_MS * 5);
+        driver.assert.timePlayed(CLOCK_TICK_MS * 2);
+        driver.when.undoneElsewhere();
+        driver.time.pass(CLOCK_TICK_MS * 3);
+
+        driver.assert.timePlayed(CLOCK_TICK_MS * 5);
     });
 
     it('shows straight away for a game resumed already stuck', async () => {

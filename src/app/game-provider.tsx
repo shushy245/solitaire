@@ -23,13 +23,19 @@ export const GameProvider = ({
     const [session, dispatch] = useReducer(reducer, undefined, createInitialSession);
 
     const lastTick = useRef(now());
+    // Reported by the hint provider, which works out once per position whether the game is over (stuck).
+    const isGameOver = useRef(false);
 
     // Adds the real time since the clock was last read. It runs on an always-on interval (the reducer only
     // advances the clock while a game is in progress) and right before every action that changes the game,
     // so the first move starts the clock and the winning move stops it at that exact moment.
     const flushClock = useCallback((): void => {
         const current = now();
-        dispatch({ kind: SessionActionKind.Tick, elapsedMs: current - lastTick.current });
+        dispatch({
+            kind: SessionActionKind.Tick,
+            elapsedMs: current - lastTick.current,
+            isGameOver: isGameOver.current,
+        });
         lastTick.current = current;
     }, [now]);
 
@@ -89,6 +95,9 @@ export const GameProvider = ({
             },
             startAutoComplete: () => {
                 dispatch({ kind: SessionActionKind.StartAutoComplete });
+            },
+            reportGameOver: (isOver) => {
+                isGameOver.current = isOver;
             },
         }),
         [seedSource, flushClock],

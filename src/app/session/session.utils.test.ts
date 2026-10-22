@@ -176,19 +176,36 @@ describe('reduceSession — timer', () => {
     it('does not tick before the first move', () => {
         const session = freshSession();
 
-        expect(reduceSession({ session, action: { kind: SessionActionKind.Tick, elapsedMs: 1000 } })).toBe(session);
+        expect(
+            reduceSession({ session, action: { kind: SessionActionKind.Tick, elapsedMs: 1000, isGameOver: false } }),
+        ).toBe(session);
     });
 
     it('adds the real time measured since the last tick once play has started', () => {
         const played = drawIn(freshSession());
         const afterTicks = [1000, 61_500].reduce(
             (current, elapsedMs) =>
-                reduceSession({ session: current, action: { kind: SessionActionKind.Tick, elapsedMs } }),
+                reduceSession({
+                    session: current,
+                    action: { kind: SessionActionKind.Tick, elapsedMs, isGameOver: false },
+                }),
             played,
         );
 
         // a throttled background tab reports one long gap, not many ticks — it must still count it all
         expect(afterTicks.elapsedMs).toBe(62_500);
+    });
+
+    // The game-over check is too costly to run per tick, so the tick carries its answer.
+    it('does not tick while the game is over', () => {
+        const played = drawIn(freshSession());
+
+        expect(
+            reduceSession({
+                session: played,
+                action: { kind: SessionActionKind.Tick, elapsedMs: 1000, isGameOver: true },
+            }),
+        ).toBe(played);
     });
 
     it('stops ticking once the game is won', () => {
@@ -203,9 +220,12 @@ describe('reduceSession — timer', () => {
         );
 
         expect(isWon(finished.game)).toBe(true);
-        expect(reduceSession({ session: finished, action: { kind: SessionActionKind.Tick, elapsedMs: 1000 } })).toBe(
-            finished,
-        );
+        expect(
+            reduceSession({
+                session: finished,
+                action: { kind: SessionActionKind.Tick, elapsedMs: 1000, isGameOver: false },
+            }),
+        ).toBe(finished);
     });
 });
 

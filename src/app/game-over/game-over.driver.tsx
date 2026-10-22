@@ -64,6 +64,7 @@ export type GameOverDriver = {
         undoneElsewhere: () => void;
     };
     click: { undo: () => void; newGame: () => void; close: () => void };
+    time: { pass: (ms: number) => void };
     assert: {
         panelShown: (isShown: boolean) => void;
         panelNeverAppeared: () => void;
@@ -71,6 +72,7 @@ export type GameOverDriver = {
         newGameFocused: () => void;
         undoEnabled: (isEnabled: boolean) => void;
         movesMade: (moves: number) => void;
+        timePlayed: (ms: number) => void;
         freshDealIn: (drawMode: DrawMode) => void;
     };
 };
@@ -187,6 +189,13 @@ export const makeGameOverDriver = (): GameOverDriver => {
                 fireEvent.click(screen.getByRole('button', { name: 'Close' }));
             },
         },
+        time: {
+            pass: (ms) => {
+                act(() => {
+                    vi.advanceTimersByTime(ms);
+                });
+            },
+        },
         assert: {
             panelShown: (isShown) => {
                 // A named region, not a dialog: it is not modal — the table stays live behind it.
@@ -208,6 +217,9 @@ export const makeGameOverDriver = (): GameOverDriver => {
             },
             movesMade: (moves) => {
                 expect(game().session.game.moves).toBe(moves);
+            },
+            timePlayed: (ms) => {
+                expect(game().session.elapsedMs).toBe(ms);
             },
             freshDealIn: (drawMode) => {
                 expect(game().session.game.moves).toBe(0);

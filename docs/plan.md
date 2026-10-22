@@ -58,8 +58,9 @@ type GameContextValue = {
     playCard: (cardId: string) => void; // intent, resolved against the current game
     undo: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
+    undoToUnstuck: () => void;                 // (stuck-polish) the game-over panel's Undo: back to the last unstuck position
     startAutoComplete: () => void;
-    stopAutoMove: () => void;                  // (auto-move) a pick-up stops safe cards flying home
+    reportGameOver: (isGameOver: boolean) => void; // (stuck-polish) the hint provider stops the clock on a stuck game
 };
 // <GameProvider createInitialSession={() => SessionModel} seedSource={() => number} now={() => number}
 //               saveSession={(session) => void}>

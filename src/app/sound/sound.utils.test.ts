@@ -17,7 +17,10 @@ describe('soundForChange', () => {
         const session = seedOne();
 
         expect(
-            soundOf({ before: session, after: act(session, { kind: SessionActionKind.Tick, elapsedMs: 1000 }) }),
+            soundOf({
+                before: session,
+                after: act(session, { kind: SessionActionKind.Tick, elapsedMs: 1000, isGameOver: false }),
+            }),
         ).toBe(undefined);
         expect(soundOf({ before: session, after: session })).toBe(undefined);
     });
