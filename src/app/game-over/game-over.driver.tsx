@@ -63,7 +63,7 @@ export type GameOverDriver = {
         drawn: (times: number) => void;
         undoneElsewhere: () => void;
     };
-    click: { undo: () => void; newGame: () => void };
+    click: { undo: () => void; newGame: () => void; close: () => void };
     assert: {
         panelShown: (isShown: boolean) => void;
         panelNeverAppeared: () => void;
@@ -182,6 +182,9 @@ export const makeGameOverDriver = (): GameOverDriver => {
             },
             newGame: () => {
                 fireEvent.click(screen.getByTestId(GameOverTestIds.NewGame));
+            },
+            close: () => {
+                fireEvent.click(screen.getByRole('button', { name: 'Close' }));
             },
         },
         assert: {

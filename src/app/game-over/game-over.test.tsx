@@ -75,6 +75,30 @@ describe('GameOver', () => {
         driver.assert.panelShown(false);
     });
 
+    it('can be closed, and stays closed while the game stays stuck — draws included', async () => {
+        driver.given.oneMoveFromStuckWithDeck();
+        await driver.when.created();
+        driver.when.lastMovePlayed();
+
+        driver.click.close();
+        driver.assert.panelShown(false);
+        driver.when.drawn(2);
+
+        driver.assert.panelShown(false);
+    });
+
+    it('comes back once the game has been un-stuck and gets stuck again', async () => {
+        driver.given.oneMoveFromStuck(DrawMode.One);
+        await driver.when.created();
+        driver.when.lastMovePlayed();
+        driver.click.close();
+
+        driver.when.undoneElsewhere();
+        driver.when.lastMovePlayed();
+
+        driver.assert.panelShown(true);
+    });
+
     it('shows straight away for a game resumed already stuck', async () => {
         driver.given.alreadyStuck();
 

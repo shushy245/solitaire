@@ -1,1 +1,6 @@
-export type GameOverPanelProps = { canUndo: boolean; onUndo: () => void; onNewGame: () => void };
+export type GameOverPanelProps = {
+    canUndo: boolean;
+    onUndo: () => void;
+    onNewGame: () => void;
+    onClose: () => void;
+};

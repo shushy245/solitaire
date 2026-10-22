@@ -1,4 +1,4 @@
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import { Row } from '../../ui/box.tsx';
 import { useGame } from '../game-provider.tsx';
@@ -21,22 +21,42 @@ export const GameOver = (): JSX.Element | undefined => {
         [isGameOver, game, history, phase],
     );
 
-    if (!isGameOver) return undefined;
+    const [isClosed, setClosed] = useState(false);
+
+    // Closed for this stuck stretch only: once the game is not over (an undo, a new deal), a later game over shows again.
+    if (isClosed && !isGameOver) setClosed(false);
+
+    if (!isGameOver || isClosed) return undefined;
+
+    const handleClose = (): void => {
+        setClosed(true);
+    };
 
     const handleNewGame = (): void => {
         newGame({ drawMode: game.drawMode });
     };
 
-    return <GameOverPanel canUndo={isUndoable} onUndo={undoToUnstuck} onNewGame={handleNewGame} />;
+    return (
+        <GameOverPanel canUndo={isUndoable} onUndo={undoToUnstuck} onNewGame={handleNewGame} onClose={handleClose} />
+    );
 };
 
-const GameOverPanel = ({ canUndo: isUndoable, onUndo, onNewGame }: GameOverPanelProps): JSX.Element => {
+const GameOverPanel = ({ canUndo: isUndoable, onUndo, onNewGame, onClose }: GameOverPanelProps): JSX.Element => {
     const titleId = useId();
     // The panel takes focus, so a keyboard player can step back (or, with nothing to undo, deal) straight away.
     const handleFirstActionRef = useFocusOnAppear<HTMLButtonElement>();
 
     return (
         <section aria-labelledby={titleId} className={styles.panel} data-testid={GameOverTestIds.Panel}>
+            <button
+                type="button"
+                aria-label="Close"
+                className={styles.close}
+                data-testid={GameOverTestIds.Close}
+                onClick={onClose}
+            >
+                {`×`}
+            </button>
             <h2 id={titleId} className={styles.title}>
                 {`No more moves`}
             </h2>
