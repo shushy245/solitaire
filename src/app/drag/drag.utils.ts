@@ -1,4 +1,4 @@
-import { canApplyMove, GameStateModel, isTopCard, Move, MoveKind } from '~/engine/index.ts';
+import { canApplyMove, GameStateModel, isTopCard, Move, MoveKind, runFrom } from '~/engine/index.ts';
 
 import { PileKind } from '../board/layout.utils.ts';
 
@@ -28,7 +28,7 @@ export const pickUp = ({ game, cardId }: { game: GameStateModel; cardId: string 
 
     const column = game.tableau.findIndex((pile) => pile.some((card) => card.id === cardId));
     const cards = game.tableau[column] ?? [];
-    const run = cards.slice(cards.findIndex((card) => card.id === cardId));
+    const run = runFrom({ pile: cards, cardId });
     const head = run[0];
 
     if (head === undefined || !head.faceUp) return undefined;

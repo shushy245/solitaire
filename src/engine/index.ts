@@ -13,6 +13,7 @@ export {
     isMovableRun,
     isTopCard,
     isWon,
+    runFrom,
     suitColorOf,
     topCard,
 } from './selectors.ts';

@@ -56,6 +56,13 @@ export const isMovableRun = (run: PileModel): boolean =>
         );
     });
 
+// The cards from the named one to the top of the pile; empty when the card is not in it.
+export const runFrom = ({ pile, cardId }: { pile: PileModel; cardId: string }): PileModel => {
+    const start = pile.findIndex((card) => card.id === cardId);
+
+    return start === -1 ? [] : pile.slice(start);
+};
+
 const isCompleteFoundation = (pile: PileModel): boolean => pile.length === CARDS_PER_SUIT;
 
 export const isWon = (state: GameStateModel): boolean => state.foundations.every(isCompleteFoundation);

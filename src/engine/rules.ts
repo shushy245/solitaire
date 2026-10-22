@@ -1,5 +1,13 @@
 import { CardModel, GameStateModel, Move, MoveKind, MoveOf, PileModel } from './model.ts';
-import { canRecycle, canStackOnFoundation, canStackOnTableau, isMovableRun, isTopCard, topCard } from './selectors.ts';
+import {
+    canRecycle,
+    canStackOnFoundation,
+    canStackOnTableau,
+    isMovableRun,
+    isTopCard,
+    runFrom,
+    topCard,
+} from './selectors.ts';
 
 type RuleMap = { [K in MoveKind]: (args: { state: GameStateModel; move: MoveOf<K> }) => boolean };
 
@@ -40,10 +48,10 @@ const ruleMap: RuleMap = {
 
         if (source === undefined || target === undefined || isSamePile(move)) return false;
 
-        const run = source.slice(source.findIndex((card) => card.id === move.cardId));
+        const run = runFrom({ pile: source, cardId: move.cardId });
         const head = run[0];
 
-        if (head === undefined || head.id !== move.cardId) return false;
+        if (head === undefined) return false;
 
         return isMovableRun(run) && canStackOnTableau({ card: head, pile: target });
     },

@@ -86,3 +86,8 @@ export type Move = MoveOf<MoveKind>;
 export const FOUNDATION_COUNT = 4;
 export const CARDS_PER_SUIT = 13;
 export const TABLEAU_COUNT = 7;
+export const DECK_SIZE = FOUNDATION_COUNT * CARDS_PER_SUIT;
+// Column i is dealt i + 1 cards.
+export const DEALT_TABLEAU_CARDS = (TABLEAU_COUNT * (TABLEAU_COUNT + 1)) / 2;
+// Turn 3 draws three, so at most three waste cards ever show.
+export const MAX_WASTE_FAN = 3;

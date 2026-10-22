@@ -1,4 +1,5 @@
 import {
+    DEALT_TABLEAU_CARDS,
     findClickMove,
     GameStateModel,
     hasStock,
@@ -32,8 +33,7 @@ export const STACK_HOLD_MS = 60;
 export const DEAL_STAGGER_MS = 35;
 const MOVE_MS = 260;
 const FLIP_MS = 300;
-const TABLEAU_CARDS = 28;
-export const DEAL_TOTAL_MS = TABLEAU_CARDS * DEAL_STAGGER_MS + MOVE_MS + FLIP_MS;
+export const DEAL_TOTAL_MS = DEALT_TABLEAU_CARDS * DEAL_STAGGER_MS + MOVE_MS + FLIP_MS;
 
 export const rankLabelMap: Record<Rank, string> = {
     [Rank.Ace]: 'A',

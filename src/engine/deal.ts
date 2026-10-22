@@ -1,15 +1,22 @@
 import { createDeck, shuffle } from './deck.ts';
-import { CardModel, DrawMode, FOUNDATION_COUNT, GameStateModel, PileModel, TABLEAU_COUNT } from './model.ts';
+import {
+    CardModel,
+    DEALT_TABLEAU_CARDS,
+    DrawMode,
+    FOUNDATION_COUNT,
+    GameStateModel,
+    PileModel,
+    TABLEAU_COUNT,
+} from './model.ts';
 
 // Column i takes i + 1 cards from the front of the shuffled deck; the rest becomes the stock.
 export const dealGame = ({ seed, drawMode }: { seed: number; drawMode: DrawMode }): GameStateModel => {
     const deck = shuffle({ items: createDeck(), seed });
-    const tableauSize = (TABLEAU_COUNT * (TABLEAU_COUNT + 1)) / 2;
 
     return {
         seed,
         drawMode,
-        stock: deck.slice(tableauSize),
+        stock: deck.slice(DEALT_TABLEAU_CARDS),
         waste: [],
         wasteFan: 0,
         foundations: Array.from({ length: FOUNDATION_COUNT }, () => []),

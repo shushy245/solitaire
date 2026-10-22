@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
 
-import { isWon } from './selectors.ts';
 import { Rank, Suit } from './model.ts';
+import { isWon, runFrom } from './selectors.ts';
 
 const fullSuit = (suit: Suit) =>
     Array.from({ length: 13 }, (_, i) =>
@@ -26,5 +26,20 @@ describe('isWon', () => {
 
     it('is false for an empty table', () => {
         expect(isWon(aGameState().build())).toBe(false);
+    });
+});
+
+describe('runFrom', () => {
+    const king = aCard().withSuit(Suit.Spades).withRank(Rank.King).build();
+    const queen = aCard().withSuit(Suit.Spades).withRank(Rank.Queen).build();
+    const jack = aCard().withSuit(Suit.Spades).withRank(Rank.Jack).build();
+    const pile = [king, queen, jack];
+
+    it('is the named card and every card above it', () => {
+        expect(runFrom({ pile, cardId: queen.id })).toEqual([queen, jack]);
+    });
+
+    it('is empty when the card is not in the pile', () => {
+        expect(runFrom({ pile: [king], cardId: jack.id })).toEqual([]);
     });
 });

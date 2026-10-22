@@ -3,10 +3,12 @@ import { z } from 'zod';
 import { RequestedDealModel } from '~/utils/seed-source.utils.ts';
 import {
     CardModel,
+    DECK_SIZE,
     DrawMode,
     FOUNDATION_COUNT,
     GameStateModel,
     isMovableRun,
+    MAX_WASTE_FAN,
     Rank,
     Suit,
     TABLEAU_COUNT,
@@ -20,7 +22,6 @@ import { DealProgress, makeSession, SessionModel, SessionPhase } from '../sessio
 export { SAVED_GAME_KEY, SAVED_STATS_KEY } from './storage-keys.utils.ts';
 
 const SAVE_VERSION = 1;
-const DECK_SIZE = 52;
 
 export enum SavedKind {
     Found = 'found',
@@ -70,8 +71,6 @@ const holdsEveryCardOnce = (game: GameStateModel): boolean => {
 
     return ids.length === DECK_SIZE && new Set(ids).size === DECK_SIZE;
 };
-
-const MAX_WASTE_FAN = 3;
 
 // Ace first, then each rank one higher in the Ace's suit, all face-up — anything else could fake a win.
 const isBuiltUpInOneSuit = (pile: readonly CardModel[]): boolean => {

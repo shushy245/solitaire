@@ -1,10 +1,10 @@
 import { replaceAt } from './setters.ts';
 import { canApplyMove } from './rules.ts';
-import { isEmptyPile, isFaceDown, topCard } from './selectors.ts';
 import { clampScore, REVEAL_BONUS, scoreMove } from './scoring.ts';
-import { DrawMode, GameStateModel, MoveKind, MoveOf, PileModel } from './model.ts';
+import { isEmptyPile, isFaceDown, runFrom, topCard } from './selectors.ts';
+import { DrawMode, GameStateModel, MAX_WASTE_FAN, MoveKind, MoveOf, PileModel } from './model.ts';
 
-const drawCountMap: Record<DrawMode, number> = { [DrawMode.One]: 1, [DrawMode.Three]: 3 };
+const drawCountMap: Record<DrawMode, number> = { [DrawMode.One]: 1, [DrawMode.Three]: MAX_WASTE_FAN };
 
 // Each transition only relocates cards; it runs after canApplyMove has accepted the move.
 type TransitionMap = { [K in MoveKind]: (args: { state: GameStateModel; move: MoveOf<K> }) => GameStateModel };
@@ -41,10 +41,11 @@ const transitionMap: TransitionMap = {
     }),
     [MoveKind.TableauToTableau]: ({ state, move }) => {
         const source = pileAt({ piles: state.tableau, index: move.from });
-        const runStart = source.findIndex((card) => card.id === move.cardId);
-        const lifted = replaceAt({ items: state.tableau, index: move.from, value: source.slice(0, runStart) });
+        const run = runFrom({ pile: source, cardId: move.cardId });
+        const left = source.slice(0, source.length - run.length);
+        const lifted = replaceAt({ items: state.tableau, index: move.from, value: left });
 
-        return { ...state, tableau: placeOn({ piles: lifted, index: move.to, cards: source.slice(runStart) }) };
+        return { ...state, tableau: placeOn({ piles: lifted, index: move.to, cards: run }) };
     },
     [MoveKind.TableauToFoundation]: ({ state, move }) => {
         const source = pileAt({ piles: state.tableau, index: move.from });
