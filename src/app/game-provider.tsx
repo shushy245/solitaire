@@ -96,8 +96,8 @@ export const GameProvider = ({
             startAutoComplete: () => {
                 dispatch({ kind: SessionActionKind.StartAutoComplete });
             },
-            reportGameOver: (isOver) => {
-                isGameOver.current = isOver;
+            reportGameOver: (report) => {
+                isGameOver.current = report.isGameOver;
             },
         }),
         [seedSource, flushClock],

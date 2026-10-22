@@ -186,7 +186,7 @@ export const makeGameOverDriver = (): GameOverDriver => {
                 fireEvent.click(screen.getByTestId(GameOverTestIds.NewGame));
             },
             close: () => {
-                fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+                fireEvent.click(screen.getByTestId(GameOverTestIds.Close));
             },
         },
         time: {

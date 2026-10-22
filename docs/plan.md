@@ -60,7 +60,7 @@ type GameContextValue = {
     newGame: (opts: { drawMode: DrawMode }) => void;
     undoToUnstuck: () => void;                 // (stuck-polish) the game-over panel's Undo: back to the last unstuck position
     startAutoComplete: () => void;
-    reportGameOver: (isGameOver: boolean) => void; // (stuck-polish) the hint provider stops the clock on a stuck game
+    reportGameOver: (report: { isGameOver: boolean }) => void; // (stuck-polish) the hint provider stops the clock on a stuck game
 };
 // <GameProvider createInitialSession={() => SessionModel} seedSource={() => number} now={() => number}
 //               saveSession={(session) => void}>

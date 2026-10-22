@@ -97,13 +97,28 @@ export const canUndo = (session: Pick<SessionModel, 'history' | 'phase'>): boole
 // What undo needs to know — not the clock, so a component can work it out once per position, not per tick.
 type UndoStateModel = Pick<SessionModel, 'game' | 'history' | 'phase'>;
 
+// Game states are never changed in place, so a stuck answer holds for the object for good. Remembered per position,
+// a player drawing on in a stuck game costs one new search per draw, not one per position since getting stuck.
+const stuckByGame = new WeakMap<GameStateModel, boolean>();
+
+const isStuckRemembered = (game: GameStateModel): boolean => {
+    const known = stuckByGame.get(game);
+
+    if (known !== undefined) return known;
+
+    const answer = isStuck(game);
+    stuckByGame.set(game, answer);
+
+    return answer;
+};
+
 // Where the game last was not stuck, searched from the newest position back: a stuck game stays stuck whatever is
-// drawn, so the search runs once per draw made after getting stuck, plus once for the position it lands on.
+// drawn, so the search walks back over the draws made after getting stuck to the position it lands on.
 const lastUnstuckIndex = (state: UndoStateModel): number | undefined => {
-    if (!canUndo(state) || !isStuck(state.game)) return undefined;
+    if (!canUndo(state) || !isStuckRemembered(state.game)) return undefined;
 
     const newestFirst = state.history.map((game, index) => ({ game, index })).reverse();
-    const found = newestFirst.find(({ game }) => !isStuck(game));
+    const found = newestFirst.find(({ game }) => !isStuckRemembered(game));
 
     return found === undefined ? undefined : found.index;
 };

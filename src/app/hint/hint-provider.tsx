@@ -36,7 +36,7 @@ export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.E
     if (hint !== undefined && hint.game !== game) setHint(undefined);
 
     useEffect(() => {
-        reportGameOver(isGameOver);
+        reportGameOver({ isGameOver });
     }, [isGameOver, reportGameOver]);
 
     const showHint = useCallback((): void => {
