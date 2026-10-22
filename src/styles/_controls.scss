@@ -1,0 +1,8 @@
+// A control that cannot be used right now — one look for every disabled button, outlined or filled.
+@mixin disabled-control {
+    border-color: var(--control-line);
+    background: rgb(0 0 0 / 0.18);
+    color: var(--text);
+    opacity: 0.45;
+    cursor: default;
+}

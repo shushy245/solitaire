@@ -1,3 +1,5 @@
+@use '../../styles/controls';
+
 // Anchored to the foot of the window, clear of the scoreboard and foundations, so the table stays readable and
 // playable behind it — it is a notice, not a dialog.
 .panel {
@@ -32,7 +34,8 @@
     background: transparent;
     color: var(--text-muted);
     font: inherit;
-    font-size: 1.5rem;
+    // The × glyph is about half its font size; 2rem draws it ~16px.
+    font-size: 2rem;
     line-height: 1;
     cursor: pointer;
 
@@ -80,16 +83,16 @@
         outline: 2px solid var(--text);
         outline-offset: 2px;
     }
-
-    &:disabled {
-        opacity: 0.45;
-        cursor: default;
-    }
 }
 
+// After the fills, so a disabled Undo loses its brass fill and looks like every other disabled control.
 .undo {
     background: var(--brass);
     color: var(--ink);
+
+    &:disabled {
+        @include controls.disabled-control;
+    }
 }
 
 .newGame {

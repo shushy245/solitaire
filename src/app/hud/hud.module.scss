@@ -1,3 +1,5 @@
+@use '../../styles/controls';
+
 // The HUD's rows join the header's wrapping row: the controls sit beside the title (or wrap under it
 // on narrow screens); the stats and any question take full lines below.
 .hud {
@@ -66,8 +68,7 @@
     }
 
     &:disabled {
-        opacity: 0.45;
-        cursor: default;
+        @include controls.disabled-control;
     }
 }
 
