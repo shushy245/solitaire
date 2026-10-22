@@ -23,8 +23,21 @@ const game = aGameState()
     .build();
 
 describe('nextHint', () => {
+    it('never suggests sending back a card the player took down off a foundation', () => {
+        const aceOfSpades = aCard().withRank(Rank.Ace).withSuit(Suit.Spades).build();
+        const game = aGameState()
+            .withColumn({ index: 0, cards: [aceOfSpades] })
+            .build();
+
+        expect(
+            nextHint({ previous: undefined, game, isGameStuck: false, keptOnTable: new Set([aceOfSpades.id]) }),
+        ).toMatchObject({
+            kind: HintKind.NoMoves,
+        });
+    });
+
     it('starts at the most useful hint', () => {
-        expect(nextHint({ previous: undefined, game, isGameStuck: false })).toMatchObject({
+        expect(nextHint({ previous: undefined, game, isGameStuck: false, keptOnTable: new Set() })).toMatchObject({
             kind: HintKind.Showing,
             game,
             index: 0,
@@ -33,11 +46,11 @@ describe('nextHint', () => {
     });
 
     it('moves on to the next hint for the same game, wrapping round to the first', () => {
-        const first = nextHint({ previous: undefined, game, isGameStuck: false });
-        const second = nextHint({ previous: first, game, isGameStuck: false });
+        const first = nextHint({ previous: undefined, game, isGameStuck: false, keptOnTable: new Set() });
+        const second = nextHint({ previous: first, game, isGameStuck: false, keptOnTable: new Set() });
 
         expect(second).toMatchObject({ kind: HintKind.Showing, game, index: 1 });
-        expect(nextHint({ previous: second, game, isGameStuck: false })).toMatchObject({
+        expect(nextHint({ previous: second, game, isGameStuck: false, keptOnTable: new Set() })).toMatchObject({
             kind: HintKind.Showing,
             game,
             index: 0,
@@ -45,16 +58,17 @@ describe('nextHint', () => {
     });
 
     it('starts over at the first hint once the game has changed', () => {
-        const first = nextHint({ previous: undefined, game, isGameStuck: false });
+        const first = nextHint({ previous: undefined, game, isGameStuck: false, keptOnTable: new Set() });
         const changed = aGameState()
             .withColumn({ index: 0, cards: [aceOfHearts] })
             .build();
 
         expect(
             nextHint({
-                previous: nextHint({ previous: first, game, isGameStuck: false }),
+                previous: nextHint({ previous: first, game, isGameStuck: false, keptOnTable: new Set() }),
                 game: changed,
                 isGameStuck: false,
+                keptOnTable: new Set(),
             }),
         ).toMatchObject({
             kind: HintKind.Showing,
@@ -66,7 +80,7 @@ describe('nextHint', () => {
     it('says there is no move when nothing plays and nothing is left to draw', () => {
         const stuck = aGameState().build();
 
-        expect(nextHint({ previous: undefined, game: stuck, isGameStuck: true })).toEqual({
+        expect(nextHint({ previous: undefined, game: stuck, isGameStuck: true, keptOnTable: new Set() })).toEqual({
             kind: HintKind.NoMoves,
             game: stuck,
         });
@@ -78,7 +92,9 @@ describe('nextHint', () => {
             .withColumn({ index: 0, cards: [down({ rank: Rank.Two, suit: Suit.Hearts }), blackNine] })
             .build();
 
-        expect(nextHint({ previous: undefined, game: stuckWithDeck, isGameStuck: true })).toEqual({
+        expect(
+            nextHint({ previous: undefined, game: stuckWithDeck, isGameStuck: true, keptOnTable: new Set() }),
+        ).toEqual({
             kind: HintKind.NoMoves,
             game: stuckWithDeck,
         });
@@ -113,7 +129,7 @@ describe('highlightOf', () => {
 
 describe('shownHighlight', () => {
     it('shows the hint only for the game it was given for, and only while it is visible', () => {
-        const hint = nextHint({ previous: undefined, game, isGameStuck: false });
+        const hint = nextHint({ previous: undefined, game, isGameStuck: false, keptOnTable: new Set() });
 
         expect(shownHighlight({ hint, isVisible: true, game })?.cardIds).toEqual(new Set([aceOfHearts.id]));
         expect(shownHighlight({ hint, isVisible: false, game })).toBeUndefined();

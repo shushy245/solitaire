@@ -7,7 +7,6 @@ import {
     isAutoCompletable,
     isWon,
     Move,
-    MoveKind,
     nextAutoMove,
     nextSafeMove,
 } from '~/engine/index.ts';
@@ -98,21 +97,31 @@ export const canUndo = (session: SessionModel): boolean => session.history.lengt
 const advance = ({ session, game }: { session: SessionModel; game: GameStateModel }): SessionModel =>
     game === session.game ? session : { ...session, game, history: [...session.history, session.game] };
 
-// After a player move, any card safe to send home flies there by itself.
-const phaseAfterPlayerMove = (game: GameStateModel): SessionPhase =>
-    nextSafeMove(game) === undefined ? SessionPhase.Playing : SessionPhase.AutoMoving;
+const homeCardIds = (game: GameStateModel): string[] => game.foundations.flat().map((card) => card.id);
 
-// A card the player took down off a foundation was taken down on purpose — sending it straight back would undo them.
-const isTakenFromFoundation = (move: Move): boolean => move.kind === MoveKind.FoundationToTableau;
+// Cards the player took down off a foundation in this game: home in an earlier position, not home now. Undo pops
+// the positions after it, so undoing the take-down forgets the card. Auto-move and Hint never send these back.
+export const cardsTakenDown = (session: SessionModel): ReadonlySet<string> => {
+    const homeNow = new Set(homeCardIds(session.game));
+
+    return new Set(session.history.flatMap(homeCardIds).filter((cardId) => !homeNow.has(cardId)));
+};
+
+const nextAutoMoveOf = (session: SessionModel) =>
+    nextSafeMove({ state: session.game, keptOnTable: cardsTakenDown(session) });
+
+// After a player move, any card safe to send home flies there by itself.
+const withAutoMovePhase = (session: SessionModel): SessionModel => ({
+    ...session,
+    phase: nextAutoMoveOf(session) === undefined ? SessionPhase.Playing : SessionPhase.AutoMoving,
+});
 
 const playerMove = ({ session, move }: { session: SessionModel; move: Move }): SessionModel => {
     if (isAutoCompleting(session)) return session;
 
     const next = advance({ session, game: applyMove({ state: session.game, move }) });
 
-    if (next === session) return session;
-
-    return { ...next, phase: isTakenFromFoundation(move) ? SessionPhase.Playing : phaseAfterPlayerMove(next.game) };
+    return next === session ? session : withAutoMovePhase(next);
 };
 
 type ReducerMap = {
@@ -161,13 +170,13 @@ const reducerMap: ReducerMap = {
     [SessionActionKind.AutoMoveStep]: ({ session }) => {
         if (!isAutoMoving(session)) return session;
 
-        const move = nextSafeMove(session.game);
+        const move = nextAutoMoveOf(session);
         const game = move === undefined ? session.game : applyMove({ state: session.game, move });
 
         // Nothing safe left, or a rejected step (nothing changed) — never stall in AutoMoving.
         if (game === session.game) return { ...session, phase: SessionPhase.Playing };
 
-        return { ...session, game, phase: phaseAfterPlayerMove(game) };
+        return withAutoMovePhase({ ...session, game });
     },
     // The player took hold of the cards: what has gone home stays home, nothing more flies.
     [SessionActionKind.StopAutoMove]: ({ session }) =>

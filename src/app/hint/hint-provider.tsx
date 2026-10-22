@@ -4,7 +4,7 @@ import { isStuck, isWon } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
 import { HINT_SHOWN_MS } from './hint-timing.ts';
-import { isAutoCompleting, isAutoMoving } from '../session/session.utils.ts';
+import { cardsTakenDown, isAutoCompleting, isAutoMoving } from '../session/session.utils.ts';
 import {
     HintContextValue,
     HintModel,
@@ -39,9 +39,9 @@ export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.E
     const showHint = useCallback((): void => {
         if (!canHint) return;
 
-        setHint((previous) => nextHint({ previous, game, isGameStuck }));
+        setHint((previous) => nextHint({ previous, game, isGameStuck, keptOnTable: cardsTakenDown(session) }));
         setShown({ isVisible: true });
-    }, [canHint, game, isGameStuck]);
+    }, [canHint, game, isGameStuck, session]);
 
     useEffect(() => {
         if (!shown.isVisible) return undefined;

@@ -9,6 +9,7 @@ import { applyMove } from './apply.ts';
 import { listHints } from './hints.ts';
 import { listLegalMoves } from './rules.ts';
 import { isFaceDown, isWon } from './selectors.ts';
+import { isReturnOfKeptCard } from './safe-move.ts';
 import { DrawMode, GameStateModel, Move, MoveKind } from './model.ts';
 
 // Long enough to cycle a full deck twice in turn 3 and still play the table moves between.
@@ -41,8 +42,24 @@ const endingAt = ({ start, state }: { start: GameStateModel; state: GameStateMod
     return undefined;
 };
 
-const afterFirstHint = (state: GameStateModel) => {
-    const [hint] = listHints(state);
+const homeIds = (state: GameStateModel): string[] => state.foundations.flat().map((card) => card.id);
+
+// Cards taken down off a foundation along the way — the app never hints them back up (it reads its undo history).
+const keptAlong = (positions: readonly GameStateModel[]): ReadonlySet<string> => {
+    const last = positions[positions.length - 1];
+    const homeNow = new Set(last === undefined ? [] : homeIds(last));
+
+    return new Set(positions.flatMap(homeIds).filter((cardId) => !homeNow.has(cardId)));
+};
+
+// The position after the first hint, as the app shows it: never a card the player took down sent back up.
+const afterFirstHint = (positions: readonly GameStateModel[]) => {
+    const state = positions[positions.length - 1];
+
+    if (state === undefined) return undefined;
+
+    const keptOnTable = keptAlong(positions);
+    const [hint] = listHints(state).filter((move) => !isReturnOfKeptCard({ move, keptOnTable }));
 
     return hint === undefined ? undefined : applyMove({ state, move: hint });
 };
@@ -55,7 +72,7 @@ const walkFirstHints = (start: GameStateModel): GameStateModel[] =>
             if (walk.length <= step) return walk;
 
             const last = walk[walk.length - 1] ?? start;
-            const next = endingAt({ start, state: last }) === undefined ? afterFirstHint(last) : undefined;
+            const next = endingAt({ start, state: last }) === undefined ? afterFirstHint(walk) : undefined;
 
             return next === undefined || walk.length > MAX_HINT_STEPS ? walk : [...walk, next];
         },
@@ -118,7 +135,7 @@ describe('following the first hint', () => {
                 if (hint === undefined || isDeckMove(hint)) return;
 
                 const next = applyMove({ state: start, move: hint });
-                const back = afterFirstHint(next);
+                const back = afterFirstHint([start, next]);
 
                 expect(back === undefined ? undefined : cardsKey(back)).not.toBe(cardsKey(start));
             }),

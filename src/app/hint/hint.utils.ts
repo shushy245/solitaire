@@ -1,4 +1,4 @@
-import { GameStateModel, listHints, Move, MoveKind, PileModel, topCard } from '~/engine/index.ts';
+import { GameStateModel, isReturnOfKeptCard, listHints, Move, MoveKind, PileModel, topCard } from '~/engine/index.ts';
 
 import { PileKind } from '../board/layout.utils.ts';
 import { PileRefModel } from '../drag/drag.utils.ts';
@@ -53,12 +53,15 @@ export const nextHint = ({
     previous,
     game,
     isGameStuck,
+    keptOnTable,
 }: {
     previous: HintModel | undefined;
     game: GameStateModel;
     isGameStuck: boolean;
+    // Cards the player took down off a foundation — never suggested back up.
+    keptOnTable: ReadonlySet<string>;
 }): HintModel => {
-    const hints = isGameStuck ? [] : listHints(game);
+    const hints = isGameStuck ? [] : listHints(game).filter((move) => !isReturnOfKeptCard({ move, keptOnTable }));
     const index =
         isShowingHint(previous) && isSameGame({ hint: previous, game }) ? (previous.index + 1) % hints.length : 0;
     const move = hints[index];

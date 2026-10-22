@@ -6,6 +6,7 @@ import { dealGame, DrawMode, isWon, makeDrawMove, Move, MoveKind, Rank, Suit } f
 
 import {
     canUndo,
+    cardsTakenDown,
     makeSession,
     reduceSession,
     SessionAction,
@@ -341,32 +342,52 @@ describe('reduceSession — auto-move', () => {
         expect(act(stopped, { kind: SessionActionKind.StopAutoMove })).toBe(stopped);
     });
 
-    it('does not start after the player takes a card down off a foundation, so it is not sent straight back', () => {
+    describe('a card the player took down off a foundation', () => {
         const threeOfHearts = aCard().withSuit(Suit.Hearts).withRank(Rank.Three).build();
         const blackFour = aCard().withSuit(Suit.Clubs).withRank(Rank.Four).build();
+        const stockCard = aCard().withSuit(Suit.Diamonds).withRank(Rank.Nine).asFaceDown().build();
         const blackTwos = [Suit.Clubs, Suit.Spades].map((suit) => [
             aCard().withSuit(suit).withRank(Rank.Ace).build(),
             aCard().withSuit(suit).withRank(Rank.Two).build(),
         ]);
-        const heartsToThree = [Rank.Ace, Rank.Two].map((rank) => aCard().withSuit(Suit.Hearts).withRank(rank).build());
-        const session = aSession()
+        const heartsToTwo = [Rank.Ace, Rank.Two].map((rank) => aCard().withSuit(Suit.Hearts).withRank(rank).build());
+        const homeToThree = aSession()
             .withGame(
                 aGameState()
-                    .withFoundation({ index: 0, cards: [...heartsToThree, threeOfHearts] })
+                    .withFoundation({ index: 0, cards: [...heartsToTwo, threeOfHearts] })
                     .withFoundation({ index: 1, cards: blackTwos[0] ?? [] })
                     .withFoundation({ index: 2, cards: blackTwos[1] ?? [] })
                     .withColumn({ index: 0, cards: [blackFour] })
+                    .withStock([stockCard])
                     .build(),
             )
             .build();
+        const pulledDown = () =>
+            act(homeToThree, {
+                kind: SessionActionKind.Move,
+                move: { kind: MoveKind.FoundationToTableau, cardId: threeOfHearts.id, from: 0, to: 0 },
+            });
 
-        const pulledDown = act(session, {
-            kind: SessionActionKind.Move,
-            move: { kind: MoveKind.FoundationToTableau, cardId: threeOfHearts.id, from: 0, to: 0 },
+        it('is not sent straight back', () => {
+            expect(pulledDown().game.tableau[0]?.map((card) => card.id)).toEqual([blackFour.id, threeOfHearts.id]);
+            expect(pulledDown().phase).toBe(SessionPhase.Playing);
         });
 
-        expect(pulledDown.game.tableau[0]?.map((card) => card.id)).toEqual([blackFour.id, threeOfHearts.id]);
-        expect(pulledDown.phase).toBe(SessionPhase.Playing);
+        it('is not sent back by a later move either', () => {
+            const drawn = act(pulledDown(), {
+                kind: SessionActionKind.Move,
+                move: { kind: MoveKind.Draw, cardId: stockCard.id },
+            });
+
+            expect(drawn.phase).toBe(SessionPhase.Playing);
+        });
+
+        it('is the only card kept back: undoing the take-down forgets it', () => {
+            const undone = act(pulledDown(), { kind: SessionActionKind.Undo });
+
+            expect(cardsTakenDown(undone)).toEqual(new Set());
+            expect(cardsTakenDown(pulledDown())).toEqual(new Set([threeOfHearts.id]));
+        });
     });
 
     it('a step outside a sequence does nothing', () => {

@@ -1,3 +1,4 @@
+import { applyMove } from './apply.ts';
 import { listLegalMoves } from './rules.ts';
 import { GameStateModel, Move, MoveKind, MoveOf } from './model.ts';
 import { isFreeingMove, isOntoEmptyColumn, isPointlessMove, isRevealingMove } from './click-move.ts';
@@ -35,6 +36,21 @@ const isRepeatHint = ({
                 isOntoEmptyPile({ state, move: earlier }),
         );
 
+// A card taken down off a foundation is worth it only as a base: once it lies on the column, a column card can go
+// onto it and turn a card over or free one for home, or the waste can play onto it.
+const isEnablingMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
+    if (move.kind !== MoveKind.FoundationToTableau) return false;
+
+    const after = applyMove({ state, move });
+
+    return listLegalMoves(after).some(
+        (next) =>
+            'to' in next &&
+            next.to === move.to &&
+            (next.kind === MoveKind.WasteToTableau || isUncoveringMove({ state: after, move: next })),
+    );
+};
+
 const isUncoveringMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
     isRevealingMove({ state, move }) || isFreeingMove({ state, move });
 
@@ -45,7 +61,7 @@ const hintRankMap: { [K in MoveKind]: (args: { state: GameStateModel; move: Move
     [MoveKind.TableauToFoundation]: () => 0,
     [MoveKind.TableauToTableau]: ({ state, move }) => (isUncoveringMove({ state, move }) ? 1 : 3),
     [MoveKind.WasteToTableau]: () => 2,
-    [MoveKind.FoundationToTableau]: () => undefined,
+    [MoveKind.FoundationToTableau]: ({ state, move }) => (isEnablingMove({ state, move }) ? 3 : undefined),
     [MoveKind.Draw]: () => 4,
     [MoveKind.Recycle]: () => 4,
 };

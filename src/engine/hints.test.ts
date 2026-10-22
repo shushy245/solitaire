@@ -124,6 +124,31 @@ describe('listHints', () => {
         expect(listHints(state)).toEqual([{ kind: MoveKind.TableauToTableau, cardId: redSeven.id, from: 0, to: 1 }]);
     });
 
+    it('suggests taking a card down off a foundation when a column card can then go onto it and turn a card over', () => {
+        const heartsToFive = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five].map((rank) =>
+            up({ rank, suit: Suit.Hearts }),
+        );
+        const fiveOfHearts = heartsToFive[4];
+        const state = aGameState()
+            .withFoundation({ index: 0, cards: heartsToFive })
+            .withColumn({ index: 0, cards: [hidden, up({ rank: Rank.Four, suit: Suit.Spades })] })
+            .withColumn({ index: 1, cards: [up({ rank: Rank.Six, suit: Suit.Clubs })] })
+            .build();
+
+        expect(listHints(state)).toEqual([
+            { kind: MoveKind.FoundationToTableau, cardId: fiveOfHearts?.id, from: 0, to: 1 },
+        ]);
+    });
+
+    it('never suggests taking a card down when nothing could then go onto it', () => {
+        const state = aGameState()
+            .withFoundation({ index: 0, cards: [aceOfHearts, up({ rank: Rank.Two, suit: Suit.Hearts })] })
+            .withColumn({ index: 0, cards: [up({ rank: Rank.Three, suit: Suit.Spades })] })
+            .build();
+
+        expect(listHints(state)).toEqual([]);
+    });
+
     it('has nothing to suggest with no move and nothing left to draw', () => {
         expect(listHints(aGameState().build())).toEqual([]);
     });

@@ -10,6 +10,8 @@ const up = ({ rank, suit }: { rank: Rank; suit: Suit }) => aCard().withRank(rank
 const suitUpTo = ({ suit, rank }: { suit: Suit; rank: Rank }) =>
     Array.from({ length: rank }, (_, index) => up({ rank: index + 1, suit }));
 
+const none: ReadonlySet<string> = new Set();
+
 const hidden = aCard().withRank(Rank.King).withSuit(Suit.Clubs).asFaceDown().build();
 
 describe('nextSafeMove', () => {
@@ -19,7 +21,12 @@ describe('nextSafeMove', () => {
             .withColumn({ index: 2, cards: [hidden, ace] })
             .build();
 
-        expect(nextSafeMove(state)).toEqual({ kind: MoveKind.TableauToFoundation, cardId: ace.id, from: 2, to: 0 });
+        expect(nextSafeMove({ state, keptOnTable: none })).toEqual({
+            kind: MoveKind.TableauToFoundation,
+            cardId: ace.id,
+            from: 2,
+            to: 0,
+        });
     });
 
     it('sends a Two home once its Ace is there, from the waste', () => {
@@ -29,7 +36,11 @@ describe('nextSafeMove', () => {
             .withWaste([two])
             .build();
 
-        expect(nextSafeMove(state)).toEqual({ kind: MoveKind.WasteToFoundation, cardId: two.id, to: 1 });
+        expect(nextSafeMove({ state, keptOnTable: none })).toEqual({
+            kind: MoveKind.WasteToFoundation,
+            cardId: two.id,
+            to: 1,
+        });
     });
 
     it('sends a card home only when both opposite-colour cards one rank lower are already home', () => {
@@ -47,8 +58,8 @@ describe('nextSafeMove', () => {
             .withColumn({ index: 0, cards: [hidden, threeOfHearts] })
             .build();
 
-        expect(nextSafeMove(onlyClubs)).toBeUndefined();
-        expect(nextSafeMove(bothBlacks)).toEqual({
+        expect(nextSafeMove({ state: onlyClubs, keptOnTable: none })).toBeUndefined();
+        expect(nextSafeMove({ state: bothBlacks, keptOnTable: none })).toEqual({
             kind: MoveKind.TableauToFoundation,
             cardId: threeOfHearts.id,
             from: 0,
@@ -64,10 +75,19 @@ describe('nextSafeMove', () => {
             .withWaste([up({ rank: Rank.Nine, suit: Suit.Hearts })])
             .build();
 
-        expect(nextSafeMove(state)).toBeUndefined();
+        expect(nextSafeMove({ state, keptOnTable: none })).toBeUndefined();
+    });
+
+    it('never sends back a card the player took down off a foundation', () => {
+        const ace = up({ rank: Rank.Ace, suit: Suit.Hearts });
+        const state = aGameState()
+            .withColumn({ index: 2, cards: [hidden, ace] })
+            .build();
+
+        expect(nextSafeMove({ state, keptOnTable: new Set([ace.id]) })).toBeUndefined();
     });
 
     it('finds nothing in a won game', () => {
-        expect(nextSafeMove(aGameState().asWon().build())).toBeUndefined();
+        expect(nextSafeMove({ state: aGameState().asWon().build(), keptOnTable: none })).toBeUndefined();
     });
 });

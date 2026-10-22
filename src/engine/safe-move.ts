@@ -1,6 +1,6 @@
 import { suitColorOf, topCard } from './selectors.ts';
 import { findFoundationTarget } from './auto-complete.ts';
-import { CardModel, GameStateModel, MoveKind, MoveOf, PileModel, Rank, Suit } from './model.ts';
+import { CardModel, GameStateModel, Move, MoveKind, MoveOf, PileModel, Rank, Suit } from './model.ts';
 
 type SafeMove = MoveOf<MoveKind.WasteToFoundation | MoveKind.TableauToFoundation>;
 
@@ -44,7 +44,18 @@ const columnMoves = (state: GameStateModel): SafeMove[] =>
         return [{ kind: MoveKind.TableauToFoundation, cardId: card.id, from, to }];
     });
 
+// A move home for a card the player took down off a foundation on purpose — never made or suggested for them.
+export const isReturnOfKeptCard = ({ move, keptOnTable }: { move: Move; keptOnTable: ReadonlySet<string> }): boolean =>
+    (move.kind === MoveKind.WasteToFoundation || move.kind === MoveKind.TableauToFoundation) &&
+    keptOnTable.has(move.cardId);
+
 // The next card that can go home by itself — the waste top first, then the columns left to right. Only top cards
-// move, never a card already home.
-export const nextSafeMove = (state: GameStateModel): SafeMove | undefined =>
-    [...wasteMove(state), ...columnMoves(state)][0];
+// move, never a card already home, never one the player took down (`keptOnTable`).
+export const nextSafeMove = ({
+    state,
+    keptOnTable,
+}: {
+    state: GameStateModel;
+    keptOnTable: ReadonlySet<string>;
+}): SafeMove | undefined =>
+    [...wasteMove(state), ...columnMoves(state)].find((move) => !isReturnOfKeptCard({ move, keptOnTable }));
