@@ -470,6 +470,25 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
     silent once shown, nor a shown tab write once hidden)
   - pre-mortem: the record (stats) is saved through the same gate — a hidden tab cannot count a win twice
 
+### Story `stuck-takedown` — BF-7 from the `stuck-polish` triage (2026-10-22, autonomous run)
+- Owns: `src/engine/stuck.ts` (take-down predicate), `src/app/session/` (game-over judged with history),
+  `src/app/hint/hint-provider.tsx` (uses it)
+- Depends on: two-tabs
+- Parallel: serial
+- Decision (autonomous run, the recorded fix idea): a position is game over when it is stuck, or when an earlier
+  position in this game was stuck and since then only cards came down off foundations (same face-down cards, same
+  deck size, fewer cards home). Everything such a position can reach, the stuck one could reach too, so it can never
+  be won. Face-down and deck counts only fall over a game, so the positions compared are one unbroken stretch.
+- Cases:
+  - engine: a later position with the same face-down cards and deck size and fewer cards home is a take-down of the
+    earlier one; a card turned over, a deck card played or an equal home count is not
+  - a card taken down off a foundation in a stuck game is game over; the same take-down in a game that was not stuck
+    is not
+  - the panel's Undo leaps past a take-down made after the game got stuck to the last position that was not stuck
+  - the clock stays stopped and a closed panel stays closed when a card is taken down in a stuck game and put back
+  - pre-mortem: the stuck search runs only for earlier positions with more cards home than now (a long stretch of
+    draws in a game that is not stuck searches nothing new, e.g. after a reload)
+
 ---
 
 ## Review triage

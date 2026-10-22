@@ -48,4 +48,4 @@ Full history: `docs/changelog.md`; commit-level record: `git log`.
 
 ## What's next
 Autonomous run (user, 2026-10-22: "do everything left, order does not matter"): `polish-review` ✅ → `stuck-polish` ✅
-→ BF-1 ✅ (`two-tabs`) → BF-7 (`stuck-polish` triage in `docs/plan.md`) → RF-backlog. BF-2 won't fix (user). The manual Chrome/Safari listen needs the user.
+→ BF-1 ✅ (`two-tabs`) → BF-7 (`stuck-takedown` in `docs/plan.md`) → RF-backlog. BF-2 won't fix (user). The manual Chrome/Safari listen needs the user.
