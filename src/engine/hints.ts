@@ -66,6 +66,10 @@ const hintRankMap: { [K in MoveKind]: (args: { state: GameStateModel; move: Move
     [MoveKind.Recycle]: () => 4,
 };
 
+// A move home for a card the player took down off a foundation on purpose — never suggested back to them.
+export const isReturnOfKeptCard = ({ move, keptOnTable }: { move: Move; keptOnTable: ReadonlySet<string> }): boolean =>
+    isFoundationMove(move) && keptOnTable.has(move.cardId);
+
 // The moves worth suggesting, most useful first: up to a foundation, then a column move that turns a card over or
 // frees one for its foundation, then the waste onto a column, then a column move that empties its column, then the
 // stock — always last, so cycling the hints ends on it. Never a card back off a foundation, never a pointless move.

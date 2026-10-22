@@ -4,9 +4,8 @@ export { applyMove } from './apply.ts';
 export { canApplyMove, listLegalMoves, makeDrawMove } from './rules.ts';
 export { findFoundationTarget, isAutoCompletable, nextAutoMove } from './auto-complete.ts';
 export { findClickMove } from './click-move.ts';
-export { listHints } from './hints.ts';
+export { isReturnOfKeptCard, listHints } from './hints.ts';
 export { isStuck } from './stuck.ts';
-export { isReturnOfKeptCard, nextSafeMove } from './safe-move.ts';
 export {
     hasStock,
     isEmptyPile,

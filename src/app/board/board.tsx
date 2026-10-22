@@ -44,7 +44,7 @@ import {
 import styles from './board.module.scss';
 
 export const Board = (): JSX.Element => {
-    const { session, dispatchMove, playCard, stopAutoMove } = useGame();
+    const { session, dispatchMove, playCard } = useGame();
     const { game } = session;
     const slots = useMemo(() => layoutCards(game), [game]);
     const order = useMemo(() => dealOrder(slots), [slots]);
@@ -69,7 +69,6 @@ export const Board = (): JSX.Element => {
         // No pick-up while dealing, nor while auto-complete moves the cards itself (a drop would be ignored).
         isEnabled: canPlayCards,
         dispatchMove,
-        onPress: stopAutoMove,
         onRelease: liftUntilLanded,
         onSnapBack: handleSnapBack,
         boardRef: boardElement,

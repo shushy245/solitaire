@@ -266,171 +266,29 @@ describe('reduceSession — auto-complete', () => {
     });
 });
 
-describe('reduceSession — auto-move', () => {
-    const hiddenTwo = aCard().withSuit(Suit.Hearts).withRank(Rank.Two).asFaceDown().build();
-    const aceOfHearts = aCard().withSuit(Suit.Hearts).withRank(Rank.Ace).build();
-    const blackFive = aCard().withSuit(Suit.Spades).withRank(Rank.Five).build();
-    const redSix = aCard().withSuit(Suit.Diamonds).withRank(Rank.Six).build();
-    const kingOfClubs = aCard().withSuit(Suit.Clubs).withRank(Rank.King).asFaceDown().build();
-    // Moving the black five onto the red six uncovers the Ace of hearts, and under it the Two of hearts.
-    const freeingMove: Move = { kind: MoveKind.TableauToTableau, cardId: blackFive.id, from: 0, to: 1 };
-    const start = aSession()
+describe('cardsTakenDown', () => {
+    const threeOfHearts = aCard().withSuit(Suit.Hearts).withRank(Rank.Three).build();
+    const blackFour = aCard().withSuit(Suit.Clubs).withRank(Rank.Four).build();
+    const heartsToTwo = [Rank.Ace, Rank.Two].map((rank) => aCard().withSuit(Suit.Hearts).withRank(rank).build());
+    const homeToThree = aSession()
         .withGame(
             aGameState()
-                .withColumn({ index: 0, cards: [hiddenTwo, aceOfHearts, blackFive] })
-                .withColumn({ index: 1, cards: [redSix] })
-                .withStock([kingOfClubs])
+                .withFoundation({ index: 0, cards: [...heartsToTwo, threeOfHearts] })
+                .withColumn({ index: 0, cards: [blackFour] })
                 .build(),
         )
         .build();
-    const beforeFreeing = () => start;
     const act = (session: SessionModel, action: SessionAction) => reduceSession({ session, action });
-    const step = (session: SessionModel) => act(session, { kind: SessionActionKind.AutoMoveStep });
-    const freed = () => act(beforeFreeing(), { kind: SessionActionKind.Move, move: freeingMove });
-
-    it('starts after a player move that leaves a card safe to send home', () => {
-        expect(freed().phase).toBe(SessionPhase.AutoMoving);
-    });
-
-    it('does not start after a move that leaves nothing safe to send home', () => {
-        const drawn = drawIn(freshSession());
-
-        expect(drawn.phase).toBe(SessionPhase.Playing);
-    });
-
-    it('each step sends one safe card home as a scored move, and returns to play when none is left', () => {
-        const once = step(freed());
-        const twice = step(once);
-
-        expect(once.game.foundations.flat().map((card) => card.id)).toEqual([aceOfHearts.id]);
-        // +10 for the Ace home, +5 for the Two of hearts it turns over.
-        expect(once.game.score).toBe(freed().game.score + 15);
-        expect(once.phase).toBe(SessionPhase.AutoMoving);
-        expect(twice.game.foundations.flat()).toHaveLength(2);
-        expect(step(twice).phase).toBe(SessionPhase.Playing);
-    });
-
-    it('undo takes back the player move and the cards it sent home together, and does not auto-move again', () => {
-        const finished = step(step(step(freed())));
-
-        const undone = act(finished, { kind: SessionActionKind.Undo });
-
-        expect(undone.game).toEqual(beforeFreeing().game);
-        expect(undone.phase).toBe(SessionPhase.Playing);
-    });
-
-    it('undo mid-sequence stops it and steps back over the player move', () => {
-        const undone = act(step(freed()), { kind: SessionActionKind.Undo });
-
-        expect(undone.game).toEqual(beforeFreeing().game);
-        expect(undone.phase).toBe(SessionPhase.Playing);
-    });
-
-    it('a new game mid-sequence stops it', () => {
-        const next = act(step(freed()), { kind: SessionActionKind.NewGame, seed: 3, drawMode: DrawMode.One });
-
-        expect(next.phase).toBe(SessionPhase.Playing);
-    });
-
-    it('stopping it keeps the cards sent home so far and returns to play', () => {
-        const oneHome = step(freed());
-
-        const stopped = act(oneHome, { kind: SessionActionKind.StopAutoMove });
-
-        expect(stopped.game).toBe(oneHome.game);
-        expect(stopped.phase).toBe(SessionPhase.Playing);
-        expect(act(stopped, { kind: SessionActionKind.StopAutoMove })).toBe(stopped);
-    });
-
-    describe('a card the player took down off a foundation', () => {
-        const threeOfHearts = aCard().withSuit(Suit.Hearts).withRank(Rank.Three).build();
-        const blackFour = aCard().withSuit(Suit.Clubs).withRank(Rank.Four).build();
-        const stockCard = aCard().withSuit(Suit.Diamonds).withRank(Rank.Nine).asFaceDown().build();
-        const blackTwos = [Suit.Clubs, Suit.Spades].map((suit) => [
-            aCard().withSuit(suit).withRank(Rank.Ace).build(),
-            aCard().withSuit(suit).withRank(Rank.Two).build(),
-        ]);
-        const heartsToTwo = [Rank.Ace, Rank.Two].map((rank) => aCard().withSuit(Suit.Hearts).withRank(rank).build());
-        const homeToThree = aSession()
-            .withGame(
-                aGameState()
-                    .withFoundation({ index: 0, cards: [...heartsToTwo, threeOfHearts] })
-                    .withFoundation({ index: 1, cards: blackTwos[0] ?? [] })
-                    .withFoundation({ index: 2, cards: blackTwos[1] ?? [] })
-                    .withColumn({ index: 0, cards: [blackFour] })
-                    .withStock([stockCard])
-                    .build(),
-            )
-            .build();
-        const pulledDown = () =>
-            act(homeToThree, {
-                kind: SessionActionKind.Move,
-                move: { kind: MoveKind.FoundationToTableau, cardId: threeOfHearts.id, from: 0, to: 0 },
-            });
-
-        it('is not sent straight back', () => {
-            expect(pulledDown().game.tableau[0]?.map((card) => card.id)).toEqual([blackFour.id, threeOfHearts.id]);
-            expect(pulledDown().phase).toBe(SessionPhase.Playing);
-        });
-
-        it('is not sent back by a later move either', () => {
-            const drawn = act(pulledDown(), {
-                kind: SessionActionKind.Move,
-                move: { kind: MoveKind.Draw, cardId: stockCard.id },
-            });
-
-            expect(drawn.phase).toBe(SessionPhase.Playing);
-        });
-
-        it('is the only card kept back: undoing the take-down forgets it', () => {
-            const undone = act(pulledDown(), { kind: SessionActionKind.Undo });
-
-            expect(cardsTakenDown(undone)).toEqual(new Set());
-            expect(cardsTakenDown(pulledDown())).toEqual(new Set([threeOfHearts.id]));
-        });
-    });
-
-    it('a step outside a sequence does nothing', () => {
-        const session = beforeFreeing();
-
-        expect(step(session)).toBe(session);
-    });
-
-    it('a player move mid-sequence is played, and undo then returns to what the player saw before it', () => {
-        const oneHome = step(freed());
-        const drawn = act(oneHome, {
+    const pulledDown = () =>
+        act(homeToThree, {
             kind: SessionActionKind.Move,
-            move: { kind: MoveKind.Draw, cardId: kingOfClubs.id },
+            move: { kind: MoveKind.FoundationToTableau, cardId: threeOfHearts.id, from: 0, to: 0 },
         });
 
-        expect(drawn.game.waste.map((card) => card.id)).toEqual([kingOfClubs.id]);
-        expect(act(drawn, { kind: SessionActionKind.Undo }).game).toEqual(oneHome.game);
-    });
-
-    it('sending the last card home wins the game, recorded once', () => {
-        const oneFromWon = aGameState().asOneMoveFromWon().build();
-        const lastKing = oneFromWon.tableau[0]?.[0];
-
-        if (lastKing === undefined) throw new Error('session test: expected the King on the first column');
-
-        const kingInStock = aSession()
-            .withGame({
-                ...oneFromWon,
-                tableau: oneFromWon.tableau.map(() => []),
-                stock: [{ ...lastKing, faceUp: false }],
-            })
-            .asStarted()
-            .build();
-        const drawn = act(kingInStock, {
-            kind: SessionActionKind.Move,
-            move: { kind: MoveKind.Draw, cardId: lastKing.id },
-        });
-        const won = step(drawn);
-
-        expect(isWon(won.game)).toBe(true);
-        expect(won.stats.won).toBe(1);
-        expect(won.phase).toBe(SessionPhase.Playing);
-        expect(step(won)).toBe(won);
+    it('names the cards the player took down off a foundation, and forgets one once the take-down is undone', () => {
+        expect(cardsTakenDown(homeToThree)).toEqual(new Set());
+        expect(cardsTakenDown(pulledDown())).toEqual(new Set([threeOfHearts.id]));
+        expect(cardsTakenDown(act(pulledDown(), { kind: SessionActionKind.Undo }))).toEqual(new Set());
     });
 });
 

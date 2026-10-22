@@ -1,7 +1,7 @@
 import { DrawMode, isAutoCompletable } from '~/engine/index.ts';
 
 import { StatsModel, winPercent } from '../stats/stats.utils.ts';
-import { isAutoCompleting, isAutoMoving, isGameUnderWay, SessionModel } from '../session/session.utils.ts';
+import { isAutoCompleting, isGameUnderWay, SessionModel } from '../session/session.utils.ts';
 
 const MS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
@@ -24,7 +24,7 @@ export const formatElapsed = (elapsedMs: number): string => {
 export const needsConfirmationToLeave = isGameUnderWay;
 
 export const isAutoCompleteOffered = (session: SessionModel): boolean =>
-    isAutoCompletable(session.game) && !isAutoCompleting(session) && !isAutoMoving(session);
+    isAutoCompletable(session.game) && !isAutoCompleting(session);
 
 export const drawModeLabelMap: Record<DrawMode, string> = {
     [DrawMode.One]: 'Turn 1',

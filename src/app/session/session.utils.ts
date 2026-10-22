@@ -8,7 +8,6 @@ import {
     isWon,
     Move,
     nextAutoMove,
-    nextSafeMove,
 } from '~/engine/index.ts';
 
 import { emptyStats, recordPlayed, recordWin, StatsModel } from '../stats/stats.utils.ts';
@@ -16,8 +15,6 @@ import { emptyStats, recordPlayed, recordWin, StatsModel } from '../stats/stats.
 export enum SessionPhase {
     Playing = 'playing',
     AutoCompleting = 'auto-completing',
-    // Cards safe to send home are flying there one at a time after a player move.
-    AutoMoving = 'auto-moving',
 }
 
 // How far the current deal has got in the record: counted as played at its first move, as won at its first win.
@@ -50,8 +47,6 @@ export enum SessionActionKind {
     Tick = 'tick',
     StartAutoComplete = 'start-auto-complete',
     AutoCompleteStep = 'auto-complete-step',
-    AutoMoveStep = 'auto-move-step',
-    StopAutoMove = 'stop-auto-move',
 }
 
 type SessionPayloadMap = {
@@ -63,8 +58,6 @@ type SessionPayloadMap = {
     [SessionActionKind.Tick]: { readonly elapsedMs: number };
     [SessionActionKind.StartAutoComplete]: object;
     [SessionActionKind.AutoCompleteStep]: object;
-    [SessionActionKind.AutoMoveStep]: object;
-    [SessionActionKind.StopAutoMove]: object;
 };
 
 export type SessionActionOf<K extends SessionActionKind> = { [P in K]: { readonly kind: P } & SessionPayloadMap[P] }[K];
@@ -86,43 +79,27 @@ export const isDealUnstarted = (session: SessionModel): boolean => session.progr
 
 export const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
 
-export const isAutoMoving = (session: SessionModel): boolean => session.phase === SessionPhase.AutoMoving;
-
 // Started and not yet finished: the clock runs, and leaving would throw the player's progress away.
 export const isGameUnderWay = (session: SessionModel): boolean => session.game.moves > 0 && !isWon(session.game);
 
 export const canUndo = (session: SessionModel): boolean => session.history.length > 0 && !isAutoCompleting(session);
 
-// Records a new game state on top of history; an unchanged game (illegal move) leaves the session as is.
-const advance = ({ session, game }: { session: SessionModel; game: GameStateModel }): SessionModel =>
-    game === session.game ? session : { ...session, game, history: [...session.history, session.game] };
-
 const homeCardIds = (game: GameStateModel): string[] => game.foundations.flat().map((card) => card.id);
 
 // Cards the player took down off a foundation in this game: home in an earlier position, not home now. Undo pops
-// the positions after it, so undoing the take-down forgets the card. Auto-move and Hint never send these back.
+// the positions after it, so undoing the take-down forgets the card. Hint never suggests sending these back up.
 export const cardsTakenDown = (session: SessionModel): ReadonlySet<string> => {
     const homeNow = new Set(homeCardIds(session.game));
 
     return new Set(session.history.flatMap(homeCardIds).filter((cardId) => !homeNow.has(cardId)));
 };
 
-const nextAutoMoveOf = (session: SessionModel) =>
-    nextSafeMove({ state: session.game, keptOnTable: cardsTakenDown(session) });
+// Records a new game state on top of history; an unchanged game (illegal move) leaves the session as is.
+const advance = ({ session, game }: { session: SessionModel; game: GameStateModel }): SessionModel =>
+    game === session.game ? session : { ...session, game, history: [...session.history, session.game] };
 
-// After a player move, any card safe to send home flies there by itself.
-const withAutoMovePhase = (session: SessionModel): SessionModel => ({
-    ...session,
-    phase: nextAutoMoveOf(session) === undefined ? SessionPhase.Playing : SessionPhase.AutoMoving,
-});
-
-const playerMove = ({ session, move }: { session: SessionModel; move: Move }): SessionModel => {
-    if (isAutoCompleting(session)) return session;
-
-    const next = advance({ session, game: applyMove({ state: session.game, move }) });
-
-    return next === session ? session : withAutoMovePhase(next);
-};
+const playerMove = ({ session, move }: { session: SessionModel; move: Move }): SessionModel =>
+    isAutoCompleting(session) ? session : advance({ session, game: applyMove({ state: session.game, move }) });
 
 type ReducerMap = {
     [K in SessionActionKind]: (args: { session: SessionModel; action: SessionActionOf<K> }) => SessionModel;
@@ -140,8 +117,7 @@ const reducerMap: ReducerMap = {
 
         if (previous === undefined || !canUndo(session)) return session;
 
-        // Back to before the player's last move, auto-moves included — and nothing flies home again by itself.
-        return { ...session, game: previous, history: session.history.slice(0, -1), phase: SessionPhase.Playing };
+        return { ...session, game: previous, history: session.history.slice(0, -1) };
     },
     [SessionActionKind.NewGame]: ({ session, action }) => ({
         ...makeSession({ seed: action.seed, drawMode: action.drawMode }),
@@ -165,22 +141,6 @@ const reducerMap: ReducerMap = {
         // A rejected step (nothing changed) or a finished game ends the sweep — never stall in AutoCompleting.
         return next === session || isWon(next.game) ? { ...next, phase: SessionPhase.Playing } : next;
     },
-    // An auto-move belongs to the player move that caused it: it replaces the game without a history entry, so one
-    // undo takes both back.
-    [SessionActionKind.AutoMoveStep]: ({ session }) => {
-        if (!isAutoMoving(session)) return session;
-
-        const move = nextAutoMoveOf(session);
-        const game = move === undefined ? session.game : applyMove({ state: session.game, move });
-
-        // Nothing safe left, or a rejected step (nothing changed) — never stall in AutoMoving.
-        if (game === session.game) return { ...session, phase: SessionPhase.Playing };
-
-        return withAutoMovePhase({ ...session, game });
-    },
-    // The player took hold of the cards: what has gone home stays home, nothing more flies.
-    [SessionActionKind.StopAutoMove]: ({ session }) =>
-        isAutoMoving(session) ? { ...session, phase: SessionPhase.Playing } : session,
 };
 
 const isNewlyStarted = (session: SessionModel): boolean =>

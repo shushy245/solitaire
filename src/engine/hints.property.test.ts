@@ -6,10 +6,9 @@ import { playRandomly } from '~/testkit/play-randomly.ts';
 import { dealGame } from './deal.ts';
 import { isStuck } from './stuck.ts';
 import { applyMove } from './apply.ts';
-import { listHints } from './hints.ts';
 import { listLegalMoves } from './rules.ts';
 import { isFaceDown, isWon } from './selectors.ts';
-import { isReturnOfKeptCard } from './safe-move.ts';
+import { isReturnOfKeptCard, listHints } from './hints.ts';
 import { DrawMode, GameStateModel, Move, MoveKind } from './model.ts';
 
 // Long enough to cycle a full deck twice in turn 3 and still play the table moves between.

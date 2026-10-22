@@ -48,12 +48,6 @@ describe('isAutoCompleteOffered', () => {
         expect(isAutoCompleteOffered(ready)).toBe(true);
         expect(isAutoCompleteOffered({ ...ready, phase: SessionPhase.AutoCompleting })).toBe(false);
     });
-
-    it('is not offered while safe cards are flying home by themselves', () => {
-        const ready = { ...session(), game: aGameState().asReadyToAutoComplete().build() };
-
-        expect(isAutoCompleteOffered({ ...ready, phase: SessionPhase.AutoMoving })).toBe(false);
-    });
 });
 
 describe('countLabel', () => {

@@ -11,8 +11,6 @@ export type GameContextValue = {
     undo: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;
-    // Stops safe cards flying home by themselves (the player has picked cards up); cards already home stay.
-    stopAutoMove: () => void;
 };
 
 export type GameProviderProps = {

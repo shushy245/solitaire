@@ -111,7 +111,6 @@ export const useCardDrag = ({
     game,
     isEnabled,
     dispatchMove,
-    onPress,
     onRelease,
     onSnapBack,
     boardRef,
@@ -119,8 +118,6 @@ export const useCardDrag = ({
     game: GameStateModel;
     isEnabled: boolean;
     dispatchMove: (move: Move) => void;
-    // Called when a press takes hold of cards that could be dragged.
-    onPress: () => void;
     onRelease: (cardIds: readonly string[]) => void;
     onSnapBack: () => void;
     boardRef: MutableRefObject<HTMLElement | undefined>;
@@ -232,9 +229,6 @@ export const useCardDrag = ({
 
             if (pickup === undefined || active.current !== undefined) return;
 
-            // Held from the press on, before the drag threshold: a card flying home must not change the game
-            // under the press (that ends it).
-            onPress();
             active.current = {
                 pickup,
                 pointerId: event.pointerId,
@@ -252,7 +246,7 @@ export const useCardDrag = ({
                 window.removeEventListener('pointercancel', handleCancel);
             };
         },
-        [isEnabled, handleMove, handleUp, handleCancel, onPress],
+        [isEnabled, handleMove, handleUp, handleCancel],
     );
 
     // Any change to the game mid-drag (undo, a new deal) or unmount ends the drag and drops the window

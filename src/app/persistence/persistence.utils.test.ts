@@ -7,7 +7,7 @@ import { aGameState, aSession } from '~/testkit/builders/index.ts';
 import { dealGame, DrawMode, isMovableRun } from '~/engine/index.ts';
 
 import { emptyStats, recordPlayed, recordWin } from '../stats/stats.utils.ts';
-import { DealProgress, makeSession, SessionModel, SessionPhase } from '../session/session.utils.ts';
+import { DealProgress, makeSession, SessionModel } from '../session/session.utils.ts';
 import {
     chooseInitialSession,
     parseSavedGame,
@@ -217,14 +217,6 @@ describe('chooseInitialSession', () => {
         expect(initial.history).toEqual(session.history);
         expect(initial.elapsedMs).toBe(83_250);
         expect(initial.stats).toEqual(stats);
-    });
-
-    it('resumes a game left mid auto-move in plain play, so nothing flies home until the player moves', () => {
-        const saved = { ...playedSession(), progress: DealProgress.Started, phase: SessionPhase.AutoMoving };
-
-        const initial = chooseInitialSession({ savedGame: saved, stats, requestedDeal: undefined, freshSeed });
-
-        expect(initial.phase).toBe(SessionPhase.Playing);
     });
 
     it('deals a fresh random game with the saved record when there is no saved game', () => {
