@@ -435,7 +435,7 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   - E7 the stuck search runs only while hints are on (not mid-deal or mid-sweep)
   - E8 a click on a card already home does nothing (no shake, no snap-back sound)
 
-### Story `stuck-polish` — BF-3..BF-6 from the `game-over` review (2026-10-22, autonomous run)
+### Story `stuck-polish` — BF-3..BF-6 from the `game-over` review (2026-10-22, autonomous run) ✅
 - Owns: `src/app/game-over/`, `src/app/session/` (undo-to-unstuck, stuck clock), `src/app/hud/` (leave confirmation),
   `src/app/game-provider.tsx` (stuck flag into the clock)
 - Depends on: polish-review
@@ -759,6 +759,27 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   Not checked: reduced motion emulated in the browser, the hint state's script numbers at 390 (the message may have
   cleared first; the before/after table position was read while it showed).
 
+### `stuck-polish` (code-review medium, 9 findings; visual pass A+B)
+- Fixed (3): drawing on in a stuck game re-searched every position since getting stuck on each draw (4.9ms per draw
+  after 100 draws on a small table, growing; measured) → stuck answers remembered per game state (0.07ms, flat);
+  `reportGameOver` took a boolean parameter → `{ isGameOver }`; the new `Close` test id went unused → the driver
+  clicks by it.
+- BF (1, two findings): BF-7 `isStuck` judges each position on its own, so a card taken down off a foundation in a
+  stuck game reads "not stuck" (putting it back counts as progress): the clock runs again, a closed panel comes back
+  once it is put back, and the panel's Undo can land on such a take-down. Fix idea: judge a take-down position by
+  the position before it (no new progress beyond what the stuck game already had).
+- RF (1): closing the panel drops focus to the page (Tab restarts at the top) and Escape does not close it → fold
+  into the existing "panels return no focus" item.
+- Kept (1): the stuck answer is worked out in the hint provider and reported up to the clock (as the board reports
+  "table ready"), not in the game provider — moving it would run the search mid-deal and mid-sweep again (E7).
+- Dismissed (1): "a closed panel stays closed into another stuck stretch" — every single undo passes through a
+  render where the game is not over, which reopens it; a new deal does too (the table is not ready mid-deal).
+- Visual A+B (`?seed=22&draw=3` settled and after Close; `?seed=148&draw=3` after the 8♣; 390/768/1280): no
+  overflow, taps ≥44 (Close is 44×44), text ≥16px, Lighthouse a11y 100 on all, traversal clean and in visual order,
+  focus visible, no console errors; the panel covers no card at any width; the clock read 0:00 after the one move that
+  made the game stuck. Known: panel note 39–40 characters; focus lands on the panel's first action on appear.
+  Observed: after Close, nothing on screen says the game is stuck (by decision: Hint still says "No moves left").
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
@@ -778,7 +799,8 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
 - (epic review) the stock gives no visual or aria cue that it is inert during the deal.
 - (`easy-drops`) `isTableauPile` in drag.utils repeats `isTableauSlot` in layout.utils → one pile-kind predicate.
 - (`game-over`) the win panel and the game-over panel return no focus when they close (`LeaveConfirm` does) —
-  extend `useFocusOnAppear` to hand focus back when it was lost.
+  extend `useFocusOnAppear` to hand focus back when it was lost. (`stuck-polish`) also the panel's Close; and Escape
+  could close it.
 - (`hint-game-over-checks`) `isFreeingMove` runs `applyMove` twice per column move in `listHints` → once.
 - (`hint-game-over-checks`) the HUD's and the game-over panel's disabled Undo look different → one disabled style.
 - (`auto-move`) `nextSafeMove` and `nextAutoMove` both scan tops for a foundation target → one `listFoundationMoves`.

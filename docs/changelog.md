@@ -1,5 +1,11 @@
 # Changelog
 
+## stuck-polish — 2026-10-22
+- **Pain:** once a game had run out of moves, the "No more moves" notice got in the way: its Undo needed one press per card drawn since, New game asked "leave this game?" on top of it, it could not be put away, and the clock kept running on a game nobody could play.
+- **Fix:** the notice's Undo now jumps straight back to the last position the game could still be won from, New game deals at once, the notice has a close button that keeps it away while the game stays stuck, and the clock stops until the player undoes out of it.
+- **Trade-off:** only the notice's Undo jumps; the top bar's Undo and Ctrl+Z still step back one move (user decision), and switching between turn 1 and turn 3 still asks first.
+- **Result:** 406 tests pass (`vitest`, 11 more) plus all 13 browser tests; the review raised 9 issues — 3 fixed (including Undo growing slower with every draw, now flat: 4.9ms → 0.07ms per draw after 100 draws, measured), 1 new bug recorded (taking a card off a foundation in a stuck game briefly counts as "not stuck"), 1 tidy-up queued, 1 kept, 1 dismissed; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## polish-review — 2026-10-22
 - **Pain:** a review of the last two rounds of work found small ways the game misled or nudged the player: Hint saying "No moves left" when taking a card down off a foundation would help, a screen reader reading cards in a meaningless order, the table jumping when "No moves left" appeared, double-clicks playing the card just uncovered, and sloppy drops landing on the wrong pile.
 - **Fix:** eight targeted fixes, one test each — Hint now suggests a take-down when it unblocks the table and never suggests sending such a card back, each card's spoken name says where it lies, the message line keeps its space, and stray clicks and drops are ignored.

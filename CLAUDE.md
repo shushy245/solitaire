@@ -39,6 +39,10 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `stuck-polish` — the game-over panel's Undo leaps to the last unstuck position (`UndoToUnstuck`,
+  `canUndoToUnstuck`; stuck answers remembered per game state); New game on a stuck game skips "leave this game?"
+  (`asksBeforeLeaving`, mode switch still asks); the panel closes and stays closed while stuck; the clock stops while
+  stuck (`reportGameOver` from the hint provider → `Tick.isGameOver`). Open: BF-7 (take-downs in a stuck game).
 - `polish-review` — Hint no longer says "No moves left" when a take-down off a foundation unblocks the table, and
   never suggests sending such a card back up (`cardsTakenDown`, `isReturnOfKeptCard`); card names say where they lie
   (`cardLabel(slot)`); the hint status line keeps one line of height (no table jump); a double-click's second half and
@@ -48,8 +52,7 @@ Full history: `docs/changelog.md`; commit-level record: `git log`.
   properties (`hints.property.test.ts`); a run split that frees a card for home is no longer "pointless" (Hint and
   click). Cap measured: 0.12% of game overs missed → kept; `judgeStuck` gives stuck / not stuck / gave up.
   Fixtures: `?seed=148&draw=3` is one click (8♣) from stuck; `?seed=1` hints J♦→Q♣ then 4♥→5♣.
-- `card-design` — soft cream cards, Instrument Sans indices, tinted court frames, navy dotted back; colours in `global.scss`, held by `contrast.utils.test.ts`. `CORNER_RATIO` (cascade) mirrors `--radius`.
 
 ## What's next
-Autonomous run (user, 2026-10-22: "do everything left, order does not matter"): `polish-review` ✅ → `stuck-polish`
-(BF-3..BF-6, `docs/plan.md`) → BF-1/BF-2 → RF-backlog. The manual Chrome/Safari listen needs the user.
+Autonomous run (user, 2026-10-22: "do everything left, order does not matter"): `polish-review` ✅ → `stuck-polish` ✅
+→ BF-1/BF-2 (`docs/plan.md`, `persistence` triage) → BF-7 → RF-backlog. The manual Chrome/Safari listen needs the user.
