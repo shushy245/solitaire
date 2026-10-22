@@ -1,4 +1,6 @@
+import { applyMove } from './apply.ts';
 import { listLegalMoves } from './rules.ts';
+import { canStackOnFoundation, topCard } from './selectors.ts';
 import { GameStateModel, Move, MoveKind, MoveOf } from './model.ts';
 import { isOntoEmptyColumn, isPointlessMove, isRevealingMove } from './click-move.ts';
 
@@ -35,25 +37,41 @@ const isRepeatHint = ({
                 isOntoEmptyPile({ state, move: earlier }),
         );
 
+// A column move that leaves a card on top of its column which can then go home — the one run split worth making.
+const isFreeingMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
+    if (move.kind !== MoveKind.TableauToTableau) return false;
+
+    const after = applyMove({ state, move });
+    const freed = topCard(after.tableau[move.from] ?? []);
+
+    return freed !== undefined && after.foundations.some((pile) => canStackOnFoundation({ card: freed, pile }));
+};
+
+const isWorthHinting = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
+    !isPointlessMove({ state, move }) || isFreeingMove({ state, move });
+
+const isUncoveringMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean =>
+    isRevealingMove({ state, move }) || isFreeingMove({ state, move });
+
 // How useful a move is as a hint; lower is shown first, undefined is never shown. A column move ranks high when it
 // turns a card over, low when it only empties its column.
 const hintRankMap: { [K in MoveKind]: (args: { state: GameStateModel; move: Move }) => number | undefined } = {
     [MoveKind.WasteToFoundation]: () => 0,
     [MoveKind.TableauToFoundation]: () => 0,
-    [MoveKind.TableauToTableau]: ({ state, move }) => (isRevealingMove({ state, move }) ? 1 : 3),
+    [MoveKind.TableauToTableau]: ({ state, move }) => (isUncoveringMove({ state, move }) ? 1 : 3),
     [MoveKind.WasteToTableau]: () => 2,
     [MoveKind.FoundationToTableau]: () => undefined,
     [MoveKind.Draw]: () => 4,
     [MoveKind.Recycle]: () => 4,
 };
 
-// The moves worth suggesting, most useful first: up to a foundation, then a column move that turns a card over,
-// then the waste onto a column, then a column move that empties its column, then the stock — always last, so cycling the hints ends on it.
-// Never a card back off a foundation, never a run shifted to an equal place. Empty when nothing plays and nothing
-// is left to draw.
+// The moves worth suggesting, most useful first: up to a foundation, then a column move that turns a card over or
+// frees one for its foundation, then the waste onto a column, then a column move that empties its column, then the
+// stock — always last, so cycling the hints ends on it. Never a card back off a foundation, never a run shifted to an
+// equal place for nothing. Empty when nothing plays and nothing is left to draw.
 export const listHints = (state: GameStateModel): Move[] =>
     listLegalMoves(state)
-        .filter((move) => !isPointlessMove({ state, move }))
+        .filter((move) => isWorthHinting({ state, move }))
         .filter((move, index, moves) => !isRepeatHint({ state, move, index, moves }))
         .flatMap((move) => {
             const rank = hintRankMap[move.kind]({ state, move });

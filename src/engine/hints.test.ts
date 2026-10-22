@@ -110,6 +110,20 @@ describe('listHints', () => {
         expect(listHints(state).map((move) => move.kind)).toEqual([MoveKind.TableauToFoundation, MoveKind.Draw]);
     });
 
+    it('suggests splitting a run when that frees the card under it for its foundation', () => {
+        const spadesToSeven = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five, Rank.Six, Rank.Seven].map((rank) =>
+            up({ rank, suit: Suit.Spades }),
+        );
+        const redSeven = up({ rank: Rank.Seven, suit: Suit.Hearts });
+        const state = aGameState()
+            .withFoundation({ index: 0, cards: spadesToSeven })
+            .withColumn({ index: 0, cards: [hidden, up({ rank: Rank.Eight, suit: Suit.Spades }), redSeven] })
+            .withColumn({ index: 1, cards: [up({ rank: Rank.Eight, suit: Suit.Clubs })] })
+            .build();
+
+        expect(listHints(state)).toEqual([{ kind: MoveKind.TableauToTableau, cardId: redSeven.id, from: 0, to: 1 }]);
+    });
+
     it('has nothing to suggest with no move and nothing left to draw', () => {
         expect(listHints(aGameState().build())).toEqual([]);
     });
