@@ -1,5 +1,11 @@
 # Changelog
 
+## rf-code — 2026-10-22
+- **Pain:** the same rule or number was written in two or three places in the code (how a run of cards is picked up, the deck size, the card's corner rounding), test helpers were copy-pasted across six files, and some config files had drifted from the house formatting — each a place where a future change could fix one copy and miss another.
+- **Fix:** each rule and number now has one home that every user reads from, the test helpers share one piece, and the formatting check now covers config, style and page files too.
+- **Trade-off:** none weighed — these were the clean-ups queued by earlier reviews; one queued item (a change to the shared lint package) is outside this project and was left for the user.
+- **Result:** no change in how the game plays; 420 tests pass (`vitest`, 4 more) plus all 13 browser tests; the review found nothing; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## stuck-takedown — 2026-10-22
 - **Pain:** in a game with no moves left, taking a card down off a foundation made the game count as playable again — the stopped clock restarted, a closed "No more moves" notice popped back once the card went back up, and the notice's Undo could land on the take-down instead of a position worth playing from.
 - **Fix:** a position is now judged against the stuck one before it: if only cards came down off foundations since, it is still game over.

@@ -496,7 +496,7 @@ The RF-backlog items still standing. Dropped: the three `auto-move` items (auto-
 and `stepKindMap` no longer exist). Flagged, not taken: the `eslint-config-shalev` item (a change to the published
 shared package, outside this repo). Order: `rf-code` → `rf-ui` (serial; both touch `board/` and `hud/`).
 
-### Story `rf-code` — refactors with no change in behaviour
+### Story `rf-code` — refactors with no change in behaviour ✅
 - Owns: `src/engine/`, `src/app/session/`, `src/app/hud/hud.utils.ts`, `src/app/board/`, `src/app/drag/`,
   `src/app/persistence/persistence.utils.ts`, `src/app/celebration/cascade-canvas.ts`, `src/testkit/`, drivers,
   `package.json` (prettier script)
@@ -524,6 +524,7 @@ shared package, outside this repo). Order: `rf-code` → `rf-ui` (serial; both t
   - the win panel and the game-over panel hand focus back to the table when they close (as `LeaveConfirm` does);
     Escape closes the game-over panel like its Close button
   - the HUD's and the game-over panel's disabled Undo share one disabled style
+  - the game-over panel's Close glyph is legible (≥16px), its target stays 44px (`rf-code` visual pass)
   - visual pass at 390/768/1280 on the stock mid-deal, the stuck panel (Undo enabled and disabled)
 
 ---
@@ -873,31 +874,27 @@ shared package, outside this repo). Order: `rf-code` → `rf-ui` (serial; both t
   ≥16px, Lighthouse a11y 100 on both, traversal in visual order, focus visible, no console errors. Known: panel note
   39–40 characters. Not checked: reduced motion during the deal, real pointer/touch input.
 
+### `rf-code` (code-review low, 0 findings; visual pass A+B)
+- Refactor-only story, reviewed at low effort (review-cost rule): no finding.
+- Already done before the story: "one test clock" (`realNow` no longer existed). The sound driver keeps its own probe
+  (it also pins the first play handle — different knowledge).
+- Visual A+B (`?seed=1`, `?seed=22&draw=3` settled; 390/768/1280): no overflow, taps ≥44, text ≥16px, Lighthouse a11y
+  100 on both, traversal clean, no console errors. Known: panel note 39–40 characters; the two disabled Undo styles
+  differ (→ `rf-ui`). Noted → `rf-ui`: the panel's Close "×" glyph is small (~10–12px) inside its 44px target. Not
+  rendered by the pass: the win cascade — its corner ratio was read in Chrome (10.4px / 104px = 0.1) and the
+  celebration e2e still sees it paint.
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
 
 ## RF-backlog
-- Prettier coverage for JSON/SCSS/HTML (from `scaffold` review).
-- (`hud`) `app.driver.tsx` `realNow` duplicates `testkit/provider-fakes.ts` `fakeNow` — one test clock.
-- (`hud`) the `ElsewhereInTheApp` useGame probe is copy-pasted in the board and HUD drivers → testkit.
-- (`hud`) `GameProvider` `useRef(now())` reads the clock on every render; a lazy initial value would do.
-- (`hud`) HUD driver `modifier: 'ctrl' | 'meta'` string union → an enum.
-- (`hud`) `hud.utils.ts` reaches into `session.game.moves` / `session.history` — add session selectors.
+Open items only (`rf-code` closed the rest, 2026-10-22; the three `auto-move` items were dropped with auto-move).
+The UI items below are planned as story `rf-ui`; the eslint-config-shalev item is outside this repo (flagged to the user).
 - (`persistence`) eslint-config-shalev: export the single syntax selectors (so a boundary override can drop
   only the null ban) and widen the composition-root `no-console` glob to `main.{ts,tsx}`.
-- (epic review) the "run from this card" rule is written three times (rules.ts, apply.ts, drag.utils.ts) and engine
-  counts are copied as local constants (MAX_WASTE_FAN, DECK_SIZE, TABLEAU_CARDS) → one engine selector + exports.
-- (epic review) `CardProps` lives in `board.tsx` → `board.utils.ts`.
 - (epic review) the stock gives no visual or aria cue that it is inert during the deal.
-- (`easy-drops`) `isTableauPile` in drag.utils repeats `isTableauSlot` in layout.utils → one pile-kind predicate.
 - (`game-over`) the win panel and the game-over panel return no focus when they close (`LeaveConfirm` does) —
   extend `useFocusOnAppear` to hand focus back when it was lost. (`stuck-polish`) also the panel's Close; and Escape
   could close it.
-- (`hint-game-over-checks`) `isFreeingMove` runs `applyMove` twice per column move in `listHints` → once.
 - (`hint-game-over-checks`) the HUD's and the game-over panel's disabled Undo look different → one disabled style.
-- (`auto-move`) `nextSafeMove` and `nextAutoMove` both scan tops for a foundation target → one `listFoundationMoves`.
-- (`auto-move`) a step works out `nextSafeMove` twice, and `nextSafeMove` builds every candidate to keep the first.
-- (`auto-move`) `stepKindMap` (pure lookup) lives in `game-provider.tsx` → `game-provider.utils.ts`.
-- (`stuck-takedown`) `lastUnstuckIndex` slices history per walked position → pass an end index.
-- (`card-design`) `--radius` and `CORNER_RATIO` (cascade-canvas.ts) duplicate one value → read the card's computed radius.
