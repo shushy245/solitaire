@@ -491,6 +491,43 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
 
 ---
 
+## Epic: RF-backlog (2026-10-22, autonomous run)
+The RF-backlog items still standing. Dropped: the three `auto-move` items (auto-move was removed — `nextSafeMove`
+and `stepKindMap` no longer exist). Flagged, not taken: the `eslint-config-shalev` item (a change to the published
+shared package, outside this repo). Order: `rf-code` → `rf-ui` (serial; both touch `board/` and `hud/`).
+
+### Story `rf-code` — refactors with no change in behaviour
+- Owns: `src/engine/`, `src/app/session/`, `src/app/hud/hud.utils.ts`, `src/app/board/`, `src/app/drag/`,
+  `src/app/persistence/persistence.utils.ts`, `src/app/celebration/cascade-canvas.ts`, `src/testkit/`, drivers,
+  `package.json` (prettier script)
+- Depends on: stuck-takedown
+- Parallel: serial (first)
+- Cases (each item keeps the suite green; a new seam gets its own test):
+  - the "run from this card" rule has one engine home, used by rules, apply and drag; the deck size, waste fan and
+    tableau card count are engine exports, not local copies
+  - one pile-kind predicate replaces `isTableauPile` (drag) and `isTableauSlot` (layout)
+  - `CardProps` lives in `board.utils.ts`
+  - `isFreeingMove` applies a column move once per hint; `lastUnstuckIndex` walks back by end index, not by copies
+  - the HUD rules read the session through selectors (no `session.game.moves` / `session.history` reaches)
+  - `GameProvider` reads the clock once at mount (lazy initial value)
+  - the win cascade reads the card's corner radius from the rendered card, so `--radius` is the one value
+  - tests: one test clock; one `ElsewhereInTheApp` probe in testkit; the HUD driver's modifier is an enum
+  - `prettier --check` covers JSON/SCSS/HTML, and they are formatted
+
+### Story `rf-ui` — small UI items from the backlog
+- Owns: `src/app/board/` (stock), `src/app/use-focus-on-appear.ts`, `src/app/game-over/`, `src/app/celebration/`,
+  `src/app/hud/` (Undo style)
+- Depends on: rf-code
+- Parallel: serial
+- Cases:
+  - the stock says it is not ready while the deal runs (`aria-disabled`, dimmed) and is live once it settles
+  - the win panel and the game-over panel hand focus back to the table when they close (as `LeaveConfirm` does);
+    Escape closes the game-over panel like its Close button
+  - the HUD's and the game-over panel's disabled Undo share one disabled style
+  - visual pass at 390/768/1280 on the stock mid-deal, the stuck panel (Undo enabled and disabled)
+
+---
+
 ## Review triage
 
 ### `scaffold` (code-review high, 10 findings)
