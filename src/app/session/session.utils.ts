@@ -8,6 +8,7 @@ import {
     isWon,
     Move,
     nextAutoMove,
+    nextSafeMove,
 } from '~/engine/index.ts';
 
 import { emptyStats, recordPlayed, recordWin, StatsModel } from '../stats/stats.utils.ts';
@@ -15,6 +16,8 @@ import { emptyStats, recordPlayed, recordWin, StatsModel } from '../stats/stats.
 export enum SessionPhase {
     Playing = 'playing',
     AutoCompleting = 'auto-completing',
+    // Cards safe to send home are flying there one at a time after a player move.
+    AutoMoving = 'auto-moving',
 }
 
 // How far the current deal has got in the record: counted as played at its first move, as won at its first win.
@@ -47,6 +50,7 @@ export enum SessionActionKind {
     Tick = 'tick',
     StartAutoComplete = 'start-auto-complete',
     AutoCompleteStep = 'auto-complete-step',
+    AutoMoveStep = 'auto-move-step',
 }
 
 type SessionPayloadMap = {
@@ -58,6 +62,7 @@ type SessionPayloadMap = {
     [SessionActionKind.Tick]: { readonly elapsedMs: number };
     [SessionActionKind.StartAutoComplete]: object;
     [SessionActionKind.AutoCompleteStep]: object;
+    [SessionActionKind.AutoMoveStep]: object;
 };
 
 export type SessionActionOf<K extends SessionActionKind> = { [P in K]: { readonly kind: P } & SessionPayloadMap[P] }[K];
@@ -79,6 +84,8 @@ export const isDealUnstarted = (session: SessionModel): boolean => session.progr
 
 export const isAutoCompleting = (session: SessionModel): boolean => session.phase === SessionPhase.AutoCompleting;
 
+export const isAutoMoving = (session: SessionModel): boolean => session.phase === SessionPhase.AutoMoving;
+
 // Started and not yet finished: the clock runs, and leaving would throw the player's progress away.
 export const isGameUnderWay = (session: SessionModel): boolean => session.game.moves > 0 && !isWon(session.game);
 
@@ -88,8 +95,17 @@ export const canUndo = (session: SessionModel): boolean => session.history.lengt
 const advance = ({ session, game }: { session: SessionModel; game: GameStateModel }): SessionModel =>
     game === session.game ? session : { ...session, game, history: [...session.history, session.game] };
 
-const playerMove = ({ session, move }: { session: SessionModel; move: Move }): SessionModel =>
-    isAutoCompleting(session) ? session : advance({ session, game: applyMove({ state: session.game, move }) });
+// After a player move, any card safe to send home flies there by itself.
+const phaseAfterPlayerMove = (game: GameStateModel): SessionPhase =>
+    nextSafeMove(game) === undefined ? SessionPhase.Playing : SessionPhase.AutoMoving;
+
+const playerMove = ({ session, move }: { session: SessionModel; move: Move }): SessionModel => {
+    if (isAutoCompleting(session)) return session;
+
+    const next = advance({ session, game: applyMove({ state: session.game, move }) });
+
+    return next === session ? session : { ...next, phase: phaseAfterPlayerMove(next.game) };
+};
 
 type ReducerMap = {
     [K in SessionActionKind]: (args: { session: SessionModel; action: SessionActionOf<K> }) => SessionModel;
@@ -107,7 +123,8 @@ const reducerMap: ReducerMap = {
 
         if (previous === undefined || !canUndo(session)) return session;
 
-        return { ...session, game: previous, history: session.history.slice(0, -1) };
+        // Back to before the player's last move, auto-moves included — and nothing flies home again by itself.
+        return { ...session, game: previous, history: session.history.slice(0, -1), phase: SessionPhase.Playing };
     },
     [SessionActionKind.NewGame]: ({ session, action }) => ({
         ...makeSession({ seed: action.seed, drawMode: action.drawMode }),
@@ -130,6 +147,18 @@ const reducerMap: ReducerMap = {
 
         // A rejected step (nothing changed) or a finished game ends the sweep — never stall in AutoCompleting.
         return next === session || isWon(next.game) ? { ...next, phase: SessionPhase.Playing } : next;
+    },
+    // An auto-move belongs to the player move that caused it: it replaces the game without a history entry, so one
+    // undo takes both back.
+    [SessionActionKind.AutoMoveStep]: ({ session }) => {
+        const move = nextSafeMove(session.game);
+
+        if (!isAutoMoving(session)) return session;
+        if (move === undefined) return { ...session, phase: SessionPhase.Playing };
+
+        const game = applyMove({ state: session.game, move });
+
+        return { ...session, game, phase: phaseAfterPlayerMove(game) };
     },
 };
 
