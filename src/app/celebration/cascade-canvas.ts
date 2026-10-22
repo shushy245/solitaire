@@ -2,7 +2,7 @@ import { CardModel } from '~/engine/index.ts';
 import { getCanvasContext } from '~/utils/get-canvas-context.ts';
 
 import { BoundsModel } from './cascade.utils.ts';
-import { RectModel } from './celebration.utils.ts';
+import { cornerRatioOf, RectModel } from './celebration.utils.ts';
 import { isRedSuit, rankLabelMap, suitGlyphMap } from '../board/board.utils.ts';
 
 // The card colours come from the palette tokens in global.scss, so the cascade matches the table's cards.
@@ -12,11 +12,10 @@ export type CardPaintModel = {
     readonly ink: string;
     readonly inkRed: string;
     readonly fontFamily: string;
+    readonly cornerRatio: number;
 };
 
 const RANK_FONT_RATIO = 0.22;
-// Mirrors --radius in table-metrics.module.scss.
-const CORNER_RATIO = 0.1;
 const INSET_RATIO = 0.1;
 
 export const readCardPaint = (): CardPaintModel => {
@@ -29,7 +28,20 @@ export const readCardPaint = (): CardPaintModel => {
         ink: token('--ink'),
         inkRed: token('--ink-red'),
         fontFamily: getComputedStyle(document.body).fontFamily,
+        cornerRatio: readCornerRatio(),
     };
+};
+
+// --radius is a calc() over the card width, so it is read off a rendered card, not the token.
+const readCornerRatio = (): number => {
+    const [card] = document.querySelectorAll('[data-card-id]');
+
+    if (card === undefined) return 0;
+
+    return cornerRatioOf({
+        radius: getComputedStyle(card).borderTopLeftRadius,
+        width: card.getBoundingClientRect().width,
+    });
 };
 
 // The empty foundation slot the board draws under each pile (it carries no card id).
@@ -84,7 +96,7 @@ export const paintCard = ({
     context.strokeStyle = paint.edge;
     context.lineWidth = 1;
     context.beginPath();
-    context.roundRect(at.left, at.top, at.width, at.height, at.width * CORNER_RATIO);
+    context.roundRect(at.left, at.top, at.width, at.height, at.width * paint.cornerRatio);
     context.fill();
     context.stroke();
     context.fillStyle = isRedSuit(card.suit) ? paint.inkRed : paint.ink;

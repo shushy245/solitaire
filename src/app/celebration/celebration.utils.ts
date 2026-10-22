@@ -81,3 +81,13 @@ export const viewportBounds = ({
     height: number;
     cardSize: SizeModel;
 }): BoundsModel => ({ width, height, cardWidth: cardSize.width, cardHeight: cardSize.height });
+
+const isMeasured = (value: number): boolean => Number.isFinite(value) && value > 0;
+
+// A card's computed border radius (e.g. "10.4px") as a share of its width, so the cascade rounds its cards like the
+// table's. An element that could not be measured gets square corners rather than a guessed curve.
+export const cornerRatioOf = ({ radius, width }: { radius: string; width: number }): number => {
+    const px = Number.parseFloat(radius);
+
+    return isMeasured(px) && isMeasured(width) ? px / width : 0;
+};
