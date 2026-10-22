@@ -39,14 +39,16 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `rf-ui` — the stock is `aria-disabled` and dimmed mid-deal; the win and game-over panels hand lost focus to the stock
+  on close (`useHandFocusToTableOnClose`, `TABLE_FOCUS_ID`); Escape inside the game-over panel closes it (stopped there,
+  so the leave question's window Escape is untouched); one disabled look (`src/styles/_controls.scss`).
 - `rf-code` — one home for rules and numbers that had two or three copies; no change in play. `runFrom` + engine
   counts (`DECK_SIZE`, `DEALT_TABLEAU_CARDS`, `MAX_WASTE_FAN`), `isTableauPile`, `drawModeOf`, `cornerRatioOf` (cascade
   reads the card's radius), `makeHookProbe` (testkit), `pnpm lint` also runs `prettier --check` on JSON/SCSS/HTML.
 - `stuck-takedown` — a card taken down off a foundation in a stuck game no longer revives it: game over is judged with
   history (`isGameOverAt` in session.utils, `isTakeDownOf` in the engine), used by the hint provider and the panel's Undo.
-- `two-tabs` — only the visible tab saves (`makeVisibleTabSave` + `isPageVisible`, wired in `main.tsx`); a hidden
-  tab's clock ticks write nothing. Last tab looked at wins.
 
 ## What's next
 Autonomous run (user, 2026-10-22: "do everything left, order does not matter"): `polish-review` ✅ → `stuck-polish` ✅
-→ BF-1 ✅ (`two-tabs`) → BF-7 ✅ (`stuck-takedown`) → RF-backlog epic: `rf-code` ✅ → `rf-ui` (next, plan.md). BF-2 won't fix (user). The manual Chrome/Safari listen needs the user.
+→ BF-1 ✅ (`two-tabs`) → BF-7 ✅ (`stuck-takedown`) → RF-backlog epic ✅ (`rf-code`, `rf-ui`). Queue done. Left: flaky `hint.cy.ts` BF (polish-review triage, not chased);
+the eslint-config-shalev RF item (outside this repo). BF-2 won't fix (user). The manual Chrome/Safari listen needs the user.

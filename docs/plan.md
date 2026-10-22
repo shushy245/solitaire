@@ -514,7 +514,7 @@ shared package, outside this repo). Order: `rf-code` → `rf-ui` (serial; both t
   - tests: one test clock; one `ElsewhereInTheApp` probe in testkit; the HUD driver's modifier is an enum
   - `prettier --check` covers JSON/SCSS/HTML, and they are formatted
 
-### Story `rf-ui` — small UI items from the backlog
+### Story `rf-ui` — small UI items from the backlog ✅
 - Owns: `src/app/board/` (stock), `src/app/use-focus-on-appear.ts`, `src/app/game-over/`, `src/app/celebration/`,
   `src/app/hud/` (Undo style)
 - Depends on: rf-code
@@ -884,17 +884,35 @@ shared package, outside this repo). Order: `rf-code` → `rf-ui` (serial; both t
   rendered by the pass: the win cascade — its corner ratio was read in Chrome (10.4px / 104px = 0.1) and the
   celebration e2e still sees it paint.
 
+### `rf-ui` + epic `rf-backlog` (code-review medium over `epic/rf-backlog`, 7 findings; visual pass A+B)
+- One review at medium over the whole epic stood for the story review and the epic review (rf-code had its own low pass).
+- Fixed — correctness (1): Escape in the game-over panel also answered a "leave this game?" question open beside it
+  (the question listens on the window) → the panel's handler stops the key; red test with the HUD rendered beside the
+  panel, confirmed in Chrome (`?seed=148&draw=3`, 8♣, Turn 1, Escape in the panel).
+- Fixed — style (4): `drawModeOf` sat under `isDealUnstarted`'s comment; Turn 3's draw count was defined from the
+  waste-fan limit (backwards) → `TURN_THREE_DRAW_COUNT`; `isEnablingMove` built a memo per candidate; the hook probe
+  used undefined as "not rendered" → a discriminated state.
+- Dismissed (1): the panel's and `LeaveConfirm`'s focus hand-backs race when both close in one commit (stuck game,
+  mode switch, Leave) — whichever runs first, focus lands on a real control (the stock or the mode button), never the
+  page; both hand back only when focus was lost.
+- RF (1): the hand-back finds the stock by a page-wide id (`TABLE_FOCUS_ID`) → a focus target through context if a
+  second board ever appears.
+- Case gap (recorded): "focus the player moved elsewhere stays there" has no test — in this app the only place focus
+  can move to on the table is the stock, which is also the hand-back target; the rule is `LeaveConfirm`'s, tested there.
+- Visual A+B (`?seed=1` mid-deal and settled; `?seed=22&draw=3` settled, after Escape, after Close; `?seed=148&draw=3`
+  after the 8♣; 390/768/1280): no overflow, taps ≥44, text ≥16px, Lighthouse a11y 100 on all three, traversal clean and
+  in visual order at 390, focus visible; Escape and Close hand focus to the stock (ring visible) at all widths; the two
+  disabled Undo buttons measured identical. Known: panel note 39–40 characters. Not rendered: the win panel's
+  hand-back (no URL reaches a win; covered by the celebration test).
+
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
   focus model over piles and a pick/place key flow. Raised by the `drag` accessibility pass.
 
 ## RF-backlog
-Open items only (`rf-code` closed the rest, 2026-10-22; the three `auto-move` items were dropped with auto-move).
-The UI items below are planned as story `rf-ui`; the eslint-config-shalev item is outside this repo (flagged to the user).
+Open items only (epic `rf-backlog` closed the rest, 2026-10-22; the three `auto-move` items were dropped with
+auto-move). The eslint-config-shalev item is outside this repo (flagged to the user).
 - (`persistence`) eslint-config-shalev: export the single syntax selectors (so a boundary override can drop
   only the null ban) and widen the composition-root `no-console` glob to `main.{ts,tsx}`.
-- (epic review) the stock gives no visual or aria cue that it is inert during the deal.
-- (`game-over`) the win panel and the game-over panel return no focus when they close (`LeaveConfirm` does) —
-  extend `useFocusOnAppear` to hand focus back when it was lost. (`stuck-polish`) also the panel's Close; and Escape
-  could close it.
-- (`hint-game-over-checks`) the HUD's and the game-over panel's disabled Undo look different → one disabled style.
+- (`rf-ui`) `useHandFocusToTableOnClose` finds the stock by a page-wide id → a focus target through context if a
+  second board ever appears.

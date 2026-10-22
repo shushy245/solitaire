@@ -1,5 +1,11 @@
 # Changelog
 
+## rf-ui — 2026-10-22
+- **Pain:** a few small rough edges for keyboard and screen-reader players: the draw pile looked and announced itself ready while the cards were still being dealt, closing the "No more moves" or win panel dropped the keyboard back to the top of the page, and the two greyed-out Undo buttons looked different from each other.
+- **Fix:** the draw pile now shows it is not ready until the deal lands, a closing panel hands the keyboard to the table, Escape closes the "No more moves" panel, and every greyed-out button shares one look.
+- **Trade-off:** Escape closes that panel only while the keyboard is inside it — the page-wide Escape stays with the "leave this game?" question, so one key press never does two things.
+- **Result:** 426 tests pass (`vitest`, 6 more) plus all 13 browser tests; the epic review raised 7 issues — 5 fixed (one real: Escape answered both panels at once, confirmed fixed in Chrome), 1 dismissed, 1 tidy-up queued; visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## rf-code — 2026-10-22
 - **Pain:** the same rule or number was written in two or three places in the code (how a run of cards is picked up, the deck size, the card's corner rounding), test helpers were copy-pasted across six files, and some config files had drifted from the house formatting — each a place where a future change could fix one copy and miss another.
 - **Fix:** each rule and number now has one home that every user reads from, the test helpers share one piece, and the formatting check now covers config, style and page files too.
