@@ -5,9 +5,9 @@ import { playRandomly } from '~/testkit/play-randomly.ts';
 import { aCard, aGameState } from '~/testkit/builders/index.ts';
 
 import { dealGame } from './deal.ts';
-import { isStuck } from './stuck.ts';
 import { listLegalMoves } from './rules.ts';
 import { isRevealingMove } from './click-move.ts';
+import { isStuck, judgeStuck, StuckVerdict } from './stuck.ts';
 import { DrawMode, GameStateModel, Move, MoveKind, Rank, Suit } from './model.ts';
 
 const up = ({ rank, suit }: { rank: Rank; suit: Suit }) => aCard().withRank(rank).withSuit(suit).build();
@@ -164,5 +164,40 @@ describe('isStuck over random games', () => {
             ),
             { numRuns: 60 },
         );
+    });
+});
+
+describe('judgeStuck', () => {
+    const hidden = down({ rank: Rank.Two, suit: Suit.Clubs });
+    const stuckTable = aGameState()
+        .withColumn({ index: 0, cards: [hidden, up({ rank: Rank.Five, suit: Suit.Spades })] })
+        .build();
+    // Two red Tens and two black Nines: the Nines shift between the Tens, several table positions and no progress.
+    const shiftingTable = aGameState()
+        .withColumn({
+            index: 0,
+            cards: [hidden, up({ rank: Rank.Ten, suit: Suit.Hearts }), up({ rank: Rank.Nine, suit: Suit.Spades })],
+        })
+        .withColumn({
+            index: 1,
+            cards: [down({ rank: Rank.Three, suit: Suit.Clubs }), up({ rank: Rank.Ten, suit: Suit.Diamonds })],
+        })
+        .build();
+
+    it('says stuck or not stuck when the search finishes within its limit', () => {
+        expect(judgeStuck({ start: stuckTable, maxPositions: 1000 })).toBe(StuckVerdict.Stuck);
+        expect(
+            judgeStuck({
+                start: aGameState()
+                    .withStock([down({ rank: Rank.Ace, suit: Suit.Clubs })])
+                    .build(),
+                maxPositions: 1000,
+            }),
+        ).toBe(StuckVerdict.NotStuck);
+    });
+
+    it('says it gave up when the positions to search run past its limit', () => {
+        expect(judgeStuck({ start: shiftingTable, maxPositions: 1 })).toBe(StuckVerdict.GaveUp);
+        expect(judgeStuck({ start: shiftingTable, maxPositions: 1000 })).toBe(StuckVerdict.Stuck);
     });
 });

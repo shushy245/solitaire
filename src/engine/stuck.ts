@@ -62,13 +62,19 @@ const tableKey = (state: GameStateModel): string => [...state.foundations, ...st
 const nextTables = (table: GameStateModel): GameStateModel[] =>
     listLegalMoves(table).map((move) => applyMove({ state: table, move }));
 
-// True when no sequence of moves from here can turn a card over, play a card out of the deck or send one more card
-// home — so the game can never be won. The deck and the table meet only when a waste card is played, so the deck
-// is cycled once for every card it can show, then every table position reachable without progress (column shifts,
-// cards down off a foundation and back) is searched for progress or a place one of those cards would go.
-// Not a solver: a lost deal that still has progress to make is not stuck.
-export const isStuck = (start: GameStateModel): boolean => {
-    if (isWon(start)) return false;
+export enum StuckVerdict {
+    Stuck = 'stuck',
+    NotStuck = 'not-stuck',
+    // The positions to search ran past the limit before an answer.
+    GaveUp = 'gave-up',
+}
+
+// Whether any sequence of moves from here can turn a card over, play a card out of the deck or send one more card
+// home. The deck and the table meet only when a waste card is played, so the deck is cycled once for every card it
+// can show, then every table position reachable without progress (column shifts, cards down off a foundation and
+// back) is searched for progress or a place one of those cards would go — giving up past `maxPositions`.
+export const judgeStuck = ({ start, maxPositions }: { start: GameStateModel; maxPositions: number }): StuckVerdict => {
+    if (isWon(start)) return StuckVerdict.NotStuck;
 
     const deckCards = reachableWasteTops(start);
     const startTable: GameStateModel = { ...start, stock: [], waste: [], wasteFan: 0 };
@@ -79,7 +85,8 @@ export const isStuck = (start: GameStateModel): boolean => {
         deckCards.some((card) => canPlaySomewhere({ card, state: table }));
 
     for (const table of frontier) {
-        if (seen.size > MAX_POSITIONS || isProgressAt(table)) return false;
+        if (isProgressAt(table)) return StuckVerdict.NotStuck;
+        if (seen.size > maxPositions) return StuckVerdict.GaveUp;
 
         nextTables(table).forEach((next) => {
             const key = tableKey(next);
@@ -91,5 +98,10 @@ export const isStuck = (start: GameStateModel): boolean => {
         });
     }
 
-    return true;
+    return StuckVerdict.Stuck;
 };
+
+// True when no progress is possible, so the game can never be won. A search that gives up answers "not stuck" — a
+// missed announcement, never a false one. Not a solver: a lost deal that still has progress to make is not stuck.
+export const isStuck = (start: GameStateModel): boolean =>
+    judgeStuck({ start, maxPositions: MAX_POSITIONS }) === StuckVerdict.Stuck;
