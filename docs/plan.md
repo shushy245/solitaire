@@ -59,6 +59,7 @@ type GameContextValue = {
     undo: () => void;
     newGame: (opts: { drawMode: DrawMode }) => void;
     startAutoComplete: () => void;
+    stopAutoMove: () => void;                  // (auto-move) a pick-up stops safe cards flying home
 };
 // <GameProvider createInitialSession={() => SessionModel} seedSource={() => number} now={() => number}
 //               saveSession={(session) => void}>

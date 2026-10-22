@@ -4,7 +4,7 @@ import { isStuck, isWon } from '~/engine/index.ts';
 
 import { useGame } from '../game-provider.tsx';
 import { HINT_SHOWN_MS } from './hint-timing.ts';
-import { isAutoCompleting } from '../session/session.utils.ts';
+import { isAutoCompleting, isAutoMoving } from '../session/session.utils.ts';
 import {
     HintContextValue,
     HintModel,
@@ -27,7 +27,7 @@ export const HintProvider = ({ children }: { children: React.ReactNode }): JSX.E
     const [shown, setShown] = useState({ isVisible: false });
     const [tableReport, setTableReport] = useState<TableReportModel | undefined>(undefined);
     const isTableReady = isTableReadyFor({ report: tableReport, dealNumber: session.dealNumber });
-    const canHint = isTableReady && !isAutoCompleting(session) && !isWon(game);
+    const canHint = isTableReady && !isAutoCompleting(session) && !isAutoMoving(session) && !isWon(game);
     // Worked out once per game, never per clock tick: the search may cycle the whole deck.
     const isGameStuck = useMemo(() => isStuck(game), [game]);
     const isGameOver = canHint && isGameStuck;

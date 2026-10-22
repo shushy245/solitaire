@@ -331,6 +331,16 @@ describe('reduceSession — auto-move', () => {
         expect(next.phase).toBe(SessionPhase.Playing);
     });
 
+    it('stopping it keeps the cards sent home so far and returns to play', () => {
+        const oneHome = step(freed());
+
+        const stopped = act(oneHome, { kind: SessionActionKind.StopAutoMove });
+
+        expect(stopped.game).toBe(oneHome.game);
+        expect(stopped.phase).toBe(SessionPhase.Playing);
+        expect(act(stopped, { kind: SessionActionKind.StopAutoMove })).toBe(stopped);
+    });
+
     it('a step outside a sequence does nothing', () => {
         const session = beforeFreeing();
 

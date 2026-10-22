@@ -111,6 +111,7 @@ export const useCardDrag = ({
     game,
     isEnabled,
     dispatchMove,
+    onPickUp,
     onRelease,
     onSnapBack,
     boardRef,
@@ -118,6 +119,8 @@ export const useCardDrag = ({
     game: GameStateModel;
     isEnabled: boolean;
     dispatchMove: (move: Move) => void;
+    // Called once a press turns into a drag (the cards leave their places).
+    onPickUp: () => void;
     onRelease: (cardIds: readonly string[]) => void;
     onSnapBack: () => void;
     boardRef: MutableRefObject<HTMLElement | undefined>;
@@ -170,11 +173,12 @@ export const useCardDrag = ({
                 active.current = { ...drag, elements };
                 lastPressDragged.current = true;
                 setDraggingIds(new Set(drag.pickup.cardIds));
+                onPickUp();
             }
 
             setDragOffset({ elements, dx, dy });
         },
-        [boardRef, endDrag],
+        [boardRef, endDrag, onPickUp],
     );
 
     const handleUp = useCallback(

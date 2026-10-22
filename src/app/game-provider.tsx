@@ -11,6 +11,13 @@ import {
 
 const GameContext = createContext<GameContextValue | undefined>(undefined);
 
+// The step each self-playing phase takes on its timer.
+const stepKindMap: Partial<Record<SessionPhase, SessionActionKind.AutoCompleteStep | SessionActionKind.AutoMoveStep>> =
+    {
+        [SessionPhase.AutoCompleting]: SessionActionKind.AutoCompleteStep,
+        [SessionPhase.AutoMoving]: SessionActionKind.AutoMoveStep,
+    };
+
 const reducer = (session: SessionModel, action: SessionAction): SessionModel => reduceSession({ session, action });
 
 export const GameProvider = ({
@@ -50,13 +57,16 @@ export const GameProvider = ({
         saveSession(session);
     }, [session, saveSession]);
 
-    // One card per step; each new game state schedules the next, and leaving the phase cancels it.
+    // One card per step, for auto-complete and auto-move alike; each new game state schedules the next, and leaving
+    // the phase cancels it.
     useEffect(() => {
-        if (session.phase !== SessionPhase.AutoCompleting) return undefined;
+        const stepKind = stepKindMap[session.phase];
+
+        if (stepKind === undefined) return undefined;
 
         const timer = setTimeout(() => {
             flushClock();
-            dispatch({ kind: SessionActionKind.AutoCompleteStep });
+            dispatch({ kind: stepKind });
         }, AUTO_COMPLETE_STEP_MS);
 
         return () => {
@@ -85,6 +95,9 @@ export const GameProvider = ({
             },
             startAutoComplete: () => {
                 dispatch({ kind: SessionActionKind.StartAutoComplete });
+            },
+            stopAutoMove: () => {
+                dispatch({ kind: SessionActionKind.StopAutoMove });
             },
         }),
         [seedSource, flushClock],

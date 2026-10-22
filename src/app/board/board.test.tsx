@@ -4,6 +4,7 @@ import { DrawMode, Rank, Suit } from '~/engine/index.ts';
 
 import { PileKind } from './layout.utils.ts';
 import { HINT_SHOWN_MS } from '../hint/hint-timing.ts';
+import { AUTO_COMPLETE_STEP_MS } from '../game-provider.utils.ts';
 import { BoardDriver, makeBoardDriver } from './board.driver.tsx';
 import { DEAL_TOTAL_MS, DealPhase, STACK_HOLD_MS } from './board.utils.ts';
 
@@ -204,19 +205,27 @@ describe('Board', () => {
     });
 
     it('a move puts the hint out at once, and a later hint restarts its own timer', async () => {
-        driver.given.column({ index: 2, cards: [{ rank: Rank.Ace, suit: Suit.Hearts }] });
+        // A column move, not a card home: a loose Ace would fly home by itself after the draw.
+        driver.given.column({
+            index: 2,
+            cards: [
+                { rank: Rank.Four, suit: Suit.Clubs, faceUp: false },
+                { rank: Rank.Nine, suit: Suit.Spades },
+            ],
+        });
+        driver.given.column({ index: 3, cards: [{ rank: Rank.Ten, suit: Suit.Hearts }] });
         driver.given.stock([{ rank: Rank.Five, suit: Suit.Clubs }]);
         await driver.when.created();
         driver.when.dealt();
 
         driver.when.hintRequestedElsewhere();
         await driver.click.stock();
-        driver.assert.hinted({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isHinted: false });
+        driver.assert.hinted({ card: { rank: Rank.Nine, suit: Suit.Spades }, isHinted: false });
 
         driver.time.pass(HINT_SHOWN_MS - 500);
         driver.when.hintRequestedElsewhere();
         driver.time.pass(1000);
-        driver.assert.hinted({ card: { rank: Rank.Ace, suit: Suit.Hearts }, isHinted: true });
+        driver.assert.hinted({ card: { rank: Rank.Nine, suit: Suit.Spades }, isHinted: true });
     });
 
     it('ignores a hint asked for mid-deal, so the first hint after the deal is still the best one', async () => {
@@ -313,5 +322,44 @@ describe('Board', () => {
         driver.assert.dealPhase(DealPhase.Dealing);
         driver.time.pass(DEAL_TOTAL_MS);
         driver.assert.dealPhase(DealPhase.Settled);
+    });
+
+    describe('auto-move', () => {
+        const aceOfHearts = { rank: Rank.Ace, suit: Suit.Hearts };
+        const blackFive = { rank: Rank.Five, suit: Suit.Spades };
+
+        // Clicking the black five plays it onto the red six, uncovering the Ace of hearts.
+        beforeEach(async () => {
+            driver.given.column({ index: 4, cards: [aceOfHearts, blackFive] });
+            driver.given.column({ index: 2, cards: [{ rank: Rank.Six, suit: Suit.Diamonds }] });
+            await driver.when.created();
+            driver.when.dealt();
+        });
+
+        it('a card left safe by a move flies home by itself a moment later', async () => {
+            await driver.click.card(blackFive);
+
+            driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Tableau, pileIndex: 4 });
+            driver.time.pass(AUTO_COMPLETE_STEP_MS);
+            driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Foundation, pileIndex: 0 });
+        });
+
+        it('picking up a card mid-sequence stops it', async () => {
+            await driver.click.card(blackFive);
+
+            driver.pointer.press(blackFive);
+            driver.pointer.moveBy({ dx: 30, dy: 30 });
+            driver.time.pass(AUTO_COMPLETE_STEP_MS * 3);
+
+            driver.assert.cardIn({ card: aceOfHearts, pile: PileKind.Tableau, pileIndex: 4 });
+        });
+
+        it('a hint asked for mid-sequence is refused, so it never points at the position in between', async () => {
+            await driver.click.card(blackFive);
+
+            driver.when.hintRequestedElsewhere();
+
+            driver.assert.hinted({ card: aceOfHearts, isHinted: false });
+        });
     });
 });

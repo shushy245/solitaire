@@ -51,6 +51,7 @@ export enum SessionActionKind {
     StartAutoComplete = 'start-auto-complete',
     AutoCompleteStep = 'auto-complete-step',
     AutoMoveStep = 'auto-move-step',
+    StopAutoMove = 'stop-auto-move',
 }
 
 type SessionPayloadMap = {
@@ -63,6 +64,7 @@ type SessionPayloadMap = {
     [SessionActionKind.StartAutoComplete]: object;
     [SessionActionKind.AutoCompleteStep]: object;
     [SessionActionKind.AutoMoveStep]: object;
+    [SessionActionKind.StopAutoMove]: object;
 };
 
 export type SessionActionOf<K extends SessionActionKind> = { [P in K]: { readonly kind: P } & SessionPayloadMap[P] }[K];
@@ -160,6 +162,9 @@ const reducerMap: ReducerMap = {
 
         return { ...session, game, phase: phaseAfterPlayerMove(game) };
     },
+    // The player took hold of the cards: what has gone home stays home, nothing more flies.
+    [SessionActionKind.StopAutoMove]: ({ session }) =>
+        isAutoMoving(session) ? { ...session, phase: SessionPhase.Playing } : session,
 };
 
 const isNewlyStarted = (session: SessionModel): boolean =>
