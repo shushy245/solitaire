@@ -332,6 +332,17 @@ describe('Board', () => {
         driver.assert.dealtStockTopStillOnStock();
     });
 
+    it('tells assistive tech the stock is not ready while the cards are dealt, and ready once they land', async () => {
+        driver.given.dealtGame({ seed: 12, drawMode: DrawMode.One });
+        await driver.when.created();
+        driver.time.pass(STACK_HOLD_MS);
+
+        driver.assert.stockReady(false);
+        driver.when.dealt();
+
+        driver.assert.stockReady(true);
+    });
+
     it('lifts a card above the table while it flies, and settles it when it lands', async () => {
         driver.given.dealtGame({ seed: 12, drawMode: DrawMode.One });
         await driver.when.created();

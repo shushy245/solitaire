@@ -64,6 +64,7 @@ export type BoardDriver = {
         cardLabel: (args: { card: CardName; label: string }) => void;
         cardFaceDownAndUnlabelled: (args: { card: CardName; label: string }) => void;
         stockLabel: (label: string) => void;
+        stockReady: (isReady: boolean) => void;
         dealPhase: (phase: DealPhase) => void;
         lifted: (args: { card: CardName; isLifted: boolean }) => void;
         dealtStockTopLifted: (isLifted: boolean) => void;
@@ -326,6 +327,12 @@ export const makeBoardDriver = (): BoardDriver => {
             },
             stockLabel: (label) => {
                 expect(screen.getByTestId(BoardTestIds.Stock)).toHaveAccessibleName(label);
+            },
+            // Not ready is aria-disabled, never disabled: a disabled button would drop keyboard focus mid-deal.
+            stockReady: (isReady) => {
+                const stock = screen.getByTestId(BoardTestIds.Stock);
+                expect(stock).toHaveAttribute('aria-disabled', String(!isReady));
+                expect(stock).toBeEnabled();
             },
             dealPhase: (phase) => {
                 expect(screen.getByTestId(BoardTestIds.Board)).toHaveAttribute('data-deal-phase', phase);

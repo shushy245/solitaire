@@ -127,6 +127,7 @@ export const Board = (): JSX.Element => {
             <button
                 type="button"
                 aria-label={stockLabelFor(game)}
+                aria-disabled={!isSettled(dealPhase)}
                 className={joinClassNames(
                     styles.slot,
                     styles.stockButton,
