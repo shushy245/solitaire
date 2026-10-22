@@ -6,6 +6,7 @@ export { findFoundationTarget, isAutoCompletable, nextAutoMove } from './auto-co
 export { findClickMove } from './click-move.ts';
 export { listHints } from './hints.ts';
 export { isStuck } from './stuck.ts';
+export { nextSafeMove } from './safe-move.ts';
 export {
     hasStock,
     isEmptyPile,
