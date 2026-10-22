@@ -50,7 +50,10 @@ const afterFirstHint = (state: GameStateModel) => {
 // The positions met following the first hint from `start`, up to an ending, a position with no hint or the limit.
 const walkFirstHints = (start: GameStateModel): GameStateModel[] =>
     Array.from({ length: MAX_HINT_STEPS }).reduce<GameStateModel[]>(
-        (walk) => {
+        (walk, _, step) => {
+            // A walk that stopped earlier stays stopped — no need to judge its last position again.
+            if (walk.length <= step) return walk;
+
             const last = walk[walk.length - 1] ?? start;
             const next = endingAt({ start, state: last }) === undefined ? afterFirstHint(last) : undefined;
 
@@ -105,12 +108,17 @@ describe('following the first hint', () => {
         );
     });
 
-    it('never leads back to where it started — a hint that is undone by the next hint is pointless', () => {
+    // A draw then a recycle can rightly bring a short deck back round; only table moves must never undo each other.
+    it('never leads back to where it started with a table move — a hint undone by the next hint is pointless', () => {
         fc.assert(
             fc.property(positionArb, (position) => {
                 const start = positionFrom(position);
-                const next = afterFirstHint(start);
-                const back = next === undefined ? undefined : afterFirstHint(next);
+                const [hint] = listHints(start);
+
+                if (hint === undefined || isDeckMove(hint)) return;
+
+                const next = applyMove({ state: start, move: hint });
+                const back = afterFirstHint(next);
 
                 expect(back === undefined ? undefined : cardsKey(back)).not.toBe(cardsKey(start));
             }),

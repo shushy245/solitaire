@@ -1,10 +1,7 @@
+import { readTable, waitForSettledDeal } from './deal.ts';
 import { HudTestIds } from '../../../src/app/hud/hud.test-ids.ts';
 import { BoardTestIds } from '../../../src/app/board/board.test-ids.ts';
 import { GameOverTestIds } from '../../../src/app/game-over/game-over.test-ids.ts';
-
-const waitForSettledDeal = (): void => {
-    cy.findByTestId(BoardTestIds.Board).should('have.attr', 'data-deal-phase', 'settled');
-};
 
 export const gameOverDriver = {
     given: {
@@ -27,6 +24,7 @@ export const gameOverDriver = {
             cy.findByTestId(GameOverTestIds.Undo).click();
         },
         newGameChosen: (): void => {
+            readTable().as('tableBeforeNewGame');
             cy.findByTestId(GameOverTestIds.NewGame).click();
         },
     },
@@ -46,7 +44,11 @@ export const gameOverDriver = {
                 .and('have.attr', 'data-pile-index', '4');
             cy.findByTestId(HudTestIds.Moves).should('contain.text', '0 moves');
         },
+        // A different deal (the cards lie elsewhere), landed, unplayed and in turn 3.
         freshDealInTurnThree: (): void => {
+            cy.get<string[]>('@tableBeforeNewGame').then((before) => {
+                readTable().should('not.deep.equal', before);
+            });
             waitForSettledDeal();
             cy.findByTestId(HudTestIds.Moves).should('contain.text', '0 moves');
             cy.findByTestId(HudTestIds.Mode('three')).should('have.attr', 'aria-pressed', 'true');

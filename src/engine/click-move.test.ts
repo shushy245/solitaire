@@ -94,6 +94,25 @@ describe('findClickMove', () => {
         expect(findClickMove({ state, cardId: redEight.id })).toBeUndefined();
     });
 
+    it('splits a run when that frees the card under it for its foundation (the move Hint points at)', () => {
+        const spadesToSeven = [Rank.Ace, Rank.Two, Rank.Three, Rank.Four, Rank.Five, Rank.Six, Rank.Seven].map((rank) =>
+            up({ rank, suit: Suit.Spades }),
+        );
+        const redSeven = up({ rank: Rank.Seven, suit: Suit.Hearts });
+        const state = aGameState()
+            .withFoundation({ index: 0, cards: spadesToSeven })
+            .withColumn({ index: 0, cards: [hidden, up({ rank: Rank.Eight, suit: Suit.Spades }), redSeven] })
+            .withColumn({ index: 1, cards: [up({ rank: Rank.Eight, suit: Suit.Clubs })] })
+            .build();
+
+        expect(findClickMove({ state, cardId: redSeven.id })).toEqual({
+            kind: MoveKind.TableauToTableau,
+            cardId: redSeven.id,
+            from: 0,
+            to: 1,
+        });
+    });
+
     it('never takes a card back down from a foundation', () => {
         const state = aGameState()
             .withFoundation({ index: 0, cards: [aceOfHearts, twoOfHearts] })

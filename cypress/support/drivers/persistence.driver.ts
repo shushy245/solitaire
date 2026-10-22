@@ -1,26 +1,10 @@
+import { readTable, waitForSettledDeal } from './deal.ts';
 import { HudTestIds } from '../../../src/app/hud/hud.test-ids.ts';
 import { BoardTestIds } from '../../../src/app/board/board.test-ids.ts';
 import { SAVED_GAME_KEY, SAVED_STATS_KEY } from '../../../src/app/persistence/storage-keys.utils.ts';
 
 // The fixtures are saves exactly as the app writes them.
 const SWEEP_TIMEOUT_MS = 10_000;
-
-const waitForSettledDeal = (): void => {
-    cy.findByTestId(BoardTestIds.Board).should('have.attr', 'data-deal-phase', 'settled');
-};
-
-// Every card's place and face, as one comparable list.
-const readTable = (): Cypress.Chainable<string[]> =>
-    cy
-        .get('[data-testid^="BoardTestIds.Card."]')
-        .then((cards) =>
-            [...cards]
-                .map(
-                    (card) =>
-                        `${card.dataset.testid ?? ''} ${card.dataset.pile ?? ''}:${card.dataset.pileIndex ?? ''}:${card.dataset.face ?? ''}`,
-                )
-                .sort(),
-        );
 
 export const persistenceDriver = {
     given: {

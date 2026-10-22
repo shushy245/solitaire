@@ -1,9 +1,9 @@
 {
-  "version": 1,
-  "played": 4,
-  "won": 1,
-  "best": {
-    "timeMs": 400000,
-    "score": 700
-  }
+    "version": 1,
+    "played": 4,
+    "won": 1,
+    "best": {
+        "timeMs": 400000,
+        "score": 700
+    }
 }

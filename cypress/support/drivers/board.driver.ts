@@ -1,3 +1,4 @@
+import { waitForSettledDeal } from './deal.ts';
 import { BoardTestIds } from '../../../src/app/board/board.test-ids.ts';
 
 // buttons: 1 while pressed, as a real browser reports — a move with no button held ends the drag.
@@ -16,7 +17,7 @@ export const boardDriver = {
         // Seed 1's deal opens with the Jack of diamonds (column 2) playable onto the black Queen in column 5.
         dealWithOpeningColumnMove: (): void => {
             cy.visit('/?seed=1');
-            cy.findByTestId(BoardTestIds.Board).should('have.attr', 'data-deal-phase', 'settled');
+            waitForSettledDeal();
         },
     },
     drag: {

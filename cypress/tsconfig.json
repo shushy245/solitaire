@@ -1,8 +1,8 @@
 {
-  "extends": "../tsconfig.json",
-  "compilerOptions": {
-    "lib": ["ES2022", "DOM"],
-    "types": ["cypress", "@testing-library/cypress", "node"]
-  },
-  "include": ["**/*.ts", "../src/**/*.utils.ts", "../src/**/*.test-ids.ts"]
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "lib": ["ES2022", "DOM"],
+        "types": ["cypress", "@testing-library/cypress", "node"]
+    },
+    "include": ["**/*.ts", "../src/**/*.utils.ts", "../src/**/*.test-ids.ts"]
 }

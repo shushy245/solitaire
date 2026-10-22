@@ -1,6 +1,7 @@
+import { applyMove } from './apply.ts';
 import { listLegalMoves } from './rules.ts';
-import { isEmptyPile, isFaceDown } from './selectors.ts';
 import { GameStateModel, Move, MoveKind, MoveOf } from './model.ts';
+import { canStackOnFoundation, isEmptyPile, isFaceDown, topCard } from './selectors.ts';
 
 type ToTableauMove = MoveOf<MoveKind.WasteToTableau | MoveKind.TableauToTableau | MoveKind.FoundationToTableau>;
 
@@ -22,10 +23,7 @@ const cardUnder = ({ state, move }: { state: GameStateModel; move: MoveOf<MoveKi
     return column[column.findIndex((card) => card.id === move.cardId) - 1];
 };
 
-// A legal move that changes nothing worth having. In real play a face-up card always lies on its own run, so
-// moving off a face-up card only shifts the run to an equal place (and a click would ping-pong it); a run that
-// already heads its column, moved to another empty one, is the same shift.
-// A column move that turns over the face-down card under the moved run.
+// A column-to-column move that turns over the face-down card under the moved run.
 export const isRevealingMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
     if (move.kind !== MoveKind.TableauToTableau) return false;
 
@@ -34,12 +32,29 @@ export const isRevealingMove = ({ state, move }: { state: GameStateModel; move: 
     return under !== undefined && isFaceDown(under);
 };
 
+// A column-to-column move that leaves a card on top of its column which can then go home — the one run split worth
+// making.
+export const isFreeingMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
+    if (move.kind !== MoveKind.TableauToTableau) return false;
+
+    const after = applyMove({ state, move });
+    const freed = topCard(after.tableau[move.from] ?? []);
+
+    return freed !== undefined && after.foundations.some((pile) => canStackOnFoundation({ card: freed, pile }));
+};
+
+// A legal move that changes nothing worth having. In real play a face-up card always lies on its own run, so
+// moving off a face-up card only shifts the run to an equal place (and a click would ping-pong it) — unless it
+// frees that face-up card for its foundation; a run that already heads its column, moved to another empty one, is
+// the same shift.
 export const isPointlessMove = ({ state, move }: { state: GameStateModel; move: Move }): boolean => {
     if (move.kind !== MoveKind.TableauToTableau) return false;
 
     const under = cardUnder({ state, move });
 
-    return under === undefined ? isOntoEmptyColumn({ state, move }) : !isFaceDown(under);
+    if (under === undefined) return isOntoEmptyColumn({ state, move });
+
+    return !isFaceDown(under) && !isFreeingMove({ state, move });
 };
 
 // How eagerly a click plays each kind of move; a kind missing here is never played by a click. Lower goes first.

@@ -1,12 +1,9 @@
+import { waitForSettledDeal } from './deal.ts';
 import { HudTestIds } from '../../../src/app/hud/hud.test-ids.ts';
 import { BoardTestIds } from '../../../src/app/board/board.test-ids.ts';
 import { AudioLog, installFakeAudioContext } from '../fake-audio-context.ts';
 
 const audio: AudioLog = { contexts: 0, starts: 0 };
-
-const waitForSettledDeal = (): void => {
-    cy.findByTestId(BoardTestIds.Board).should('have.attr', 'data-deal-phase', 'settled');
-};
 
 export const soundDriver = {
     given: {
