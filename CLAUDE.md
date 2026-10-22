@@ -39,13 +39,14 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
+- `stuck-takedown` — a card taken down off a foundation in a stuck game no longer revives it: game over is judged with
+  history (`isGameOverAt` in session.utils, `isTakeDownOf` in the engine), used by the hint provider and the panel's Undo.
 - `two-tabs` — only the visible tab saves (`makeVisibleTabSave` + `isPageVisible`, wired in `main.tsx`); a hidden
   tab's clock ticks write nothing. Last tab looked at wins.
 - `stuck-polish` — the game-over panel's Undo leaps to the last unstuck position (`UndoToUnstuck`,
-  `canUndoToUnstuck`; stuck answers remembered per game state); New game on a stuck game skips "leave this game?"
-  (`asksBeforeLeaving`, mode switch still asks); the panel closes and stays closed while stuck; the clock stops while
-  stuck (`reportGameOver` from the hint provider → `Tick.isGameOver`). Open: BF-7 (take-downs in a stuck game).
+  `canUndoToUnstuck`); New game on a stuck game skips "leave this game?" (mode switch still asks); the panel closes
+  and stays closed while stuck; the clock stops while stuck (`reportGameOver` → `Tick.isGameOver`).
 
 ## What's next
 Autonomous run (user, 2026-10-22: "do everything left, order does not matter"): `polish-review` ✅ → `stuck-polish` ✅
-→ BF-1 ✅ (`two-tabs`) → BF-7 (`stuck-takedown` in `docs/plan.md`) → RF-backlog. BF-2 won't fix (user). The manual Chrome/Safari listen needs the user.
+→ BF-1 ✅ (`two-tabs`) → BF-7 ✅ (`stuck-takedown`) → RF-backlog (next; drop auto-move items). BF-2 won't fix (user). The manual Chrome/Safari listen needs the user.

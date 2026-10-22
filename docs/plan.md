@@ -470,7 +470,7 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
     silent once shown, nor a shown tab write once hidden)
   - pre-mortem: the record (stats) is saved through the same gate — a hidden tab cannot count a win twice
 
-### Story `stuck-takedown` — BF-7 from the `stuck-polish` triage (2026-10-22, autonomous run)
+### Story `stuck-takedown` — BF-7 from the `stuck-polish` triage (2026-10-22, autonomous run) ✅
 - Owns: `src/engine/stuck.ts` (take-down predicate), `src/app/session/` (game-over judged with history),
   `src/app/hint/hint-provider.tsx` (uses it)
 - Depends on: two-tabs
@@ -814,6 +814,7 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   focus visible, no console errors; the panel covers no card at any width; the clock read 0:00 after the one move that
   made the game stuck. Known: panel note 39–40 characters; focus lands on the panel's first action on appear.
   Observed: after Close, nothing on screen says the game is stuck (by decision: Hint still says "No moves left").
+- BF-7 fixed in `stuck-takedown`.
 
 ### `two-tabs` (code-review low, 0 findings; visual pass A+B)
 - Checked in Chrome (isolated profile, two tabs): with one tab made to report "hidden" and its clock ticking, the
@@ -823,6 +824,17 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   looked at wins" (the plan's decision). Option for the user: reload the saved game when a tab is shown again.
 - Visual A+B (`?seed=1` settled; after a draw and a reload; 390/768/1280): no overflow, taps ≥44, text ≥16px,
   Lighthouse a11y 100, traversal clean, no console errors; the draw survived the reload. Nothing drawn changed.
+
+### `stuck-takedown` (code-review low, 1 finding; visual pass A+B)
+- Fix-only story, reviewed at low effort (review-cost rule). No correctness finding.
+- RF (1): `lastUnstuckIndex` copies the history (`slice`) for every position it walks back over — quadratic in the
+  length of a stuck stretch; not measured as slow → pass an end index instead of a copy.
+- Case gaps (recorded, not tested): "only earlier positions with more cards home are searched" rests on the `&&` order
+  in `isGameOverAt` (no test observes which searches run); "a take-down then a shift stays over" is covered by the
+  reasoning in the plan decision, the tests use take-down then put-back.
+- Visual A+B (`?seed=22&draw=3` settled; `?seed=148&draw=3` after the 8♣; 390/768/1280): no overflow, taps ≥44, text
+  ≥16px, Lighthouse a11y 100 on both, traversal in visual order, focus visible, no console errors. Known: panel note
+  39–40 characters. Not checked: reduced motion during the deal, real pointer/touch input.
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a
@@ -850,4 +862,5 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
 - (`auto-move`) `nextSafeMove` and `nextAutoMove` both scan tops for a foundation target → one `listFoundationMoves`.
 - (`auto-move`) a step works out `nextSafeMove` twice, and `nextSafeMove` builds every candidate to keep the first.
 - (`auto-move`) `stepKindMap` (pure lookup) lives in `game-provider.tsx` → `game-provider.utils.ts`.
+- (`stuck-takedown`) `lastUnstuckIndex` slices history per walked position → pass an end index.
 - (`card-design`) `--radius` and `CORNER_RATIO` (cascade-canvas.ts) duplicate one value → read the card's computed radius.

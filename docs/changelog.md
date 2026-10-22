@@ -1,5 +1,11 @@
 # Changelog
 
+## stuck-takedown — 2026-10-22
+- **Pain:** in a game with no moves left, taking a card down off a foundation made the game count as playable again — the stopped clock restarted, a closed "No more moves" notice popped back once the card went back up, and the notice's Undo could land on the take-down instead of a position worth playing from.
+- **Fix:** a position is now judged against the stuck one before it: if only cards came down off foundations since, it is still game over.
+- **Trade-off:** none weighed — this was the fix recorded with the bug.
+- **Result:** 416 tests pass (`vitest`, 7 more), lint and typecheck clean; the review found no bug (one speed tidy-up queued); visual pass clean on phone, tablet and laptop widths, accessibility 100.
+
 ## two-tabs — 2026-10-22
 - **Pain:** with the game open in two tabs, a tab left in the background kept rewriting its old game over the one being played every second, so a reload could bring back the wrong game.
 - **Fix:** only the tab the player can see saves; a background tab's ticking clock writes nothing.
