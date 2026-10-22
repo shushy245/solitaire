@@ -39,10 +39,11 @@ Single-package Vite + React 18 + TS app. Klondike solitaire, frontend-only, no b
 
 ## What's done
 Full history: `docs/changelog.md`; commit-level record: `git log`.
-- `auto-move` — safe cards (Ace, Two, or both opposite-colour cards one lower home) fly home after each player move
-  (`nextSafeMove`, `src/engine/safe-move.ts`; `SessionPhase.AutoMoving`, stepped on the auto-complete timer). Steps
-  push no history, so one Undo takes back the move and its auto-moves; a press calls `stopAutoMove`; no auto-move
-  after a card is taken off a foundation, nor on load. Always on (no toggle — the user was not asked in time).
+- `polish-review` — Hint no longer says "No moves left" when a take-down off a foundation unblocks the table, and
+  never suggests sending such a card back up (`cardsTakenDown`, `isReturnOfKeptCard`); card names say where they lie
+  (`cardLabel(slot)`); the hint status line keeps one line of height (no table jump); a double-click's second half and
+  a click on a home card do nothing; a drop overlapping its source most snaps back. `auto-move` was built and then
+  removed at the user's request (2d037b1) — never re-propose it.
 - `hint-game-over-checks` — Hint and "No more moves" proven in Cypress (`hint.cy.ts`, `game-over.cy.ts`) and by
   properties (`hints.property.test.ts`); a run split that frees a card for home is no longer "pointless" (Hint and
   click). Cap measured: 0.12% of game overs missed → kept; `judgeStuck` gives stuck / not stuck / gave up.
@@ -50,7 +51,5 @@ Full history: `docs/changelog.md`; commit-level record: `git log`.
 - `card-design` — soft cream cards, Instrument Sans indices, tinted court frames, navy dotted back; colours in `global.scss`, held by `contrast.utils.test.ts`. `CORNER_RATIO` (cascade) mirrors `--radius`.
 
 ## What's next
-Epic "Trust and flow" (`docs/plan.md`): `hint-game-over-checks` ✅ → `auto-move` ✅.
-Autonomous run (user, 2026-10-22: "do everything left, order does not matter"): one epic-level review over both
-"Play polish" and "Trust and flow" → BF-3..BF-6 story → BF-1/BF-2 → RF-backlog. The manual Chrome/Safari listen
-needs the user.
+Autonomous run (user, 2026-10-22: "do everything left, order does not matter"): `polish-review` ✅ → `stuck-polish`
+(BF-3..BF-6, `docs/plan.md`) → BF-1/BF-2 → RF-backlog. The manual Chrome/Safari listen needs the user.

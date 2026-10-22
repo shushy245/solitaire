@@ -417,7 +417,7 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
   - pre-mortem: a new game, undo or drag started mid-sequence stops it (no move lands on the wrong game)
   - pre-mortem: a restored game on load runs no auto-moves until the player moves (no surprise moves on reload)
 
-### Story `polish-review` — fixes from the epic-level review of Play polish + Trust and flow (2026-10-22)
+### Story `polish-review` — fixes from the epic-level review of Play polish + Trust and flow (2026-10-22) ✅
 - Owns: `src/engine/` (hints, safe-move), `src/app/session/`, `src/app/board/`, `src/app/drag/`, `src/app/hud/`,
   `src/app/hint/`
 - Depends on: auto-move
@@ -739,6 +739,24 @@ Order: `hint-game-over-checks` → `auto-move` (serial: auto-move changes what "
 - Visual A+B (`?seed=1`: settled, after J♦, after draws; 390/768/1280): no overflow, taps ≥44, text ≥16px, Lighthouse
   a11y 100, traversal clean; drawn Aces flew home with no press; under reduced motion they jump (no animation).
   Not checked: a press overlapping a live sequence in the browser, turn 3, real touch.
+
+### `polish-review` (code-review low, 0 findings; visual pass A+B)
+- Fix-only story, reviewed at low effort (review-cost rule): one pass over the non-test changes, no finding.
+- E2 changed meaning mid-story: auto-move was removed at the user's request (2026-10-22), so "never auto-moved
+  back" became "Hint never suggests sending back a card the player took down" (`isReturnOfKeptCard`).
+- E5 found by measuring in Chrome: the empty "No moves left" line had no height, so the table dropped 19.5px for two
+  seconds → the line keeps one line of height. The first e2e draft was blind (it re-checked the table after the
+  message cleared) → message and table top read in one retry.
+- BF (1) flaky: `hint.cy.ts` "pressing H again shows the next hint" failed once in 7 runs of the spec with no change
+  between runs (another run had a second, unnamed failure). Not chased yet.
+- Visual A+B (`?seed=1` settled; `?seed=22&draw=3` settled and right after Hint; 390/768/1280): no overflow, taps ≥44,
+  text ≥16px, Lighthouse a11y 100 on both, traversal clean, no console errors; board top unchanged by the message at
+  all three widths (153.5px at 768/1280, 285px at 390). Kept: the reserved line leaves an empty band above the stock
+  when no message shows (the cost of the fix). Kept: the panel's New game shows its focus ring on appear (focus is
+  placed there on purpose). Dismissed: the message "line length" 90–101 — the script measures the full-row element,
+  the text is 30 characters. Known: panel note 39–40 characters; cards not in the tab order (Deferred: keyboard play).
+  Not checked: reduced motion emulated in the browser, the hint state's script numbers at 390 (the message may have
+  cleared first; the before/after table position was read while it showed).
 
 ## Deferred (not in v1 scope)
 - Keyboard play — cards are pointer-only today (the stock button is keyboard-operable). Would need a

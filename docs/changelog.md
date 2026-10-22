@@ -1,5 +1,11 @@
 # Changelog
 
+## polish-review — 2026-10-22
+- **Pain:** a review of the last two rounds of work found small ways the game misled or nudged the player: Hint saying "No moves left" when taking a card down off a foundation would help, a screen reader reading cards in a meaningless order, the table jumping when "No moves left" appeared, double-clicks playing the card just uncovered, and sloppy drops landing on the wrong pile.
+- **Fix:** eight targeted fixes, one test each — Hint now suggests a take-down when it unblocks the table and never suggests sending such a card back, each card's spoken name says where it lies, the message line keeps its space, and stray clicks and drops are ignored.
+- **Trade-off:** an empty line's worth of space now sits above the cards when no message shows, so the table never jumps.
+- **Result:** 395 tests pass (`vitest`) and the hint browser tests pass; the review found nothing further; visual pass clean on phone, tablet and laptop widths with the table measured unmoved, accessibility 100; one browser test seen to flake once, recorded.
+
 ## auto-move — 2026-10-22
 - **Pain:** every Ace and low card had to be sent home by hand, even when nothing on the table could ever need it — busywork most solitaire games do for you.
 - **Fix:** after each move, cards that nothing left on the table could need (Aces, Twos, and cards whose two opposite-colour cards one rank lower are already home) fly to their foundations by themselves, one at a time.
