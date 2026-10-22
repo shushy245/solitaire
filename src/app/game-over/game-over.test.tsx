@@ -117,6 +117,20 @@ describe('GameOver', () => {
         driver.assert.tableFocused();
     });
 
+    it('Escape in the panel closes only the panel, not a "leave this game?" question open beside it', async () => {
+        driver.given.oneMoveFromStuck(DrawMode.One);
+        await driver.when.created();
+        driver.when.lastMovePlayed();
+        driver.click.otherModeInHud(DrawMode.Three);
+        driver.assert.leaveQuestionShown(true);
+
+        driver.when.panelFocused();
+        driver.press.escape();
+
+        driver.assert.panelShown(false);
+        driver.assert.leaveQuestionShown(true);
+    });
+
     it('comes back once the game has been un-stuck and gets stuck again', async () => {
         driver.given.oneMoveFromStuck(DrawMode.One);
         await driver.when.created();

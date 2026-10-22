@@ -48,9 +48,13 @@ const GameOverPanel = ({ canUndo: isUndoable, onUndo, onNewGame, onClose }: Game
     const handleFirstActionRef = useFocusOnAppear<HTMLButtonElement>();
     useHandFocusToTableOnClose();
 
-    // Escape closes it while focus is inside — the page-wide Escape belongs to the "leave this game?" question.
+    // Escape closes it while focus is inside, and goes no further: the "leave this game?" question listens for Escape
+    // on the whole page, and one key press must not answer it too.
     const handleKeyDown = (event: React.KeyboardEvent): void => {
-        if (event.key === 'Escape') onClose();
+        if (event.key !== 'Escape') return;
+
+        event.stopPropagation();
+        onClose();
     };
 
     return (

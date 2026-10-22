@@ -7,8 +7,10 @@ import { aCard, aGameState, aSession } from '~/testkit/builders/index.ts';
 import { discardSave, fakeNow, fixedSeed } from '~/testkit/provider-fakes.ts';
 import { DrawMode, makeDrawMove, MoveKind, Rank, Suit } from '~/engine/index.ts';
 
+import { Hud } from '../hud/hud.tsx';
 import { GameOver } from './game-over.tsx';
 import { Board } from '../board/board.tsx';
+import { HudTestIds } from '../hud/hud.test-ids.ts';
 import { HintProvider } from '../hint/hint-provider.tsx';
 import { BoardTestIds } from '../board/board.test-ids.ts';
 import { GameOverTestIds } from './game-over.test-ids.ts';
@@ -79,8 +81,9 @@ export type GameOverDriver = {
         aceTakenDown: () => void;
         acePutBack: () => void;
         undoneElsewhere: () => void;
+        panelFocused: () => void;
     };
-    click: { undo: () => void; newGame: () => void; close: () => void };
+    click: { undo: () => void; newGame: () => void; close: () => void; otherModeInHud: (mode: DrawMode) => void };
     press: { escape: () => void };
     time: { pass: (ms: number) => void };
     assert: {
@@ -89,6 +92,7 @@ export type GameOverDriver = {
         undoFocused: () => void;
         newGameFocused: () => void;
         tableFocused: () => void;
+        leaveQuestionShown: (isShown: boolean) => void;
         undoEnabled: (isEnabled: boolean) => void;
         movesMade: (moves: number) => void;
         timePlayed: (ms: number) => void;
@@ -156,6 +160,7 @@ export const makeGameOverDriver = (): GameOverDriver => {
                         <SoundProvider player={new FakeSoundPlayer()} initiallyMuted={false} saveMuted={discardSave}>
                             <MotionProvider prefersReducedMotion={prefersReducedMotion}>
                                 <HintProvider>
+                                    <Hud />
                                     <Board />
                                     <GameOver />
                                     <elsewhere.Probe />
@@ -208,6 +213,9 @@ export const makeGameOverDriver = (): GameOverDriver => {
                     });
                 });
             },
+            panelFocused: () => {
+                screen.getByTestId(GameOverTestIds.Undo).focus();
+            },
             // The HUD's Undo and Ctrl+Z go through the game's plain undo.
             undoneElsewhere: () => {
                 act(() => {
@@ -225,6 +233,9 @@ export const makeGameOverDriver = (): GameOverDriver => {
             },
             close: () => {
                 clickFocused(GameOverTestIds.Close);
+            },
+            otherModeInHud: (mode) => {
+                fireEvent.click(screen.getByTestId(HudTestIds.Mode(mode)));
             },
         },
         press: {
@@ -254,6 +265,10 @@ export const makeGameOverDriver = (): GameOverDriver => {
             },
             newGameFocused: () => {
                 expect(screen.getByTestId(GameOverTestIds.NewGame)).toHaveFocus();
+            },
+            leaveQuestionShown: (isShown) => {
+                if (isShown) expect(screen.getByTestId(HudTestIds.Confirm)).toBeVisible();
+                else expect(screen.queryByTestId(HudTestIds.Confirm)).not.toBeInTheDocument();
             },
             tableFocused: () => {
                 expect(screen.getByTestId(BoardTestIds.Stock)).toHaveFocus();
